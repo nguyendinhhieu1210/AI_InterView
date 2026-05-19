@@ -16,6 +16,9 @@ const { gradeCVAnswersAdvanced } =
 const { extractTextFromPDF } =
   require('../utils/pdfReader');
 
+
+const saveActivity = require('../utils/saveActivity');
+
 /**
  * Extract text from uploaded file
  */
@@ -62,6 +65,7 @@ exports.uploadCV = async (req, res) => {
     }
 
     console.log('=== UPLOAD CV ===');
+
     console.log(
       'File:',
       file.originalname,
@@ -302,6 +306,10 @@ exports.submitCVAnswers = async (
         });
 
       await session.save();
+      await saveActivity(
+        req.user.id,
+        'cv_interview'
+      );
     }
 
     return res.json({
