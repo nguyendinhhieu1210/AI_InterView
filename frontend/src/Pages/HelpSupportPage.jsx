@@ -1,35 +1,33 @@
-import { useEffect, useRef,useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     LogOut, User, Brain, Zap, Award, ChevronDown, Settings, HelpCircle,
     BarChart3, MessageCircle, FileText, Mail, Phone, Globe, ExternalLink,
-    CheckCircle, Clock, LayoutGrid, ArrowLeft, PlayCircle, Loader2
+    CheckCircle, Clock, LayoutGrid, ArrowLeft, PlayCircle, Loader2, Code
 } from 'lucide-react';
 import { TrendingUp } from 'lucide-react';
 import { FaLinkedin } from 'react-icons/fa';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext'; // Import AuthContext
+import { useAuth } from '../contexts/AuthContext';
 
 export default function HelpSupportPage() {
     const navigate = useNavigate();
     const { darkMode } = useTheme();
     const { language } = useLanguage();
-    const { user, isAuthenticated, loading: authLoading, logout } = useAuth(); // Lấy từ context
+    const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
 
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const dropdownRef = useRef(null);
     const howItWorksRef = useRef(null);
 
-    // Chuyển hướng nếu chưa đăng nhập
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
             navigate('/login');
         }
     }, [authLoading, isAuthenticated, navigate]);
 
-    // Xử lý logout thủ công (có delay 2s)
     const handleLogout = () => {
         if (isLoggingOut) return;
         setIsLoggingOut(true);
@@ -39,7 +37,6 @@ export default function HelpSupportPage() {
         }, 2000);
     };
 
-    // Click outside dropdown
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -73,13 +70,14 @@ export default function HelpSupportPage() {
     const avatarUrl = user.avatar;
     const avatarLetter = displayName.charAt(0).toUpperCase();
 
-    // Translation (giữ nguyên)
     const t = (key) => {
         const translations = {
             en: {
                 helpSupport: 'Help & Support',
-                helpSubtitle: 'Get assistance and discover how our AI-powered platform personalizes interviews based on your CV.',
-                howItWorks: 'How the AI Interview System Works',
+                helpSubtitle: 'Get assistance and discover how our AI-powered platform personalizes interviews based on your CV or chosen topics.',
+                topicSectionTitle: '📌 Manual Topic Entry',
+                topicSectionDesc: 'Don\'t have a CV? No problem! You can manually enter programming languages, frameworks, or topics (e.g., Java, Python, JavaScript, React). The AI will generate interview questions tailored exactly to the technologies you choose.',
+                howItWorks: 'How the AI Interview System Works (CV-based)',
                 step1Title: 'Upload Your CV',
                 step1Desc: 'Upload your CV (PDF format). Choose your target role, tech stack, and seniority level.',
                 step2Title: 'AI Analysis & Parsing',
@@ -103,7 +101,7 @@ export default function HelpSupportPage() {
                 backToDashboard: 'Back to Dashboard',
                 knowledgeBase: 'Knowledge Base',
                 reportIssue: 'Report an Issue',
-                personalNote: 'Your questions are always generated based on your CV content — fully personalized!',
+                personalNote: 'Your questions are generated based on your CV content OR the topics you enter — fully personalized!',
                 connectWithUs: 'Connect with us on social media for updates and tips.',
                 howToUse: 'How to use?',
                 back: 'Back to Dashboard',
@@ -111,8 +109,10 @@ export default function HelpSupportPage() {
             },
             vi: {
                 helpSupport: 'Trợ giúp & Hỗ trợ',
-                helpSubtitle: 'Nhận trợ giúp và khám phá cách nền tảng AI cá nhân hóa phỏng vấn dựa trên CV của bạn.',
-                howItWorks: 'Hệ thống phỏng vấn AI hoạt động thế nào',
+                helpSubtitle: 'Nhận trợ giúp và khám phá cách nền tảng AI cá nhân hóa phỏng vấn dựa trên CV hoặc chủ đề bạn chọn.',
+                topicSectionTitle: '📌 Nhập chủ đề thủ công',
+                topicSectionDesc: 'Không có CV? Không vấn đề! Bạn có thể nhập thủ công các ngôn ngữ lập trình, framework hoặc chủ đề (VD: Java, Python, JavaScript, React). AI sẽ tạo câu hỏi phù hợp với công nghệ bạn chọn.',
+                howItWorks: 'Hệ thống phỏng vấn AI hoạt động thế nào (dựa trên CV)',
                 step1Title: 'Tải lên CV',
                 step1Desc: 'Tải lên CV (PDF). Chọn vai trò, công nghệ và cấp độ mong muốn.',
                 step2Title: 'AI phân tích CV',
@@ -136,7 +136,7 @@ export default function HelpSupportPage() {
                 backToDashboard: 'Quay lại Trang chính',
                 knowledgeBase: 'Cơ sở kiến thức',
                 reportIssue: 'Báo cáo sự cố',
-                personalNote: 'Câu hỏi luôn được tạo dựa trên nội dung CV của bạn — cá nhân hóa hoàn toàn!',
+                personalNote: 'Câu hỏi luôn được tạo dựa trên nội dung CV hoặc chủ đề bạn nhập — cá nhân hóa hoàn toàn!',
                 connectWithUs: 'Kết nối với chúng tôi qua mạng xã hội để nhận cập nhật và mẹo hữu ích.',
                 howToUse: 'Cách sử dụng?',
                 back: 'Quay lại trang chính',
@@ -146,6 +146,7 @@ export default function HelpSupportPage() {
         return translations[language]?.[key] || translations['en'][key] || key;
     };
 
+    // Original 6 steps (CV-based)
     const steps = [
         { icon: FileText, title: t('step1Title'), desc: t('step1Desc'), color: 'blue' },
         { icon: Brain, title: t('step2Title'), desc: t('step2Desc'), color: 'purple' },
@@ -183,7 +184,7 @@ export default function HelpSupportPage() {
             )}
 
             <div className="max-w-7xl mx-auto">
-                {/* Back Button */}
+                {/* Back button */}
                 <button
                     onClick={() => navigate('/welcome')}
                     className="group mb-8 flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 font-medium"
@@ -212,7 +213,30 @@ export default function HelpSupportPage() {
                     </div>
                 </div>
 
-                {/* How It Works Section - Only one */}
+                {/* NEW STANDALONE SECTION: Manual Topic Entry */}
+                <div className="mb-12">
+                    <div className={`rounded-2xl border-2 border-dashed p-6 transition-all ${darkMode ? 'bg-cyan-900/20 border-cyan-500/50' : 'bg-cyan-50 border-cyan-400'}`}>
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                            <div className={`p-3 rounded-xl ${darkMode ? 'bg-cyan-800/50' : 'bg-cyan-100'}`}>
+                                <Code className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{t('topicSectionTitle')}</h3>
+                                <p className="text-gray-600 dark:text-gray-300">{t('topicSectionDesc')}</p>
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                    {['Java', 'Python', 'JavaScript', 'React', 'Node.js', 'SQL'].map((tag) => (
+                                        <span key={tag} className={`px-2 py-1 rounded-lg text-xs font-mono ${darkMode ? 'bg-gray-800 text-cyan-300' : 'bg-white text-cyan-700 shadow-sm'}`}>
+                                            {tag}
+                                        </span>
+                                    ))}
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 italic">+ any topic you want</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* How It Works Section (only the 6 CV steps) */}
                 <div ref={howItWorksRef} className="mb-12 scroll-mt-24">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl">
@@ -252,7 +276,7 @@ export default function HelpSupportPage() {
                     </div>
                 </div>
 
-                {/* Contact & Support Section */}
+                {/* Contact & Support Section (unchanged) */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
                         <div className={`rounded-3xl shadow-2xl border p-6 transition-all ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
@@ -334,8 +358,8 @@ export default function HelpSupportPage() {
                             <div className="flex items-start gap-3">
                                 <CheckCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5" />
                                 <div>
-                                    <h4 className="font-semibold text-gray-800 dark:text-white">100% CV‑based Questions</h4>
-                                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Every interview question is tailored specifically from your uploaded CV — skills, projects and experience.</p>
+                                    <h4 className="font-semibold text-gray-800 dark:text-white">100% CV‑based & Topic‑based Questions</h4>
+                                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Every interview question is tailored specifically from your uploaded CV or the tech topics you enter — skills, projects, and experience.</p>
                                 </div>
                             </div>
                         </div>

@@ -8,7 +8,12 @@ const auth = require('../middleware/auth');
 const upload = multer({ dest: 'uploads/' });
 
 // Upload CV – không lưu DB, trả về { fullName, skills, rawText, fileName }
-router.post('/upload', upload.single('cv'), cvController.uploadCV);
+router.post(
+    '/upload',
+    auth,
+    upload.single('cv'),
+    cvController.uploadCV
+);
 
 // Phân tích text CV (không lưu) – dùng cho preview
 router.post('/analyze-text', cvController.analyzeCVText);

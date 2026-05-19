@@ -1,6 +1,8 @@
 // backend/controllers/interviewController.js
 const { generateInterviewQuestions, gradeEssay } = require('../services/aiService');
 const InterviewResult = require('../models/InterviewResult');
+const saveActivity = require('../utils/saveActivity');
+
 
 // Sinh câu hỏi (giữ nguyên)
 const generateQuestions = async (req, res) => {
@@ -74,6 +76,10 @@ const submitAnswers = async (req, res) => {
       totalScore
     });
     await interviewRecord.save();
+    await saveActivity(
+      userId,
+      'interview'
+    );
 
     res.json({
       success: true,

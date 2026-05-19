@@ -26,6 +26,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import WeaknessAnalysis from '../components/WeaknessAnalysis';
 import api from '../services/api';
+import ActivityCalendar from '../components/ActivityCalendar';
 
 export default function WelcomePage() {
   // ------------------------------
@@ -51,6 +52,7 @@ export default function WelcomePage() {
   });
 
   const [recentActivities, setRecentActivities] = useState([]);
+  const [activities, setActivities] = useState([]);
 
   // ------------------------------
   // 2. Helper functions (no hooks)
@@ -252,6 +254,41 @@ export default function WelcomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+  fetchActivities();
+}, []);
+
+const fetchActivities = async () => {
+
+  try {
+
+    const token = localStorage.getItem('token');
+
+    const res = await fetch(
+      'http://localhost:5000/api/activity/calendar',
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setActivities(data.activities);
+    }
+
+  } catch (err) {
+
+    console.error(
+      'Fetch activities error:',
+      err
+    );
+
+  }
+};
+
   // ------------------------------
   // 5. Early returns (after all hooks)
   // ------------------------------
@@ -288,6 +325,10 @@ export default function WelcomePage() {
   const handleCVUploadSuccess = () => {
     fetchDashboardData();
   };
+
+
+
+  
 
   const displayName = user.fullName || user.userName;
   const avatarLetter = displayName.charAt(0).toUpperCase();
@@ -519,8 +560,15 @@ export default function WelcomePage() {
               </div>
             </div>
 
+
+            <ActivityCalendar
+              sessions={activities}
+            />
+
             {/* AI FEEDBACK */}
             <AIFeedback />
+
+
 
 
 
