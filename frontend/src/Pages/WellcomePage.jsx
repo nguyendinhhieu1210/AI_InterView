@@ -13,7 +13,11 @@ import {
   Calendar,
   MessageCircle,
   TrendingUp,
-  FileText
+  FileText,
+  Sparkles,
+  Clock,
+  ChevronRight,
+  Flame,
 } from 'lucide-react';
 
 import { StartInterviewModal } from '../components/StartInterviewModal';
@@ -24,13 +28,12 @@ import PerformanceTrendChart from '../components/PerformanceTrendChart';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import WeaknessAnalysis from '../components/WeaknessAnalysis';
 import api from '../services/api';
 import ActivityCalendar from '../components/ActivityCalendar';
 
 export default function WelcomePage() {
   // ------------------------------
-  // 1. All hooks (unconditionally)
+  // 1. All hooks
   // ------------------------------
   const navigate = useNavigate();
   const { darkMode } = useTheme();
@@ -43,27 +46,27 @@ export default function WelcomePage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   const [stats, setStats] = useState({
     totalInterviews: 0,
     averageScore: 0,
-    progressPercent: 0,
-    change: '+0%'
+    change: '+0%',
+    streak: 0,
   });
 
   const [recentActivities, setRecentActivities] = useState([]);
   const [activities, setActivities] = useState([]);
 
   // ------------------------------
-  // 2. Helper functions (no hooks)
+  // 2. Helper functions
   // ------------------------------
   const t = (key) => {
     const translations = {
       en: {
         interviewsCompleted: 'Completed',
         averageScore: 'Avg Score',
-        aiAccuracy: 'AI Accuracy',
-        progress: 'Progress',
+        streak: 'Current Streak',
         recentActivity: 'Recent Activity',
         viewAll: 'View all',
         performanceTrend: 'Performance Trend',
@@ -71,9 +74,6 @@ export default function WelcomePage() {
         startNewInterview: 'Start New Interview',
         viewDashboard: 'Performance Dashboard',
         scheduleMock: 'Mock Interview',
-        upcomingSchedule: 'Upcoming Schedule',
-        noUpcoming: 'No upcoming interviews',
-        scheduleNow: 'Schedule one →',
         logout: 'Sign Out',
         settings: 'Settings',
         helpSupport: 'Help & Support',
@@ -83,13 +83,12 @@ export default function WelcomePage() {
         goodEvening: 'Good Evening',
         readyMessage:
           'Ready to ace your next interview? Your AI coach is here to help.',
-        score: 'Score'
+        days: 'days',
       },
       vi: {
         interviewsCompleted: 'Đã hoàn thành',
         averageScore: 'Điểm TB',
-        aiAccuracy: 'Độ chính xác AI',
-        progress: 'Tiến độ',
+        streak: 'Chuỗi hiện tại',
         recentActivity: 'Hoạt động gần đây',
         viewAll: 'Xem tất cả',
         performanceTrend: 'Xu hướng điểm',
@@ -97,9 +96,6 @@ export default function WelcomePage() {
         startNewInterview: 'Phỏng vấn mới',
         viewDashboard: 'Bảng điều khiển',
         scheduleMock: 'Lên lịch thử',
-        upcomingSchedule: 'Lịch sắp tới',
-        noUpcoming: 'Chưa có lịch phỏng vấn',
-        scheduleNow: 'Đặt lịch ngay →',
         logout: 'Đăng xuất',
         settings: 'Cài đặt',
         helpSupport: 'Trợ giúp',
@@ -109,8 +105,8 @@ export default function WelcomePage() {
         goodEvening: 'Chào buổi tối',
         readyMessage:
           'Sẵn sàng chinh phục? Trợ lý AI luôn đồng hành.',
-        score: 'Điểm'
-      }
+        days: 'ngày',
+      },
     };
     return translations[language]?.[key] || translations.en[key];
   };
@@ -133,15 +129,60 @@ export default function WelcomePage() {
     return t('goodEvening');
   };
 
-  const getScoreColor = (score) => {
-    if (score >= 90) return 'from-emerald-500 to-teal-500 text-white';
-    if (score >= 75) return 'from-blue-500 to-cyan-500 text-white';
-    if (score >= 60) return 'from-yellow-500 to-orange-500 text-white';
-    return 'from-rose-500 to-pink-500 text-white';
+  const getScoreBadgeClass = (score) => {
+    if (score >= 80) return 'bg-emerald-500 text-white';
+    if (score >= 50) return 'bg-amber-500 text-white';
+    return 'bg-rose-500 text-white';
+  };
+
+  const getScoreColorClass = (score) => {
+    if (score >= 80) return 'text-emerald-600 dark:text-emerald-400';
+    if (score >= 50) return 'text-amber-600 dark:text-amber-400';
+    return 'text-rose-600 dark:text-rose-400';
+  };
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatTime = (date) => {
+    return date.toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
+
+  // Tính current streak (chuỗi hiện tại)
+  const calculateStreak = (sessions) => {
+    if (!sessions.length) return 0;
+    const dates = sessions.map(s => new Date(s.createdAt).toDateString());
+    const uniqueDates = [...new Set(dates)].sort((a,b) => new Date(b) - new Date(a));
+    let streak = 0;
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (uniqueDates[0] !== today && uniqueDates[0] !== yesterday) return 0;
+    let currentDate = uniqueDates[0] === today ? today : yesterday;
+    for (let i = 0; i < uniqueDates.length; i++) {
+      if (uniqueDates[i] === currentDate) {
+        streak++;
+        const prevDate = new Date(currentDate);
+        prevDate.setDate(prevDate.getDate() - 1);
+        currentDate = prevDate.toDateString();
+      } else {
+        break;
+      }
+    }
+    return streak;
   };
 
   // ------------------------------
-  // 3. Data fetching function
+  // 3. Data fetching
   // ------------------------------
   const fetchDashboardData = async () => {
     if (!user) return;
@@ -149,7 +190,7 @@ export default function WelcomePage() {
     try {
       const [normalRes, cvRes] = await Promise.all([
         api.get('/interview/history').catch(() => ({ data: { success: false, history: [] } })),
-        api.get('/cv/history').catch(() => ({ data: { success: false, history: [] } }))
+        api.get('/cv/history').catch(() => ({ data: { success: false, history: [] } })),
       ]);
 
       const normalList = normalRes.data?.success ? normalRes.data.history : [];
@@ -157,10 +198,7 @@ export default function WelcomePage() {
       const allSessions = [...normalList, ...cvList];
 
       const total = allSessions.length;
-      const avgScore = total === 0
-        ? 0
-        : Math.round(allSessions.reduce((sum, item) => sum + (item.totalScore || 0), 0) / total);
-      const progress = avgScore;
+      const avgScore = total === 0 ? 0 : Math.round(allSessions.reduce((sum, item) => sum + (item.totalScore || 0), 0) / total);
 
       const now = new Date();
       const monthAgo = new Date();
@@ -169,22 +207,17 @@ export default function WelcomePage() {
       const recentSessions = allSessions.filter((item) => new Date(item.createdAt) >= monthAgo);
       const prevSessions = allSessions.filter((item) => new Date(item.createdAt) < monthAgo);
 
-      const recentAvg = recentSessions.length
-        ? recentSessions.reduce((sum, item) => sum + (item.totalScore || 0), 0) / recentSessions.length
-        : 0;
-      const prevAvg = prevSessions.length
-        ? prevSessions.reduce((sum, item) => sum + (item.totalScore || 0), 0) / prevSessions.length
-        : 0;
+      const recentAvg = recentSessions.length ? recentSessions.reduce((sum, item) => sum + (item.totalScore || 0), 0) / recentSessions.length : 0;
+      const prevAvg = prevSessions.length ? prevSessions.reduce((sum, item) => sum + (item.totalScore || 0), 0) / prevSessions.length : 0;
 
-      const change = prevAvg === 0
-        ? '+0%'
-        : `${recentAvg > prevAvg ? '+' : ''}${Math.round(recentAvg - prevAvg)}%`;
+      const change = prevAvg === 0 ? '+0%' : `${recentAvg > prevAvg ? '+' : ''}${Math.round((recentAvg - prevAvg))}%`;
+      const streak = calculateStreak(allSessions);
 
       setStats({
         totalInterviews: total,
         averageScore: avgScore,
-        progressPercent: progress,
-        change
+        change,
+        streak,
       });
 
       const sorted = [...allSessions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -204,7 +237,7 @@ export default function WelcomePage() {
           action: actionText,
           score: session.totalScore !== undefined && session.totalScore !== null ? session.totalScore : null,
           date: formatRelativeTime(session.createdAt),
-          icon: session.cvName ? FileText : MessageCircle
+          icon: session.cvName ? FileText : MessageCircle,
         };
       });
       setRecentActivities(latest);
@@ -216,81 +249,56 @@ export default function WelcomePage() {
   };
 
   // ------------------------------
-  // 4. All useEffect hooks (unconditional)
+  // 4. useEffect hooks
   // ------------------------------
-  // Redirect if not logged in
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/login');
-    }
+    if (!authLoading && !isAuthenticated) navigate('/login');
   }, [authLoading, isAuthenticated, navigate]);
 
-  // Fetch dashboard data when user is available
   useEffect(() => {
-    if (user) {
-      fetchDashboardData();
-    }
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (user) fetchDashboardData();
+  }, [user]);
 
-  // Listen to storage changes (e.g., logout from another tab)
   useEffect(() => {
     const handleStorage = (e) => {
-      if (e.key === 'user' || e.key === 'token') {
-        fetchDashboardData();
-      }
+      if (e.key === 'user' || e.key === 'token') fetchDashboardData();
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, []); // fetchDashboardData intentionally omitted, runs only once
+  }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setDropdownOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
-  fetchActivities();
-}, []);
+    fetchActivities();
+  }, []);
 
-const fetchActivities = async () => {
-
-  try {
-
-    const token = localStorage.getItem('token');
-
-    const res = await fetch(
-      'http://localhost:5000/api/activity/calendar',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-    const data = await res.json();
-
-    if (data.success) {
-      setActivities(data.activities);
+  const fetchActivities = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/activity/calendar', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) setActivities(data.activities);
+    } catch (err) {
+      console.error('Fetch activities error:', err);
     }
+  };
 
-  } catch (err) {
-
-    console.error(
-      'Fetch activities error:',
-      err
-    );
-
-  }
-};
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentDateTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // ------------------------------
-  // 5. Early returns (after all hooks)
+  // 5. Early returns
   // ------------------------------
   if (authLoading) {
     return (
@@ -300,12 +308,10 @@ const fetchActivities = async () => {
     );
   }
 
-  if (!isAuthenticated || !user) {
-    return null;
-  }
+  if (!isAuthenticated || !user) return null;
 
   // ------------------------------
-  // 6. Event handlers & render helpers
+  // 6. Event handlers
   // ------------------------------
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -322,17 +328,12 @@ const fetchActivities = async () => {
     fetchDashboardData();
   };
 
-  const handleCVUploadSuccess = () => {
-    fetchDashboardData();
-  };
-
-
-
-  
+  const handleCVUploadSuccess = () => fetchDashboardData();
 
   const displayName = user.fullName || user.userName;
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
+  // Chỉ 3 card: Completed, Avg Score, Current Streak
   const statsCards = [
     {
       icon: Zap,
@@ -340,49 +341,42 @@ const fetchActivities = async () => {
       value: stats.totalInterviews.toString(),
       change: stats.change,
       color: 'text-yellow-500',
-      bg: 'bg-yellow-50 dark:bg-yellow-900/20'
+      bg: 'bg-yellow-50 dark:bg-yellow-900/20',
     },
     {
       icon: Award,
       label: t('averageScore'),
       value: `${stats.averageScore}%`,
       change: stats.change,
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20'
+      color: getScoreColorClass(stats.averageScore),
+      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
     },
     {
-      icon: Brain,
-      label: t('aiAccuracy'),
-      value: '94%',
-      change: '+2%',
-      color: 'text-indigo-500',
-      bg: 'bg-indigo-50 dark:bg-indigo-900/20'
+      icon: Flame,
+      label: t('streak'),
+      value: `${stats.streak} ${t('days')}`,
+      change: null,
+      color: 'text-orange-500',
+      bg: 'bg-orange-50 dark:bg-orange-900/20',
     },
-    {
-      icon: TrendingUp,
-      label: t('progress'),
-      value: `${stats.progressPercent}%`,
-      change: stats.change,
-      color: 'text-blue-500',
-      bg: 'bg-blue-50 dark:bg-blue-900/20'
-    }
   ];
 
   // ------------------------------
-  // 7. JSX return
+  // 7. JSX
   // ------------------------------
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 transition-colors duration-500">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 transition-colors duration-500">
+      {/* Logout overlay */}
       {isLoggingOut && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl text-center animate-fadeIn">
-            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-700 dark:text-gray-300">{t('logout')}...</p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl text-center animate-fadeIn">
+            <div className="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-700 dark:text-gray-300 font-medium">{t('logout')}...</p>
           </div>
         </div>
       )}
 
-      {/* HEADER */}
+      {/* Header */}
       <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 dark:border-gray-800/50 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/welcome')}>
@@ -395,72 +389,47 @@ const fetchActivities = async () => {
             </div>
           </div>
 
-          {/* USER MENU - CẢI TIẾN GIAO DIỆN SÁNG/TỐI */}
           <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 focus:outline-none group"
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-800 group-hover:ring-indigo-300 dark:group-hover:ring-indigo-700 transition-all duration-200">
+            <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 focus:outline-none group">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-800 group-hover:ring-indigo-300 dark:group-hover:ring-indigo-700 transition-all">
                 <span className="text-white font-semibold text-base">{avatarLetter}</span>
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-semibold text-gray-800 dark:text-white">{displayName}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
               </div>
-              <ChevronDown
-                className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''
-                  }`}
-              />
+              <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
-
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 py-1.5 z-50 animate-fadeIn overflow-hidden">
-                {/* Thông tin user rút gọn (tuỳ chọn) */}
-                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-indigo-900/20 dark:to-blue-900/20 flex items-center gap-3">
+              <div className="absolute right-0 mt-2 w-56 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-1.5 z-50 animate-fadeIn overflow-hidden">
+                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-indigo-50/80 to-blue-50/80 dark:from-indigo-900/30 dark:to-blue-900/30 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center">
                     <span className="text-white text-sm font-bold">{avatarLetter}</span>
                   </div>
                   <div>
                     <p className="text-sm font-bold text-gray-800 dark:text-white">{displayName}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{user.email}</p>
                   </div>
                 </div>
-
                 <div className="py-1">
-                  <button
-                    onClick={() => { setDropdownOpen(false); navigate('/profile'); }}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors duration-150 rounded-lg"
-                  >
-                    <User className="w-4 h-4 text-indigo-500" /> {t('yourProfile')}
-                  </button>
-                  <button
-                    onClick={() => { setDropdownOpen(false); navigate('/settings'); }}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors duration-150 rounded-lg"
-                  >
-                    <Settings className="w-4 h-4 text-indigo-500" /> {t('settings')}
-                  </button>
-                  <button
-                    onClick={() => { setDropdownOpen(false); navigate('/help'); }}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors duration-150 rounded-lg"
-                  >
-                    <HelpCircle className="w-4 h-4 text-indigo-500" /> {t('helpSupport')}
-                  </button>
-                  <button
-                    onClick={() => { setDropdownOpen(false); navigate('/history'); }}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors duration-150 rounded-lg"
-                  >
-                    <FileText className="w-4 h-4 text-indigo-500" /> Interview History
-                  </button>
+                  {[
+                    { icon: User, label: t('yourProfile'), path: '/profile' },
+                    { icon: Settings, label: t('settings'), path: '/settings' },
+                    { icon: HelpCircle, label: t('helpSupport'), path: '/help' },
+                    { icon: FileText, label: 'Interview History', path: '/history' },
+                  ].map((item) => (
+                    <button
+                      key={item.path}
+                      onClick={() => { setDropdownOpen(false); navigate(item.path); }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors"
+                    >
+                      <item.icon className="w-4 h-4 text-indigo-500" />
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
-
                 <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
-
-                <button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors duration-150 rounded-lg"
-                >
+                <button onClick={handleLogout} disabled={isLoggingOut} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
                   <LogOut className="w-4 h-4" /> {t('logout')}
                 </button>
               </div>
@@ -469,61 +438,94 @@ const fetchActivities = async () => {
         </div>
       </header>
 
-      {/* MAIN */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* HERO */}
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 rounded-3xl p-8 mb-8 text-white">
-          <h2 className="text-3xl font-bold mb-2">{getGreeting()}, {displayName}!</h2>
-          <p className="text-indigo-100">{t('readyMessage')}</p>
+      {/* Main content */}
+      <main className="max-w-7xl mx-auto px-4 py-8 animate-fadeIn">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 mb-8 text-white shadow-2xl">
+          <div className="absolute inset-0 bg-black/10 rounded-3xl"></div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/3"></div>
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-2 drop-shadow-lg">
+                {getGreeting()}, {displayName}!
+                <Sparkles className="w-7 h-7 text-yellow-300 animate-pulse" />
+              </h2>
+              <p className="text-indigo-100 text-base md:text-lg max-w-2xl drop-shadow-md">{t('readyMessage')}</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-md rounded-2xl px-5 py-3 border border-white/30 shadow-lg">
+              <div className="flex items-center gap-3">
+                <Clock className="w-7 h-7 text-white drop-shadow" />
+                <div>
+                  <div className="text-xs font-medium text-indigo-100 uppercase tracking-wider">Local Time</div>
+                  <div className="text-sm font-semibold text-white drop-shadow">{formatDate(currentDateTime)}</div>
+                  <div className="text-xl md:text-2xl font-mono font-bold text-white tracking-wider drop-shadow">{formatTime(currentDateTime)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* STATS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Stats Cards - 3 cột */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
           {statsCards.map((stat, index) => (
-            <div key={index} className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg">
+            <div key={index} className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="flex justify-between items-center mb-3">
                 <div className={`p-3 rounded-xl ${stat.bg}`}>
                   <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
-                <span className="text-xs font-semibold text-green-500">{stat.change}</span>
+                {stat.change && (
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                    stat.change.startsWith('+') 
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+                      : stat.change.startsWith('-')
+                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                  }`}>
+                    {stat.change}
+                  </span>
+                )}
               </div>
               <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                {statsLoading ? '...' : stat.value}
+                {statsLoading ? <div className="w-12 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div> : stat.value}
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        {/* CONTENT */}
+        {/* Two-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT */}
+          {/* Left Column (2/3) */}
           <div className="lg:col-span-2 space-y-8">
-            {/* RECENT ACTIVITY */}
+            {/* Recent Activity */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
               <div className="px-6 py-4 border-b dark:border-gray-700 flex justify-between items-center">
-                <h3 className="text-lg font-semibold dark:text-white">{t('recentActivity')}</h3>
-                <button onClick={() => navigate('/history')} className="text-indigo-500 text-sm">
-                  {t('viewAll')}
+                <h3 className="text-lg font-semibold dark:text-white flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-indigo-500" />
+                  {t('recentActivity')}
+                </h3>
+                <button onClick={() => navigate('/history')} className="text-indigo-500 text-sm hover:text-indigo-600 flex items-center gap-1">
+                  {t('viewAll')} <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
               <div>
                 {recentActivities.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">No interviews yet</div>
+                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">No interviews yet. Start your first one!</div>
                 ) : (
                   recentActivities.map((activity) => {
                     const Icon = activity.icon;
                     return (
-                      <div key={activity.id} className="flex items-center gap-4 p-4 border-b dark:border-gray-700">
-                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-xl">
+                      <div key={activity.id} className="flex items-center gap-4 p-4 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
                           <Icon className="w-5 h-5 text-indigo-500" />
                         </div>
                         <div className="flex-1">
                           <p className="font-medium dark:text-white">{activity.action}</p>
-                          <p className="text-sm text-gray-500">{activity.date}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{activity.date}</p>
                         </div>
                         {activity.score !== null && (
-                          <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getScoreColor(activity.score)}`}>
+                          <div className={`px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${getScoreBadgeClass(activity.score)}`}>
                             {activity.score}
                           </div>
                         )}
@@ -534,56 +536,72 @@ const fetchActivities = async () => {
               </div>
             </div>
 
-            {/* CHART */}
+            {/* Performance Chart */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold dark:text-white mb-4">{t('performanceTrend')}</h3>
+              <h3 className="text-lg font-semibold dark:text-white mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-indigo-500" />
+                {t('performanceTrend')}
+              </h3>
               <PerformanceTrendChart />
             </div>
           </div>
 
-          {/* RIGHT */}
+          {/* Right Column (1/3) */}
           <div className="space-y-6">
-            {/* QUICK ACTIONS */}
+            {/* Quick Actions */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold dark:text-white mb-4">{t('quickActions')}</h3>
+              <h3 className="text-lg font-semibold dark:text-white mb-4 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-yellow-500" />
+                {t('quickActions')}
+              </h3>
               <div className="space-y-3">
-                <button onClick={() => setIsModalOpen(true)} className="w-full p-3 rounded-xl bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">
+                <button onClick={() => setIsModalOpen(true)} className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
+                  <MessageCircle className="w-4 h-4" />
                   {t('startNewInterview')}
                 </button>
                 <UploadCV onUploadSuccess={handleCVUploadSuccess} />
-                <button className="w-full p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300">
+                <button className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
                   {t('viewDashboard')}
                 </button>
-                <button className="w-full p-3 rounded-xl bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
+                <button className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
+                  <Calendar className="w-4 h-4" />
                   {t('scheduleMock')}
                 </button>
               </div>
             </div>
 
+            {/* Activity Calendar */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
+              <ActivityCalendar sessions={activities} />
+            </div>
 
-            <ActivityCalendar
-              sessions={activities}
-            />
-
-            {/* AI FEEDBACK */}
-            <AIFeedback />
-
-
-
-
-
+            {/* AI Feedback */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
+              <AIFeedback />
+            </div>
           </div>
         </div>
-        {/* <WeaknessAnalysis /> */}
       </main>
+
+      {/* Modal */}
       <StartInterviewModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onStart={handleStartInterview} />
 
       <style>{`
         @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
-        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
       `}</style>
     </div>
   );

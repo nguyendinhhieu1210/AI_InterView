@@ -1,10 +1,10 @@
-// PerformanceTrendChart.jsx – Fix lỗi lấy sai session mới nhất
-import { useState, useEffect } from 'react';
+// PerformanceTrendChart.jsx – Fixed tooltip flicker + clear date/time labels
+import { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
 import { 
   Loader2, TrendingUp, CalendarDays, Sparkles, BarChart3, Clock, 
-  TrendingDown, Award, Target, AlertCircle, Info, Zap
+  TrendingDown, Award, Target, AlertCircle, Info, Zap, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 export default function PerformanceTrendChart() {
@@ -21,6 +21,7 @@ export default function PerformanceTrendChart() {
     totalSessions: 0,
     recommendation: ''
   });
+  const scrollContainerRef = useRef(null);
 
   useEffect(() => {
     fetchHistoryAndBuildChart();
@@ -50,7 +51,7 @@ export default function PerformanceTrendChart() {
           else topicStr = 'Interview';
           
           const timestamp = parseUTCDate(item.createdAt);
-          if (!timestamp) return; // bỏ qua nếu timestamp lỗi
+          if (!timestamp) return;
           
           combined.push({
             timestamp,
@@ -86,7 +87,6 @@ export default function PerformanceTrendChart() {
         });
       }
 
-      // Lọc theo timeRange
       const now = new Date();
       let cutoffTime = null;
       if (timeRange === '7days') {
@@ -100,22 +100,20 @@ export default function PerformanceTrendChart() {
         filtered = filtered.filter(d => d.timestamp >= cutoffTime);
       }
 
-      // Sắp xếp theo timestamp TĂNG DẦN (cũ -> mới) để vẽ biểu đồ
       filtered.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-
-      // Log để debug (có thể xóa sau)
-      console.log('Filtered sessions (sorted by timestamp):', filtered.map(s => ({ label: s.label, score: s.score, timestamp: s.timestamp.toISOString() })));
 
       const chartData = filtered.map((item, idx) => {
         const date = item.timestamp;
         let displayDate;
+        // If same day as previous -> show time, else show date
         if (idx > 0 && date.toDateString() === filtered[idx-1].timestamp.toDateString()) {
-          displayDate = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          displayDate = `🕐 ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         } else {
-          displayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          let dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           if (date.getFullYear() !== now.getFullYear()) {
-            displayDate += `, ${date.getFullYear()}`;
+            dateStr += `, ${date.getFullYear()}`;
           }
+          displayDate = `📅 ${dateStr}`;
         }
         return {
           date: displayDate,
@@ -124,7 +122,8 @@ export default function PerformanceTrendChart() {
           type: item.type,
           label: item.label,
           rawDate: item.rawDate,
-          tooltipDate: date.toLocaleString()
+          tooltipDate: date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }),
+          tooltipTime: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
       });
 
@@ -151,14 +150,10 @@ export default function PerformanceTrendChart() {
       return;
     }
 
-    // Sắp xếp theo timestamp TĂNG DẦN (cũ nhất -> mới nhất)
     const sorted = [...sessions].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-    
-    // Lấy session mới nhất (cuối mảng)
     const latest = sorted[sorted.length - 1];
     const previous = sorted.length > 1 ? sorted[sorted.length - 2] : null;
     
-    // Tính % thay đổi so với bài trước
     let trendValue = 0;
     if (previous && previous.score > 0) {
       trendValue = Math.round(((latest.score - previous.score) / previous.score) * 100);
@@ -173,7 +168,6 @@ export default function PerformanceTrendChart() {
     const bestSession = sorted.find(s => s.score === best);
     const worstSession = sorted.find(s => s.score === worst);
 
-    // Xu hướng tổng thể (so sánh nửa gần nhất vs nửa cũ hơn)
     const mid = Math.floor(sorted.length / 2);
     const recentHalf = sorted.slice(0, mid);
     const olderHalf = sorted.slice(mid);
@@ -182,7 +176,6 @@ export default function PerformanceTrendChart() {
     const overallTrendValue = olderAvg === 0 ? (recentAvg > 0 ? 100 : 0) : Math.round(((recentAvg - olderAvg) / olderAvg) * 100);
     const overallTrend = overallTrendValue >= 0 ? `+${overallTrendValue}%` : `${overallTrendValue}%`;
 
-    // Tạo recommendation dựa trên điểm mới nhất
     let recommendation = '';
     const latestScore = latest.score;
     if (latestScore < 50) {
@@ -226,6 +219,10 @@ export default function PerformanceTrendChart() {
     });
   };
 
+  const chartMinWidth = Math.max(600, data.length * 70);
+  const scrollLeft = () => scrollContainerRef.current?.scrollBy({ left: -350, behavior: 'smooth' });
+  const scrollRight = () => scrollContainerRef.current?.scrollBy({ left: 350, behavior: 'smooth' });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-80">
@@ -244,16 +241,18 @@ export default function PerformanceTrendChart() {
     );
   }
 
+  // Custom Tooltip – no animation to prevent flickering
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const p = payload[0].payload;
       return (
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md p-4 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 text-xs max-w-xs transition-all animate-fadeIn z-50">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md p-4 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 text-xs max-w-xs z-50">
           <p className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-1">
             <CalendarDays className="w-3 h-3" /> {p.tooltipDate}
           </p>
-          <div className="flex items-center gap-2 mb-2 mt-2">
-            <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+          <p className="text-gray-500 dark:text-gray-400 text-[10px] mb-2">Time: {p.tooltipTime}</p>
+          <div className="flex items-center gap-2 mb-2 mt-1">
+            <div className="w-2 h-2 rounded-full bg-amber-500"></div>
             <span className="text-gray-600 dark:text-gray-300">Score:</span>
             <span className="font-semibold text-indigo-600 dark:text-indigo-400 text-base">{p.score}<span className="text-xs">/100</span></span>
           </div>
@@ -267,6 +266,26 @@ export default function PerformanceTrendChart() {
       );
     }
     return null;
+  };
+
+  // Custom legend for dot colors
+  const renderLegend = () => {
+    return (
+      <div className="flex justify-center gap-4 mt-2 text-xs">
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+          <span className="text-gray-600 dark:text-gray-300">≥80 (Excellent)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+          <span className="text-gray-600 dark:text-gray-300">50-79 (Good)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-rose-500"></div>
+          <span className="text-gray-600 dark:text-gray-300">&lt;50 (Needs improvement)</span>
+        </div>
+      </div>
+    );
   };
 
   const getScoreColorClass = (score) => {
@@ -318,49 +337,97 @@ export default function PerformanceTrendChart() {
       </div>
 
       {/* Chart */}
-      <div className="w-full h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.2} vertical={false} />
-            <XAxis 
-              dataKey="date" 
-              tick={{ fontSize: 11, fill: '#6b7280' }} 
-              tickLine={false}
-              axisLine={{ stroke: '#cbd5e1', opacity: 0.3 }}
-              dy={5}
-              interval={0}
-              angle={data.length > 6 ? -15 : 0}
-              textAnchor={data.length > 6 ? 'end' : 'middle'}
-              height={50}
-            />
-            <YAxis 
-              domain={[0, 100]} 
-              tick={{ fontSize: 11, fill: '#6b7280' }} 
-              tickLine={false}
-              axisLine={{ stroke: '#cbd5e1', opacity: 0.3 }}
-              label={{ value: 'Score', angle: -90, position: 'insideLeft', style: { fill: '#6b7280', fontSize: 11, fontWeight: 500 } }}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#818cf8', strokeWidth: 1.5, strokeDasharray: '4 4' }} />
-            <Legend 
-              wrapperStyle={{ fontSize: 11, paddingTop: 10 }}
-              formatter={() => <span className="text-gray-600 dark:text-gray-300 text-xs font-medium">📈 Score trend</span>}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="score" 
-              stroke="#4f46e5" 
-              strokeWidth={2.5} 
-              dot={{ r: 4, fill: '#4f46e5', strokeWidth: 2, stroke: '#ffffff' }} 
-              activeDot={{ r: 6, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }} 
-              name="Score" 
-              animationDuration={800} 
-              animationEasing="ease-out" 
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="relative">
+        {data.length > 7 && (
+          <>
+            <button
+              onClick={scrollLeft}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 dark:bg-gray-800/80 rounded-full p-1.5 shadow-md hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-all backdrop-blur-sm"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </button>
+            <button
+              onClick={scrollRight}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 dark:bg-gray-800/80 rounded-full p-1.5 shadow-md hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-all backdrop-blur-sm"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </button>
+          </>
+        )}
+        <div
+          ref={scrollContainerRef}
+          className="overflow-x-auto overflow-y-hidden pb-2 custom-scrollbar"
+          style={{ scrollbarWidth: 'thin' }}
+        >
+          <div style={{ width: chartMinWidth, height: 360 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.2} vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ 
+                    fontSize: data.length > 12 ? 9 : (data.length > 8 ? 10 : 11), 
+                    fill: '#374151',
+                    angle: data.length > 8 ? -25 : 0,
+                    textAnchor: data.length > 8 ? 'end' : 'middle'
+                  }}
+                  tickLine={false}
+                  axisLine={{ stroke: '#9ca3af', opacity: 0.4 }}
+                  dy={8}
+                  interval={0}
+                  height={55}
+                />
+                <YAxis 
+                  domain={[0, 100]} 
+                  tick={{ fontSize: 11, fill: '#374151' }}
+                  tickLine={false}
+                  axisLine={{ stroke: '#9ca3af', opacity: 0.4 }}
+                  label={{ value: 'Score', angle: -90, position: 'insideLeft', style: { fill: '#4b5563', fontSize: 11, fontWeight: 500 } }}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#818cf8', strokeWidth: 1.5, strokeDasharray: '4 4' }} />
+                <Legend content={renderLegend} verticalAlign="top" height={36} />
+                <Line 
+                  type="monotone" 
+                  dataKey="score" 
+                  stroke="#4f46e5" 
+                  strokeWidth={2.5} 
+                  dot={(props) => {
+                    const { cx, cy, payload } = props;
+                    const score = payload.score;
+                    let fillColor = '#f59e0b';
+                    if (score >= 80) fillColor = '#10b981';
+                    else if (score < 50) fillColor = '#ef4444';
+                    return (
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={6}
+                        fill={fillColor}
+                        stroke="#ffffff"
+                        strokeWidth={2.5}
+                        style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))', cursor: 'pointer' }}
+                      />
+                    );
+                  }}
+                  activeDot={{ r: 8, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }}
+                  name="score"
+                  animationDuration={0} // Disable animation to prevent flickering
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        {data.length > 7 && (
+          <div className="text-center text-xs text-gray-400 mt-2 flex justify-center items-center gap-1">
+            <span>← Scroll to see more →</span>
+          </div>
+        )}
       </div>
 
-      {/* PERFORMANCE ANALYSIS */}
+      {/* Performance Analysis (unchanged, keep as is) */}
       <div className="mt-8 border-t border-gray-200 dark:border-gray-800 pt-6">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-indigo-500" />
@@ -489,8 +556,20 @@ export default function PerformanceTrendChart() {
       </div>
 
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.15s ease-out; }
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
         .line-clamp-2 {
           display: -webkit-box;
           -webkit-line-clamp: 2;
