@@ -2,29 +2,34 @@ const { JsonOutputParser } = require("@langchain/core/output_parsers");
 
 const jsonParser = new JsonOutputParser();
 
-// Hàm dự phòng trích xuất JSON từ string khi parser chính thất bại
+function cleanJsonString(str) {
+  return str
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+}
+
 function extractJSON(str) {
-  let start = str.indexOf('{');
-  if (start === -1) return null;
-  let braceCount = 0;
-  for (let i = start; i < str.length; i++) {
-    if (str[i] === '{') braceCount++;
-    if (str[i] === '}') {
-      braceCount--;
-      if (braceCount === 0) {
-        let jsonStr = str.substring(start, i + 1);
-        try {
-          JSON.parse(jsonStr);
-          return jsonStr;
-        } catch (e) {
-          start = str.indexOf('{', i + 1);
-          if (start === -1) return null;
-          i = start - 1;
-          braceCount = 0;
-        }
-      }
-    }
+  str = cleanJsonString(str);
+
+  // tìm object
+  const objectMatch = str.match(/\{[\s\S]*\}/);
+
+  if (objectMatch) {
+    try {
+      return JSON.parse(objectMatch[0]);
+    } catch (e) {}
   }
+
+  // tìm array
+  const arrayMatch = str.match(/\[[\s\S]*\]/);
+
+  if (arrayMatch) {
+    try {
+      return JSON.parse(arrayMatch[0]);
+    } catch (e) {}
+  }
+
   return null;
 }
 
@@ -32,10 +37,24 @@ async function safeParseJson(raw) {
   try {
     return await jsonParser.parse(raw);
   } catch (e) {
-    const extracted = extractJSON(raw);
-    if (extracted) return JSON.parse(extracted);
-    throw new Error("Cannot parse JSON from AI response");
+    try {
+      const extracted = extractJSON(raw);
+
+      if (extracted) {
+        return extracted;
+      }
+
+      console.error("RAW AI RESPONSE:\n", raw);
+
+      throw new Error("Cannot parse JSON from AI response");
+    } catch (err) {
+      console.error("JSON PARSE ERROR:", err.message);
+      throw err;
+    }
   }
 }
 
-module.exports = { safeParseJson, extractJSON };
+module.exports = {
+  safeParseJson,
+  extractJSON,
+};

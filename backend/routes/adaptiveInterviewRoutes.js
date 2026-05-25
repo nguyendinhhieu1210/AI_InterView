@@ -9,5 +9,6 @@ router.use(auth);
 router.post('/start', adaptiveController.startAdaptiveInterview);
 router.post('/answer', adaptiveController.submitAnswer);
 router.get('/session/:sessionId', adaptiveController.getSession);
+router.get('/history', auth, adaptiveController.getHistory);
 
 module.exports = router;

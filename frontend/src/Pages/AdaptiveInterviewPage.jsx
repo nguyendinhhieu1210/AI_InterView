@@ -77,7 +77,7 @@ export default function AdaptiveInterviewPage() {
     setError(null);
     updateActivity();
     try {
-      const res = await api.post('/interview/adaptive/start', { topic, difficulty });
+      const res = await api.post('/adaptive/start', { topic, difficulty });
       setSessionId(res.data.sessionId);
       setMessages([{
         role: 'assistant',
@@ -122,7 +122,7 @@ export default function AdaptiveInterviewPage() {
     setError(null);
 
     try {
-      const response = await api.post('/interview/adaptive/answer', { sessionId, answer: userAnswer });
+      const response = await api.post('/adaptive/answer', { sessionId, answer: userAnswer });
 
       if (response.data.isFinished) {
         let finalScoreValue = response.data.finalScore;

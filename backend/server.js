@@ -43,7 +43,7 @@ app.use(
     require('./routes/activityRoutes')
 );
 
-app.use('/api/interview/adaptive', adaptiveRoutes);
+app.use('/api/adaptive', adaptiveRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

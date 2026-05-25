@@ -1,6 +1,5 @@
 const { ChatGroq } = require("@langchain/groq");
 
-
 class GroqService {
 
   constructor(

@@ -7,7 +7,7 @@ export const StartInterviewModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
-  const [mode, setMode] = useState('classic'); // 'classic' hoặc 'adaptive'
+  const [mode, setMode] = useState('classic');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -51,8 +51,8 @@ export const StartInterviewModal = ({ isOpen, onClose }) => {
                 Start New Interview
               </h3>
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-              <X className="w-5 h-5 text-gray-500" />
+            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
 
@@ -69,7 +69,7 @@ export const StartInterviewModal = ({ isOpen, onClose }) => {
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="e.g., React Developer, Node.js"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white/50 dark:bg-gray-800/50 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white/50 dark:bg-gray-800/50 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   required
                   autoFocus
                 />
@@ -88,7 +88,7 @@ export const StartInterviewModal = ({ isOpen, onClose }) => {
                     className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
                       difficulty === level
                         ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-lg scale-105'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     {level.charAt(0).toUpperCase() + level.slice(1)}
@@ -97,7 +97,7 @@ export const StartInterviewModal = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* Chế độ phỏng vấn */}
+            {/* Interview Mode - improved for both themes */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Interview Mode</label>
               <div className="grid grid-cols-2 gap-3">
@@ -106,30 +106,30 @@ export const StartInterviewModal = ({ isOpen, onClose }) => {
                   onClick={() => setMode('classic')}
                   className={`p-3 rounded-xl border-2 transition-all ${
                     mode === 'classic'
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 bg-white/30 dark:bg-gray-800/30 hover:border-indigo-300 dark:hover:border-indigo-500'
                   }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Zap className="w-5 h-5 text-yellow-500" />
-                    <span className="font-medium">Classic</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-100">Classic</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">10 câu hỏi cố định</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">10 fixed questions</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('adaptive')}
                   className={`p-3 rounded-xl border-2 transition-all ${
                     mode === 'adaptive'
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 bg-white/30 dark:bg-gray-800/30 hover:border-indigo-300 dark:hover:border-indigo-500'
                   }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <MessageSquare className="w-5 h-5 text-green-500" />
-                    <span className="font-medium">Adaptive</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-100">Adaptive</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">AI hỏi đuổi thông minh</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Smart follow-up AI</p>
                 </button>
               </div>
             </div>
