@@ -162,7 +162,7 @@ export default function WelcomePage() {
   const calculateStreak = (sessions) => {
     if (!sessions.length) return 0;
     const dates = sessions.map(s => new Date(s.createdAt).toDateString());
-    const uniqueDates = [...new Set(dates)].sort((a,b) => new Date(b) - new Date(a));
+    const uniqueDates = [...new Set(dates)].sort((a, b) => new Date(b) - new Date(a));
     let streak = 0;
     const today = new Date().toDateString();
     const yesterday = new Date(Date.now() - 86400000).toDateString();
@@ -475,13 +475,12 @@ export default function WelcomePage() {
                   <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
                 {stat.change && (
-                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                    stat.change.startsWith('+') 
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${stat.change.startsWith('+')
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
                       : stat.change.startsWith('-')
-                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                  }`}>
+                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
+                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                    }`}>
                     {stat.change}
                   </span>
                 )}
@@ -560,13 +559,12 @@ export default function WelcomePage() {
                   {t('startNewInterview')}
                 </button>
                 <UploadCV onUploadSuccess={handleCVUploadSuccess} />
-                <button className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
-                  <BarChart3 className="w-4 h-4" />
-                  {t('viewDashboard')}
-                </button>
-                <button className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  {t('scheduleMock')}
+                <button
+                  onClick={() => navigate('/adaptive-history')}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <Brain className="w-4 h-4" />
+                  Adaptive History
                 </button>
               </div>
             </div>

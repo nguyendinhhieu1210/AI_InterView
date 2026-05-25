@@ -24,6 +24,7 @@ import { CVInfoModal } from './components/CVInfoModal';
 import CVHistoryDetailPage from './Pages/CVHistoryDetailPage';
 import InterviewDetailPage from './Pages/InterviewDetailPage';
 import AdaptiveInterviewPage from './Pages/AdaptiveInterviewPage';
+import AdaptiveHistoryPage from './Pages/AdaptiveHistoryPage';
 
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
               <Route path="/cvinterview" element={<ProtectedRoute><InterviewCVPage /></ProtectedRoute>} />
               <Route path="/cv-history/:id" element={<ProtectedRoute><CVHistoryDetailPage /></ProtectedRoute>} />
               <Route path="/adaptive-interview" element={<ProtectedRoute><AdaptiveInterviewPage /></ProtectedRoute>} />
+              <Route path="/adaptive-history" element={<ProtectedRoute><AdaptiveHistoryPage /></ProtectedRoute>} />
 
             </Routes>
           </InterviewProvider>
