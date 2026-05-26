@@ -25,6 +25,7 @@ import CVHistoryDetailPage from './Pages/CVHistoryDetailPage';
 import InterviewDetailPage from './Pages/InterviewDetailPage';
 import AdaptiveInterviewPage from './Pages/AdaptiveInterviewPage';
 import AdaptiveHistoryPage from './Pages/AdaptiveHistoryPage';
+import AdaptiveSessionDetailPage from './Pages/AdaptiveSessionDetailPage';
 
 
 function App() {
@@ -54,7 +55,8 @@ function App() {
               <Route path="/cv-history/:id" element={<ProtectedRoute><CVHistoryDetailPage /></ProtectedRoute>} />
               <Route path="/adaptive-interview" element={<ProtectedRoute><AdaptiveInterviewPage /></ProtectedRoute>} />
               <Route path="/adaptive-history" element={<ProtectedRoute><AdaptiveHistoryPage /></ProtectedRoute>} />
-
+              // App.jsx - sửa dòng này
+              <Route path="/adaptive-history/:sessionId" element={<ProtectedRoute><AdaptiveSessionDetailPage /></ProtectedRoute>} />
             </Routes>
           </InterviewProvider>
         </AuthProvider>
