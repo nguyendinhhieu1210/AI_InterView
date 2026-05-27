@@ -68,10 +68,10 @@ export default function CVHistoryDetailPage() {
     };
 
     const getScoreBg = (score) => {
-        if (score >= 80) return 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800';
-        if (score >= 60) return 'bg-amber-100 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800';
-        if (score >= 40) return 'bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800';
-        return 'bg-rose-100 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800';
+        if (score >= 80) return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200';
+        if (score >= 60) return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200';
+        if (score >= 40) return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200';
+        return 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200';
     };
 
     const formatDate = (dateString) => {
@@ -119,9 +119,9 @@ export default function CVHistoryDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-fuchsia-50 to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
                 <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mx-auto mb-4" />
+                    <Loader2 className="w-12 h-12 text-purple-500 animate-spin mx-auto mb-4" />
                     <p className="text-gray-600 dark:text-gray-400 font-medium animate-pulse leading-relaxed">Loading CV session...</p>
                 </div>
             </div>
@@ -130,12 +130,12 @@ export default function CVHistoryDetailPage() {
 
     if (error || !cvSession) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-xl max-w-md w-full">
+            <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-fuchsia-50 to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-8 text-center shadow-xl max-w-md w-full">
                     <AlertCircle className="w-14 h-14 text-rose-500 mx-auto mb-4" />
                     <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">{error || 'CV session not found'}</p>
-                    <button onClick={() => navigate('/history')} className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-md">
-                        Back to History
+                    <button onClick={() => navigate('/cv-history')} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition shadow-md">
+                        Back 
                     </button>
                 </div>
             </div>
@@ -175,11 +175,11 @@ export default function CVHistoryDetailPage() {
     });
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4 sm:px-6 transition-colors duration-300">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-fuchsia-50 to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4 sm:px-6 transition-colors duration-300">
             {isLoggingOut && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl text-center animate-fadeIn">
-                        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                         <p className="text-gray-700 dark:text-gray-300">Logging out...</p>
                     </div>
                 </div>
@@ -189,15 +189,15 @@ export default function CVHistoryDetailPage() {
                 {/* Header */}
                 <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
                     <button
-                        onClick={() => navigate('/history')}
-                        className="group flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 font-medium bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm hover:shadow"
+                        onClick={() => navigate('/cv-history')}
+                        className="group flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm transition-all duration-300"
                     >
                         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-                        <span>Back to History</span>
+                        <span>Back</span>
                     </button>
                     <button
                         onClick={handleDelete}
-                        className="flex items-center gap-2 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 transition-colors bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm"
+                        className="flex items-center gap-2 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm transition-colors"
                     >
                         <Trash2 className="w-4 h-4" />
                         <span>Delete</span>
@@ -205,34 +205,34 @@ export default function CVHistoryDetailPage() {
                 </div>
 
                 {/* Thông tin chính */}
-                <div className="mb-10">
-                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-sm font-medium mb-2">
+                <div className="mb-10 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 text-purple-600 dark:text-purple-400 text-sm font-medium mb-2">
                         <FileText className="w-4 h-4" />
                         <span>CV-Based Interview</span>
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-bold leading-[1.25] pb-2 bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400">
+                    <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
                         {cvName || 'CV Interview'}
                     </h1>
                     {skillTags && skillTags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-3">
+                        <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
                             {skillTags.map((tag, idx) => (
-                                <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-100/80 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200 text-xs rounded-full font-medium shadow-sm leading-relaxed">
+                                <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100/80 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-xs rounded-full font-medium shadow-sm leading-relaxed">
                                     <Tag className="w-3 h-3" /> {tag}
                                 </span>
                             ))}
                         </div>
                     )}
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-4 flex items-center gap-2">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-4 flex items-center justify-center sm:justify-start gap-2">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-400"></span>
                         Completed on {formatDate(createdAt)}
                     </p>
                 </div>
 
-                {/* 4 thẻ thống kê - giữ nguyên màu gốc */}
+                {/* 4 thẻ thống kê - đồng bộ màu với CVHistory (purple/fuchsia/pink) */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-12">
                     <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 dark:border-gray-700/50 hover:scale-105">
-                        <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/70 transition">
-                            <TrendingUp className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                        <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-800/70 transition">
+                            <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div className={`text-3xl font-bold ${getScoreColor(totalScore)} leading-none`}>
                             {totalScore}<span className="text-sm text-gray-500 dark:text-gray-400">/{maxPossibleScore}</span>
@@ -241,34 +241,34 @@ export default function CVHistoryDetailPage() {
                     </div>
 
                     <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 dark:border-gray-700/50 hover:scale-105">
-                        <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mx-auto mb-3 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/70 transition">
-                            <ListChecks className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                        <div className="w-12 h-12 rounded-full bg-fuchsia-100 dark:bg-fuchsia-900/50 flex items-center justify-center mx-auto mb-3 group-hover:bg-fuchsia-200 dark:group-hover:bg-fuchsia-800/70 transition">
+                            <ListChecks className="w-6 h-6 text-fuchsia-600 dark:text-fuchsia-400" />
                         </div>
-                        <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 leading-none">{totalQuestions}</div>
+                        <div className="text-3xl font-bold text-fuchsia-600 dark:text-fuchsia-400 leading-none">{totalQuestions}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">Total Questions</div>
                     </div>
 
                     <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 dark:border-gray-700/50 hover:scale-105">
-                        <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/70 transition">
-                            <CheckCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                        <div className="w-12 h-12 rounded-full bg-pink-100 dark:bg-pink-900/50 flex items-center justify-center mx-auto mb-3 group-hover:bg-pink-200 dark:group-hover:bg-pink-800/70 transition">
+                            <CheckCircle className="w-6 h-6 text-pink-600 dark:text-pink-400" />
                         </div>
-                        <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 leading-none">{results.filter(r => r.isCorrect === true).length}</div>
+                        <div className="text-3xl font-bold text-pink-600 dark:text-pink-400 leading-none">{results.filter(r => r.isCorrect === true).length}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">Correct Answers</div>
                     </div>
 
                     <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 dark:border-gray-700/50 hover:scale-105">
-                        <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-800/70 transition">
-                            <BarChart className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                        <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/70 transition">
+                            <BarChart className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                         </div>
-                        <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 leading-none">{Math.round((totalScore / maxPossibleScore) * 100)}%</div>
+                        <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 leading-none">{Math.round((totalScore / maxPossibleScore) * 100)}%</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">Accuracy</div>
                     </div>
                 </div>
 
                 {/* Danh sách câu hỏi */}
                 <div className="space-y-5 mb-12">
-                    <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800 dark:text-white border-l-4 border-indigo-500 pl-3 leading-tight">
-                        <Award className="w-5 h-5 text-indigo-500" /> Questions & Answers
+                    <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800 dark:text-white border-l-4 border-purple-500 pl-3 leading-tight">
+                        <Award className="w-5 h-5 text-purple-500" /> Questions & Answers
                     </h2>
 
                     {enrichedResults.map((result, idx) => {
@@ -287,7 +287,7 @@ export default function CVHistoryDetailPage() {
                             return (
                                 <div
                                     key={idx}
-                                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/70 dark:border-gray-700/70 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+                                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border-l-8 border-l-purple-500 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
                                 >
                                     <button
                                         onClick={() => setExpandedQuestion(expandedQuestion === `cv_${idx}` ? null : `cv_${idx}`)}
@@ -305,10 +305,10 @@ export default function CVHistoryDetailPage() {
                                             )}
                                             <div>
                                                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 shadow-sm leading-relaxed">
+                                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 shadow-sm leading-relaxed">
                                                         MCQ
                                                     </span>
-                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${getScoreBg(result.score || 0)} text-gray-800 dark:text-gray-200 leading-relaxed`}>
+                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${getScoreBg(result.score || 0)} leading-relaxed`}>
                                                         Score: {result.score || 0}/10
                                                     </span>
                                                 </div>
@@ -361,8 +361,8 @@ export default function CVHistoryDetailPage() {
                                             </div>
 
                                             {explanation && (
-                                                <div className="mt-4 bg-indigo-50/70 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-200 dark:border-indigo-800">
-                                                    <p className="font-semibold text-indigo-700 dark:text-indigo-300 mb-2 text-sm flex items-center gap-1 leading-relaxed">
+                                                <div className="mt-4 bg-purple-50/70 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                                                    <p className="font-semibold text-purple-700 dark:text-purple-300 mb-2 text-sm flex items-center gap-1 leading-relaxed">
                                                         <Brain className="w-4 h-4" /> AI Explanation
                                                     </p>
                                                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -380,22 +380,22 @@ export default function CVHistoryDetailPage() {
                         return (
                             <div
                                 key={idx}
-                                className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/70 dark:border-gray-700/70 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+                                className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border-l-8 border-l-fuchsia-500 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
                             >
                                 <button
                                     onClick={() => setExpandedQuestion(expandedQuestion === `cv_${idx}` ? null : `cv_${idx}`)}
                                     className="w-full p-5 text-left flex justify-between items-start hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition"
                                 >
                                     <div className="flex gap-4">
-                                        <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shrink-0 mt-0.5">
-                                            <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                        <div className="w-7 h-7 rounded-full bg-fuchsia-100 dark:bg-fuchsia-900/50 flex items-center justify-center shrink-0 mt-0.5">
+                                            <FileText className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400" />
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 shadow-sm leading-relaxed">
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-fuchsia-100 dark:bg-fuchsia-900/60 text-fuchsia-700 dark:text-fuchsia-300 shadow-sm leading-relaxed">
                                                     Essay
                                                 </span>
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${getScoreBg(result.score || 0)} text-gray-800 dark:text-gray-200 leading-relaxed`}>
+                                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${getScoreBg(result.score || 0)} leading-relaxed`}>
                                                     Score: {result.score || 0}/10
                                                 </span>
                                             </div>
@@ -416,7 +416,7 @@ export default function CVHistoryDetailPage() {
                                         {/* User Answer */}
                                         <div>
                                             <p className="font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1 text-sm leading-relaxed">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Your Answer
+                                                <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-500"></span> Your Answer
                                             </p>
                                             <div className="bg-gray-50/80 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 whitespace-pre-wrap text-gray-800 dark:text-gray-200 text-sm leading-relaxed">
                                                 {userAnswer}
@@ -426,10 +426,10 @@ export default function CVHistoryDetailPage() {
                                         {/* AI Review */}
                                         {aiReview && (
                                             <div>
-                                                <p className="font-semibold text-indigo-700 dark:text-indigo-300 mb-2 flex items-center gap-1 text-sm leading-relaxed">
+                                                <p className="font-semibold text-purple-700 dark:text-purple-300 mb-2 flex items-center gap-1 text-sm leading-relaxed">
                                                     <Brain className="w-4 h-4" /> AI Review
                                                 </p>
-                                                <div className="bg-indigo-50/70 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4 text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                                                <div className="bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4 text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
                                                     {aiReview}
                                                 </div>
                                             </div>
@@ -495,12 +495,12 @@ export default function CVHistoryDetailPage() {
                     })}
                 </div>
 
-                {/* AI Feedback Summary - giữ màu gốc */}
+                {/* AI Feedback Summary - đồng bộ màu */}
                 {summary && (summary.strengths?.length > 0 || summary.weaknesses?.length > 0) && (
                     <div className="mt-12 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 overflow-hidden">
-                        <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
+                        <div className="bg-gradient-to-r from-purple-500/10 to-fuchsia-500/10 px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
                             <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800 dark:text-white leading-tight">
-                                <Brain className="w-5 h-5 text-indigo-500" /> AI Feedback Summary
+                                <Brain className="w-5 h-5 text-purple-500" /> AI Feedback Summary
                             </h2>
                         </div>
                         <div className="p-6 space-y-6">
@@ -534,13 +534,13 @@ export default function CVHistoryDetailPage() {
                             )}
                             {summary.suggestions && summary.suggestions.length > 0 && (
                                 <div>
-                                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-semibold mb-3 leading-relaxed">
+                                    <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-semibold mb-3 leading-relaxed">
                                         <Lightbulb className="w-5 h-5" /> Suggestions
                                     </div>
                                     <ul className="space-y-2">
                                         {summary.suggestions.map((sug, i) => (
-                                            <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300 bg-indigo-50/50 dark:bg-indigo-900/20 p-3 rounded-xl leading-relaxed">
-                                                <span className="text-indigo-500 mt-0.5">•</span> {sug}
+                                            <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300 bg-purple-50/50 dark:bg-purple-900/20 p-3 rounded-xl leading-relaxed">
+                                                <span className="text-purple-500 mt-0.5">•</span> {sug}
                                             </li>
                                         ))}
                                     </ul>

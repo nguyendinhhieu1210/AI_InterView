@@ -82,9 +82,9 @@ export default function AdaptiveSessionDetailPage() {
 
   if (loading || authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-emerald-50/30 to-teal-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mx-auto mb-4" />
           <p className="text-gray-500 dark:text-gray-400 animate-pulse">Loading your interview report...</p>
         </div>
       </div>
@@ -93,14 +93,14 @@ export default function AdaptiveSessionDetailPage() {
 
   if (error || !session) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-emerald-50/30 to-teal-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center max-w-md shadow-xl border border-gray-200 dark:border-gray-700">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Oops! Something went wrong</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{error || 'Session not found'}</p>
           <button
             onClick={() => navigate('/adaptive-history')}
-            className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl flex items-center gap-2 mx-auto hover:bg-indigo-700 transition shadow-md"
+            className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl flex items-center gap-2 mx-auto hover:bg-emerald-700 transition shadow-md"
           >
             <ArrowLeft className="w-4 h-4" /> Back to History
           </button>
@@ -109,7 +109,7 @@ export default function AdaptiveSessionDetailPage() {
     );
   }
 
-  // Lấy breakdown từ summary để lấy idealAnswer và feedback theo thứ tự
+  // Build Q&A pairs from conversation
   const breakdownMap = new Map();
   if (session.summary && session.summary.questionBreakdown) {
     session.summary.questionBreakdown.forEach((item) => {
@@ -117,7 +117,6 @@ export default function AdaptiveSessionDetailPage() {
     });
   }
 
-  // Xây dựng các cặp Q&A từ conversation
   const qaPairs = [];
   for (let i = 0; i < session.conversation.length - 1; i++) {
     const msg = session.conversation[i];
@@ -147,20 +146,20 @@ export default function AdaptiveSessionDetailPage() {
   const finalScore10 = session.finalScore || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-teal-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => navigate('/adaptive-history')}
-            className="group p-2 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-md hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-300 hover:scale-105"
+            className="group p-2 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-md hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-all duration-300 hover:scale-105"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
+            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
           </button>
           <div className="flex-1">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold leading-normal bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent pb-1">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold leading-normal bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent pb-1">
                   {session.topic}
                 </h1>
                 <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -178,7 +177,7 @@ export default function AdaptiveSessionDetailPage() {
                   )}
                 </div>
               </div>
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-sm border border-indigo-100 dark:border-indigo-900">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-sm border border-emerald-100 dark:border-emerald-900">
                 <div className="text-center">
                   <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Final Score</div>
                   <div className={`text-3xl font-black ${getScoreColor(finalScore10)}`}>
@@ -191,12 +190,12 @@ export default function AdaptiveSessionDetailPage() {
           </div>
         </div>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - updated to match history page style */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-white/30 dark:border-gray-700/50 hover:shadow-md transition">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
-                <Award className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl">
+                <Award className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-800 dark:text-white">{finalScore10.toFixed(1)}</div>
@@ -206,8 +205,8 @@ export default function AdaptiveSessionDetailPage() {
           </div>
           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-white/30 dark:border-gray-700/50 hover:shadow-md transition">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl">
-                <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="p-2.5 bg-teal-100 dark:bg-teal-900/50 rounded-xl">
+                <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               </div>
               <div>
                 <div className="text-xl font-bold text-gray-800 dark:text-white truncate">{summary.overallEvaluation || 'N/A'}</div>
@@ -217,8 +216,8 @@ export default function AdaptiveSessionDetailPage() {
           </div>
           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-white/30 dark:border-gray-700/50 hover:shadow-md transition">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-purple-100 dark:bg-purple-900/50 rounded-xl">
-                <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="p-2.5 bg-cyan-100 dark:bg-cyan-900/50 rounded-xl">
+                <FileText className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
               </div>
               <div>
                 <div className="text-xl font-bold text-gray-800 dark:text-white">{summary.grade || 'N/A'}</div>
@@ -239,12 +238,12 @@ export default function AdaptiveSessionDetailPage() {
           </div>
         </div>
 
-        {/* AI Summary Section */}
+        {/* AI Summary Section - emerald gradient */}
         {summary.summary && (
-          <div className="bg-gradient-to-r from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 shadow-sm mb-8 border border-indigo-100 dark:border-indigo-800">
+          <div className="bg-gradient-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl p-6 shadow-sm mb-8 border border-emerald-100 dark:border-emerald-800">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
-                <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl">
+                <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-800 dark:text-white text-lg mb-2">AI Interviewer's Summary</h3>
@@ -281,8 +280,8 @@ export default function AdaptiveSessionDetailPage() {
         {/* Q&A Section */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-5">
-            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
-              <MessageCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
+              <MessageCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">Interview Transcript & Detailed Scoring</h2>
           </div>
@@ -380,7 +379,7 @@ export default function AdaptiveSessionDetailPage() {
                       </div>
                     )}
 
-                    {/* AI Ideal Answer (THÊM MỚI) */}
+                    {/* AI Ideal Answer */}
                     {qa.idealAnswer && (
                       <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex-shrink-0">
@@ -395,7 +394,7 @@ export default function AdaptiveSessionDetailPage() {
                       </div>
                     )}
 
-                    {/* AI Feedback (THÊM MỚI) */}
+                    {/* AI Feedback */}
                     {qa.feedback && (
                       <div className="flex gap-3">
                         <div className="flex-shrink-0">
@@ -464,7 +463,7 @@ export default function AdaptiveSessionDetailPage() {
           </div>
         </div>
 
-        {/* Learning Roadmap */}
+        {/* Learning Roadmap - emerald/teal theme */}
         {summary.learningRoadmap && summary.learningRoadmap.length > 0 && (
           <div className="bg-gradient-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl p-6 shadow-sm border border-emerald-100 dark:border-emerald-800">
             <div className="flex items-start gap-3">
@@ -475,7 +474,7 @@ export default function AdaptiveSessionDetailPage() {
                 <h3 className="font-semibold text-gray-800 dark:text-white text-lg mb-3">Recommended Learning Roadmap</h3>
                 <div className="flex flex-wrap gap-2">
                   {summary.learningRoadmap.map((item, i) => (
-                    <span key={i} className="px-3 py-1.5 bg-white dark:bg-gray-800 text-indigo-700 dark:text-indigo-300 text-sm rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <span key={i} className="px-3 py-1.5 bg-white dark:bg-gray-800 text-emerald-700 dark:text-emerald-300 text-sm rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                       📘 {item}
                     </span>
                   ))}

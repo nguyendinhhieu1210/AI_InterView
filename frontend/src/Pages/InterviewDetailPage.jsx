@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Award, TrendingUp, CheckCircle, XCircle,
-  ChevronDown, ChevronUp, Loader2, AlertCircle, Trash2
+  ChevronDown, ChevronUp, Loader2, AlertCircle, Trash2, Calendar, HelpCircle
 } from 'lucide-react';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
@@ -15,11 +15,6 @@ export default function InterviewDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedQuestion, setExpandedQuestion] = useState(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const idleTimer = useRef(null);
-  const countdownTimer = useRef(null);
-  const isCountingDown = useRef(false);
 
   useEffect(() => {
     fetchDetail();
@@ -40,6 +35,7 @@ export default function InterviewDetailPage() {
       if (err.response?.status === 404) {
         setError('Interview not found. It may have been deleted.');
       } else if (err.response?.status === 401) {
+        // redirect handled by axios interceptor
         return;
       } else {
         setError(err.message || 'Failed to load interview details');
@@ -67,10 +63,10 @@ export default function InterviewDetailPage() {
   };
 
   const getScoreBg = (score) => {
-    if (score >= 80) return 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800';
-    if (score >= 60) return 'bg-amber-100 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800';
-    if (score >= 40) return 'bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800';
-    return 'bg-rose-100 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800';
+    if (score >= 80) return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200';
+    if (score >= 60) return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200';
+    if (score >= 40) return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200';
+    return 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200';
   };
 
   const formatDate = (dateString) => {
@@ -83,42 +79,9 @@ export default function InterviewDetailPage() {
     }).format(date);
   };
 
-  const handleLogout = () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-    setTimeout(() => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('loginTime');
-      navigate('/login');
-    }, 2000);
-  };
-
-  const resetIdleTimer = () => {
-    if (idleTimer.current) clearTimeout(idleTimer.current);
-    if (countdownTimer.current) clearTimeout(countdownTimer.current);
-    if (isCountingDown.current) isCountingDown.current = false;
-    idleTimer.current = setTimeout(() => {
-      isCountingDown.current = true;
-      countdownTimer.current = setTimeout(() => handleLogout(), 30 * 60 * 1000);
-    }, 60 * 1000);
-  };
-
-  useEffect(() => {
-    const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
-    const resetAndStart = () => resetIdleTimer();
-    events.forEach(event => window.addEventListener(event, resetAndStart));
-    resetIdleTimer();
-    return () => {
-      events.forEach(event => window.removeEventListener(event, resetAndStart));
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-      if (countdownTimer.current) clearTimeout(countdownTimer.current);
-    };
-  }, []);
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
         <span className="ml-2 text-gray-700 dark:text-gray-300">Loading details...</span>
       </div>
@@ -127,8 +90,8 @@ export default function InterviewDetailPage() {
 
   if (error || !interview) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-xl">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-8 text-center shadow-xl">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-300 mb-4">{error || 'Interview not found'}</p>
           <button onClick={() => navigate('/history')} className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
@@ -139,62 +102,59 @@ export default function InterviewDetailPage() {
     );
   }
 
-  // Lấy dữ liệu từ kết quả trả về (backend mới trả về mcqResults và textResults)
   const mcqResults = interview.mcqResults || [];
   const essayResults = interview.textResults || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-6 md:py-8 transition-colors duration-300">
-      {isLoggingOut && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl text-center animate-fadeIn">
-            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-700 dark:text-gray-300">Logging out...</p>
-          </div>
-        </div>
-      )}
-
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-6 md:py-8 transition-colors duration-300">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {/* Navigation & Delete */}
         <div className="flex justify-between items-center mb-6">
           <button
-            onClick={() => navigate('/history')}
-            className="group flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 hover:gap-3 font-medium"
+            onClick={() => navigate('/interview-history')}
+            className="group flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm transition-all duration-300"
           >
-            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" /> Back to History
+            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" /> Back 
           </button>
           <button
             onClick={handleDelete}
-            className="flex items-center gap-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+            className="flex items-center gap-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm transition-colors"
           >
             <Trash2 className="w-4 h-4" /> Delete
           </button>
         </div>
 
         {/* Title & Meta */}
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
+        <div className="mb-6 text-center sm:text-left">
+          <h1 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
             {interview.topic} · {interview.difficulty}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Completed on {formatDate(interview.createdAt)}</p>
+          <div className="flex items-center justify-center sm:justify-start gap-4 text-gray-500 dark:text-gray-400 text-sm mt-2">
+            <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {formatDate(interview.createdAt)}</span>
+            <span className="flex items-center gap-1"><HelpCircle className="w-3.5 h-3.5" /> {interview.totalQuestions} questions</span>
+          </div>
         </div>
 
         {/* Score Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-800/90 rounded-xl p-4 text-center shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-            <TrendingUp className="w-5 h-5 mx-auto text-indigo-500 mb-1" />
-            <div className={`text-2xl font-bold ${getScoreColor(interview.totalScore)}`}>
-              {interview.totalScore}<span className="text-sm text-gray-500 dark:text-gray-400">/100</span>
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-4 text-center shadow-md border border-white/20 dark:border-gray-700/50 hover:shadow-xl transition-all">
+            <TrendingUp className="w-6 h-6 mx-auto text-indigo-500 mb-2" />
+            <div className={`text-3xl font-bold ${getScoreColor(interview.totalScore)}`}>
+              {interview.totalScore}<span className="text-base text-gray-500 dark:text-gray-400">/100</span>
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">Total Score</div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Total Score</div>
           </div>
-          <div className="bg-white dark:bg-gray-800/90 rounded-xl p-4 text-center shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{interview.mcqScore || 0}<span className="text-sm text-gray-500 dark:text-gray-400">/{interview.mcqCount * 10}</span></div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">MCQ Score</div>
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-4 text-center shadow-md border border-white/20 dark:border-gray-700/50 hover:shadow-xl transition-all">
+            <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+              {interview.mcqScore || 0}<span className="text-base text-gray-500 dark:text-gray-400">/{interview.mcqCount * 10}</span>
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">MCQ Score</div>
           </div>
-          <div className="bg-white dark:bg-gray-800/90 rounded-xl p-4 text-center shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{interview.essayScore || 0}<span className="text-sm text-gray-500 dark:text-gray-400">/{interview.essayCount * 10}</span></div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">Essay Score</div>
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-4 text-center shadow-md border border-white/20 dark:border-gray-700/50 hover:shadow-xl transition-all">
+            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+              {interview.essayScore || 0}<span className="text-base text-gray-500 dark:text-gray-400">/{interview.essayCount * 10}</span>
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Essay Score</div>
           </div>
         </div>
 
@@ -204,7 +164,7 @@ export default function InterviewDetailPage() {
             <Award className="w-5 h-5 text-indigo-500" /> Questions & Answers
           </h2>
 
-          {/* MCQ Questions - using mcqResults */}
+          {/* MCQ Questions */}
           {mcqResults.map((result, idx) => {
             const isCorrect = result.isCorrect;
             const userAnswer = result.userAnswer || '';
@@ -215,17 +175,17 @@ export default function InterviewDetailPage() {
             const score = result.score || 0;
 
             return (
-              <div key={`mcq-${idx}`} className="bg-white dark:bg-gray-800/90 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all hover:shadow-md">
+              <div key={`mcq-${idx}`} className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl border-l-8 border-l-blue-500 shadow-md hover:shadow-xl transition-all overflow-hidden">
                 <button
                   onClick={() => setExpandedQuestion(expandedQuestion === `mcq_${idx}` ? null : `mcq_${idx}`)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition"
                 >
                   <div className="flex items-start gap-3">
                     {isCorrect ? <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />}
                     <div>
                       <div className="font-medium text-gray-800 dark:text-gray-200">Question {idx + 1}: {questionText}</div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isCorrect ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'}`}>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getScoreBg(score)}`}>
                           Score: {score}/10
                         </span>
                       </div>
@@ -235,8 +195,7 @@ export default function InterviewDetailPage() {
                 </button>
 
                 {expandedQuestion === `mcq_${idx}` && (
-                  <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 space-y-3 text-sm animate-slideDown">
-                    {/* Options list with highlighting */}
+                  <div className="p-4 bg-gray-50/70 dark:bg-gray-900/30 border-t border-gray-200 dark:border-gray-700 space-y-3 text-sm animate-slideDown">
                     <div className="space-y-2">
                       {options.map((option, optIdx) => {
                         const isCorrectOption = option === correctAnswer;
@@ -256,10 +215,7 @@ export default function InterviewDetailPage() {
                         }
 
                         return (
-                          <div
-                            key={optIdx}
-                            className={`flex items-center justify-between p-3 rounded-lg border ${bgClass} transition-all`}
-                          >
+                          <div key={optIdx} className={`flex items-center justify-between p-2 rounded-lg border ${bgClass} transition-all`}>
                             <div className="flex items-center gap-3">
                               <span className="font-mono text-sm font-bold w-6 text-gray-500 dark:text-gray-400">
                                 {String.fromCharCode(65 + optIdx)}.
@@ -271,8 +227,6 @@ export default function InterviewDetailPage() {
                         );
                       })}
                     </div>
-
-                    {/* Explanation */}
                     {explanation && (
                       <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                         <p className="font-semibold text-indigo-600 dark:text-indigo-400 text-xs mb-1">Explanation:</p>
@@ -285,7 +239,7 @@ export default function InterviewDetailPage() {
             );
           })}
 
-          {/* Essay Questions - using textResults */}
+          {/* Essay Questions */}
           {essayResults.map((result, idx) => {
             const userAnswer = result.userAnswer || '';
             const sampleAnswer = result.sampleAnswer || '';
@@ -296,15 +250,15 @@ export default function InterviewDetailPage() {
             const questionText = result.question;
 
             return (
-              <div key={`essay-${idx}`} className="bg-white dark:bg-gray-800/90 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all hover:shadow-md">
+              <div key={`essay-${idx}`} className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl border-l-8 border-l-purple-500 shadow-md hover:shadow-xl transition-all overflow-hidden">
                 <button
                   onClick={() => setExpandedQuestion(expandedQuestion === `essay_${idx}` ? null : `essay_${idx}`)}
-                  className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                  className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition"
                 >
                   <div className="flex-1">
                     <div className="font-medium text-gray-800 dark:text-gray-200">Question {idx + 1}: {questionText}</div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getScoreBg(score)} text-gray-800 dark:text-gray-200`}>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getScoreBg(score)}`}>
                         Score: {score}/10
                       </span>
                     </div>
@@ -312,7 +266,7 @@ export default function InterviewDetailPage() {
                   {expandedQuestion === `essay_${idx}` ? <ChevronUp className="w-5 text-gray-400" /> : <ChevronDown className="w-5 text-gray-400" />}
                 </button>
                 {expandedQuestion === `essay_${idx}` && (
-                  <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 space-y-3 text-sm animate-slideDown">
+                  <div className="p-4 bg-gray-50/70 dark:bg-gray-900/30 border-t border-gray-200 dark:border-gray-700 space-y-3 text-sm animate-slideDown">
                     <div>
                       <p className="font-semibold text-gray-700 dark:text-gray-300">Your answer:</p>
                       <div className="bg-white dark:bg-gray-800 p-3 rounded-lg mt-1 whitespace-pre-wrap border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200">
@@ -358,7 +312,9 @@ export default function InterviewDetailPage() {
           })}
 
           {mcqResults.length === 0 && essayResults.length === 0 && (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">No questions found.</div>
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 rounded-2xl backdrop-blur">
+              No questions found.
+            </div>
           )}
         </div>
       </div>
@@ -369,11 +325,6 @@ export default function InterviewDetailPage() {
           to { opacity: 1; transform: translateY(0); }
         }
         .animate-slideDown { animation: slideDown 0.25s ease-out; }
-        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
       `}</style>
     </div>
   );

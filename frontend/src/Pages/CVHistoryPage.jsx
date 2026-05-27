@@ -107,8 +107,12 @@ export default function CVHistoryPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-fuchsia-50 to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-          <button onClick={() => navigate('/history')} className="group flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
-            <ArrowLeft className="w-5 h-5" /> Back
+          <button
+            onClick={() => navigate('/history')}
+            className="group flex items-center gap-2 text-purple-600 dark:text-purple-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-all duration-300 hover:gap-3 font-medium bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm"
+          >
+            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+            Back
           </button>
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full px-5 py-2 shadow-sm">
             <BarChart3 className="w-4 h-4 inline mr-2 text-purple-500" />
@@ -117,8 +121,8 @@ export default function CVHistoryPage() {
         </div>
 
         <div className="mb-10 text-center sm:text-left">
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
-            CV‑Based Interview History
+          <h1 className="text-3xl sm:text-4xl font-extrabold pb-2 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
+            CV-Based Interview History
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">Interviews generated from your uploaded CV</p>
         </div>
