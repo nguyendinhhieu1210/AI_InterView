@@ -560,11 +560,11 @@ export default function WelcomePage() {
                 </button>
                 <UploadCV onUploadSuccess={handleCVUploadSuccess} />
                 <button
-                  onClick={() => navigate('/adaptive-history')}
+                  onClick={() => navigate('/history')}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <Brain className="w-4 h-4" />
-                  Adaptive History
+                  Interview History
                 </button>
               </div>
             </div>
