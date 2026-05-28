@@ -1,3 +1,4 @@
+
 // contexts/AuthContext.js
 import React, {
   createContext,
@@ -14,19 +15,25 @@ const AuthContext = createContext();
 // ================= CONFIG =================
 const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 phút
 const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 phút
-const ACTIVITY_THROTTLE = 10000;
+const REFRESH_THROTTLE = 60 * 1000; // 1 phút
 
 // ================= JWT PARSE =================
 const parseJwt = (token) => {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .map(
+          (c) =>
+            '%' +
+            ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        )
         .join('')
     );
+
     return JSON.parse(jsonPayload);
   } catch {
     return null;
@@ -34,103 +41,139 @@ const parseJwt = (token) => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] =
+    useState(false);
+
   const [user, setUser] = useState(null);
+
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+
+  const [token, setToken] = useState(
+    localStorage.getItem('token')
+  );
 
   const logoutLock = useRef(false);
+
   const refreshPromise = useRef(null);
-  const lastActivityRef = useRef(0);
 
   // ================= LOGOUT =================
-  const logout = useCallback((isCrossTab = false) => {
-    if (logoutLock.current) return;
-    logoutLock.current = true;
+  const logout = useCallback(
+    (isCrossTab = false) => {
+      if (logoutLock.current) return;
 
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('lastActivity');
+      logoutLock.current = true;
 
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('lastActivity');
 
-    if (!isCrossTab) {
-      localStorage.setItem('logout_event', Date.now().toString());
-      setTimeout(() => localStorage.removeItem('logout_event'), 1000);
-    }
+      sessionStorage.removeItem('lastRefreshCheck');
 
-    setTimeout(() => {
-      logoutLock.current = false;
-    }, 500);
-  }, []);
+      setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
 
-  // ================= INIT =================
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+      if (!isCrossTab) {
+        localStorage.setItem(
+          'logout_event',
+          Date.now().toString()
+        );
 
-    if (storedToken && storedUser) {
-      const decoded = parseJwt(storedToken);
-
-      if (decoded?.exp * 1000 > Date.now()) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        setIsAuthenticated(true);
-      } else {
-        localStorage.clear();
+        setTimeout(() => {
+          localStorage.removeItem('logout_event');
+        }, 1000);
       }
-    }
 
-    setLoading(false);
-  }, []);
+      setTimeout(() => {
+        logoutLock.current = false;
+      }, 500);
+    },
+    []
+  );
 
   // ================= LOGIN =================
-  const login = useCallback((newToken, userData, refreshTokenValue = null) => {
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('lastActivity', Date.now().toString());
+  const login = useCallback(
+    (newToken, userData, refreshTokenValue = null) => {
+      localStorage.setItem('token', newToken);
 
-    if (refreshTokenValue) {
-      localStorage.setItem('refreshToken', refreshTokenValue);
-    }
+      localStorage.setItem(
+        'user',
+        JSON.stringify(userData)
+      );
 
-    setToken(newToken);
-    setUser(userData);
-    setIsAuthenticated(true);
-  }, []);
+      localStorage.setItem(
+        'lastActivity',
+        Date.now().toString()
+      );
+
+      if (refreshTokenValue) {
+        localStorage.setItem(
+          'refreshToken',
+          refreshTokenValue
+        );
+      }
+
+      setToken(newToken);
+      setUser(userData);
+      setIsAuthenticated(true);
+    },
+    []
+  );
 
   // ================= REFRESH TOKEN =================
   const refreshToken = useCallback(async () => {
-    if (refreshPromise.current) return refreshPromise.current;
+    if (refreshPromise.current) {
+      return refreshPromise.current;
+    }
 
     refreshPromise.current = (async () => {
       try {
-        const rt = localStorage.getItem('refreshToken');
-        if (!rt) throw new Error('No refresh token');
+        const rt =
+          localStorage.getItem('refreshToken');
 
-        const res = await api.post('/auth/refresh', {
-          refreshToken: rt
-        });
+        if (!rt) {
+          throw new Error('No refresh token');
+        }
 
-        const { token: newToken, refreshToken: newRefresh } = res.data;
+        const res = await api.post(
+          '/auth/refresh',
+          {
+            refreshToken: rt
+          }
+        );
 
-        localStorage.setItem('token', newToken);
+        const {
+          token: newToken,
+          refreshToken: newRefresh
+        } = res.data;
+
+        localStorage.setItem(
+          'token',
+          newToken
+        );
+
         setToken(newToken);
 
         if (newRefresh) {
-          localStorage.setItem('refreshToken', newRefresh);
+          localStorage.setItem(
+            'refreshToken',
+            newRefresh
+          );
         }
 
         const decoded = parseJwt(newToken);
 
         if (decoded?.user) {
-          localStorage.setItem('user', JSON.stringify(decoded.user));
+          localStorage.setItem(
+            'user',
+            JSON.stringify(decoded.user)
+          );
+
           setUser(decoded.user);
-          setIsAuthenticated(true);
         }
+
+        setIsAuthenticated(true);
 
         return true;
       } catch (err) {
@@ -146,59 +189,149 @@ export const AuthProvider = ({ children }) => {
 
   // ================= UPDATE ACTIVITY =================
   const updateActivity = useCallback(() => {
-    if (!isAuthenticated) return;
-
     const now = Date.now();
 
-    if (now - lastActivityRef.current < ACTIVITY_THROTTLE) return;
-    lastActivityRef.current = now;
+    // ALWAYS update activity
+    localStorage.setItem(
+      'lastActivity',
+      String(now)
+    );
 
-    localStorage.setItem('lastActivity', String(now));
+    if (!isAuthenticated) return;
 
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    // throttle ONLY refresh check
+    const lastRefreshCheck = Number(
+      sessionStorage.getItem(
+        'lastRefreshCheck'
+      ) || 0
+    );
 
-    const decoded = parseJwt(token);
+    if (
+      now - lastRefreshCheck <
+      REFRESH_THROTTLE
+    ) {
+      return;
+    }
+
+    sessionStorage.setItem(
+      'lastRefreshCheck',
+      String(now)
+    );
+
+    const t = localStorage.getItem('token');
+
+    if (!t) return;
+
+    const decoded = parseJwt(t);
+
     if (!decoded?.exp) return;
 
-    const expiresIn = decoded.exp * 1000 - now;
+    const expiresIn =
+      decoded.exp * 1000 - now;
 
-    // 🔥 auto refresh khi sắp hết hạn
-    if (expiresIn < TOKEN_REFRESH_THRESHOLD) {
+    if (
+      expiresIn < TOKEN_REFRESH_THRESHOLD
+    ) {
       refreshToken();
     }
   }, [isAuthenticated, refreshToken]);
 
+  // ================= INIT =================
+  useEffect(() => {
+    const storedToken =
+      localStorage.getItem('token');
+
+    const storedUser =
+      localStorage.getItem('user');
+
+    if (storedToken && storedUser) {
+      const decoded = parseJwt(storedToken);
+
+      if (
+        decoded?.exp * 1000 >
+        Date.now()
+      ) {
+        setToken(storedToken);
+
+        setUser(
+          JSON.parse(storedUser)
+        );
+
+        setIsAuthenticated(true);
+
+        localStorage.setItem(
+          'lastActivity',
+          Date.now().toString()
+        );
+      } else {
+        localStorage.clear();
+      }
+    }
+
+    setLoading(false);
+  }, []);
+
   // ================= MULTI TAB LOGOUT =================
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === 'logout_event') logout(true);
+      if (e.key === 'logout_event') {
+        logout(true);
+      }
     };
 
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+    window.addEventListener(
+      'storage',
+      handler
+    );
+
+    return () => {
+      window.removeEventListener(
+        'storage',
+        handler
+      );
+    };
   }, [logout]);
 
-  // ================= TOKEN + USER SYNC =================
+  // ================= SYNC TOKEN =================
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === 'token' && e.newValue) {
+      if (
+        e.key === 'token' &&
+        e.newValue
+      ) {
         setToken(e.newValue);
 
-        const u = localStorage.getItem('user');
+        const u =
+          localStorage.getItem('user');
+
         if (u) {
           setUser(JSON.parse(u));
+
           setIsAuthenticated(true);
         }
       }
 
-      if (e.key === 'user' && e.newValue) {
-        setUser(JSON.parse(e.newValue));
+      if (
+        e.key === 'user' &&
+        e.newValue
+      ) {
+        setUser(
+          JSON.parse(e.newValue)
+        );
       }
     };
 
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+    window.addEventListener(
+      'storage',
+      handler
+    );
+
+    return () => {
+      window.removeEventListener(
+        'storage',
+        handler
+      );
+    };
   }, []);
 
   // ================= IDLE LOGOUT =================
@@ -206,78 +339,145 @@ export const AuthProvider = ({ children }) => {
     if (!isAuthenticated) return;
 
     const interval = setInterval(() => {
-      const last = Number(localStorage.getItem('lastActivity') || 0);
-      const idle = Date.now() - last;
+      const last = Number(
+        localStorage.getItem(
+          'lastActivity'
+        ) || 0
+      );
 
-      if (idle >= IDLE_TIMEOUT) logout();
-    }, 5000);
+      const idle =
+        Date.now() - last;
 
-    return () => clearInterval(interval);
+      if (idle >= IDLE_TIMEOUT) {
+        logout();
+      }
+    }, 30000);
+
+    return () =>
+      clearInterval(interval);
   }, [isAuthenticated, logout]);
 
-  // ================= TOKEN EXP CHECK (FIXED LOGIC) =================
+  // ================= AUTO REFRESH TOKEN =================
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const interval = setInterval(async () => {
-      if (document.hidden) return;
+    const interval = setInterval(
+      async () => {
+        if (document.hidden) return;
 
-      const t = localStorage.getItem('token');
-      if (!t) return;
+        const t =
+          localStorage.getItem(
+            'token'
+          );
 
-      const decoded = parseJwt(t);
-      if (!decoded?.exp) {
-        logout();
-        return;
-      }
+        if (!t) return;
 
-      const now = Date.now();
-      const expiresIn = decoded.exp * 1000 - now;
+        const decoded =
+          parseJwt(t);
 
-      const lastActivity = Number(localStorage.getItem('lastActivity') || 0);
-      const isActive = now - lastActivity < 5 * 60 * 1000;
+        if (!decoded?.exp) return;
 
-      // ❌ chỉ logout khi refresh fail
-      if (expiresIn <= 0) {
-        const ok = await refreshToken();
-        if (!ok) logout();
-        return;
-      }
+        const expiresIn =
+          decoded.exp * 1000 -
+          Date.now();
 
-      if (expiresIn < TOKEN_REFRESH_THRESHOLD && isActive) {
-        await refreshToken();
-      }
-    }, 60000);
+        // token expired
+        if (expiresIn <= 0) {
+          const ok =
+            await refreshToken();
 
-    return () => clearInterval(interval);
-  }, [isAuthenticated, refreshToken, logout]);
+          if (!ok) {
+            logout();
+          }
 
-  // ================= FOCUS REFRESH (IMPORTANT UX FIX) =================
+          return;
+        }
+
+        // token near expired
+        if (
+          expiresIn <
+          TOKEN_REFRESH_THRESHOLD
+        ) {
+          await refreshToken();
+        }
+      },
+      60000
+    );
+
+    return () =>
+      clearInterval(interval);
+  }, [
+    isAuthenticated,
+    refreshToken,
+    logout
+  ]);
+
+  // ================= FOCUS + VISIBILITY =================
   useEffect(() => {
-    const onFocus = async () => {
-      const t = localStorage.getItem('token');
+    const handleFocus = async () => {
+      updateActivity();
+
+      const t =
+        localStorage.getItem(
+          'token'
+        );
+
       if (!t) return;
 
-      const decoded = parseJwt(t);
+      const decoded =
+        parseJwt(t);
+
       if (!decoded?.exp) return;
 
-      const expiresIn = decoded.exp * 1000 - Date.now();
+      const expiresIn =
+        decoded.exp * 1000 -
+        Date.now();
 
-      if (expiresIn < TOKEN_REFRESH_THRESHOLD) {
+      if (
+        expiresIn <
+        TOKEN_REFRESH_THRESHOLD
+      ) {
         await refreshToken();
       }
     };
 
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [refreshToken]);
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        updateActivity();
+      }
+    };
 
-  // ================= USER ACTIVITY EVENTS =================
+    window.addEventListener(
+      'focus',
+      handleFocus
+    );
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibility
+    );
+
+    return () => {
+      window.removeEventListener(
+        'focus',
+        handleFocus
+      );
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibility
+      );
+    };
+  }, [
+    refreshToken,
+    updateActivity
+  ]);
+
+  // ================= USER EVENTS =================
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const events = [
-      'mousemove',
       'mousedown',
       'click',
       'keydown',
@@ -285,18 +485,30 @@ export const AuthProvider = ({ children }) => {
       'touchstart'
     ];
 
-    events.forEach(e =>
-      window.addEventListener(e, updateActivity)
-    );
+    events.forEach((event) => {
+      window.addEventListener(
+        event,
+        updateActivity,
+        {
+          passive: true
+        }
+      );
+    });
 
     return () => {
-      events.forEach(e =>
-        window.removeEventListener(e, updateActivity)
-      );
+      events.forEach((event) => {
+        window.removeEventListener(
+          event,
+          updateActivity
+        );
+      });
     };
-  }, [isAuthenticated, updateActivity]);
+  }, [
+    isAuthenticated,
+    updateActivity
+  ]);
 
-  // ================= CONTEXT VALUE =================
+  // ================= CONTEXT =================
   const value = {
     isAuthenticated,
     user,
@@ -318,6 +530,12 @@ export const AuthProvider = ({ children }) => {
 // ================= HOOK =================
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+
+  if (!ctx) {
+    throw new Error(
+      'useAuth must be used within AuthProvider'
+    );
+  }
+
   return ctx;
 };

@@ -236,6 +236,155 @@ export default function HelpSupportPage() {
                     </div>
                 </div>
 
+                {/* Adaptive Interview Section */}
+                <div className="mb-14">
+                    <div
+                        className={`relative overflow-hidden rounded-3xl border shadow-2xl transition-all duration-500 group
+        ${darkMode
+                                ? 'bg-gradient-to-br from-violet-900/30 via-indigo-900/20 to-cyan-900/20 border-violet-700/40'
+                                : 'bg-gradient-to-br from-violet-50 via-white to-cyan-50 border-violet-100'
+                            }`}
+                    >
+                        {/* Background Effects */}
+                        <div className="absolute -top-16 -right-16 w-56 h-56 bg-violet-500/20 rounded-full blur-3xl group-hover:scale-125 transition duration-700"></div>
+                        <div className="absolute bottom-0 left-0 w-40 h-40 bg-cyan-400/20 rounded-full blur-3xl"></div>
+
+                        <div className="relative p-6 md:p-8">
+                            {/* Header */}
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                                <div
+                                    className={`p-4 rounded-2xl shadow-lg w-fit
+                    ${darkMode
+                                            ? 'bg-violet-800/40 border border-violet-700/40'
+                                            : 'bg-white border border-violet-100'
+                                        }`}
+                                >
+                                    <Brain className="w-10 h-10 text-violet-500" />
+                                </div>
+
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-violet-500 text-white shadow">
+                                            AI Adaptive
+                                        </span>
+
+                                        <span
+                                            className={`px-3 py-1 rounded-full text-xs font-semibold
+                            ${darkMode
+                                                    ? 'bg-cyan-900/40 text-cyan-300'
+                                                    : 'bg-cyan-100 text-cyan-700'
+                                                }`}
+                                        >
+                                            Smart Interview Flow
+                                        </span>
+                                    </div>
+
+                                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-3">
+                                        Adaptive Interview System
+                                    </h2>
+
+                                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed max-w-3xl">
+                                        Our AI dynamically changes interview difficulty and follow-up questions
+                                        based on your answers in real-time. Strong answers unlock deeper technical
+                                        questions, while weaker responses trigger guidance and easier follow-ups.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Features */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mt-8">
+                                {[
+                                    {
+                                        icon: Zap,
+                                        title: 'Real-time Difficulty',
+                                        desc: 'Questions become harder or easier depending on your performance.',
+                                        gradient: 'from-yellow-500 to-orange-500'
+                                    },
+                                    {
+                                        icon: Brain,
+                                        title: 'AI Follow-up Questions',
+                                        desc: 'The AI asks deeper follow-up questions based on your answers.',
+                                        gradient: 'from-violet-500 to-indigo-500'
+                                    },
+                                    {
+                                        icon: TrendingUp,
+                                        title: 'Skill Evaluation',
+                                        desc: 'Track strengths, weaknesses, and topic mastery instantly.',
+                                        gradient: 'from-emerald-500 to-green-500'
+                                    },
+                                    {
+                                        icon: Award,
+                                        title: 'Personalized Feedback',
+                                        desc: 'Receive tailored recommendations to improve your interview skills.',
+                                        gradient: 'from-cyan-500 to-blue-500'
+                                    }
+                                ].map((item, index) => {
+                                    const Icon = item.icon;
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`group/card rounded-2xl p-5 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border
+                            ${darkMode
+                                                    ? 'bg-gray-800/60 border-gray-700/50 hover:border-violet-600/40'
+                                                    : 'bg-white/80 border-white hover:border-violet-200'
+                                                }`}
+                                        >
+                                            <div
+                                                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.gradient}
+                                flex items-center justify-center shadow-lg mb-4
+                                group-hover/card:scale-110 transition-transform duration-300`}
+                                            >
+                                                <Icon className="w-6 h-6 text-white" />
+                                            </div>
+
+                                            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+                                                {item.title}
+                                            </h3>
+
+                                            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                                {item.desc}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Bottom Highlight */}
+                            <div
+                                className={`mt-8 rounded-2xl p-5 border flex flex-col md:flex-row md:items-center gap-4
+                ${darkMode
+                                        ? 'bg-violet-900/20 border-violet-700/30'
+                                        : 'bg-violet-50 border-violet-100'
+                                    }`}
+                            >
+                                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg">
+                                    <CheckCircle className="w-6 h-6 text-white" />
+                                </div>
+
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-gray-800 dark:text-white mb-1">
+                                        Adaptive AI simulates real technical interviews
+                                    </h4>
+
+                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                        Just like real interviewers, the AI adjusts questions according to your
+                                        confidence level, technical depth, and response quality.
+                                    </p>
+                                </div>
+
+                                <button
+                                    className="px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600
+                    hover:from-violet-500 hover:to-indigo-500 text-white font-semibold shadow-lg
+                    transition-all duration-300 hover:scale-105"
+                                >
+                                    Try Adaptive Interview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* How It Works Section (only the 6 CV steps) */}
                 <div ref={howItWorksRef} className="mb-12 scroll-mt-24">
                     <div className="flex items-center gap-3 mb-6">

@@ -1,126 +1,138 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LogOut,
-  User,
-  Brain,
-  Zap,
-  Award,
-  ChevronDown,
-  Settings,
-  HelpCircle,
-  BarChart3,
-  Calendar,
-  MessageCircle,
-  TrendingUp,
-  FileText,
-  Sparkles,
-  Clock,
-  ChevronRight,
-  Flame,
+  LogOut, User, Brain, Zap, ChevronDown, Settings, HelpCircle,
+  MessageCircle, TrendingUp, FileText, Sparkles, Clock, Flame,
+  CalendarDays, Lightbulb, Quote
 } from 'lucide-react';
 
 import { StartInterviewModal } from '../components/StartInterviewModal';
 import { UploadCV } from '../components/UploadCV';
 import { AIFeedback } from '../components/AIFeedback';
 import PerformanceTrendChart from '../components/PerformanceTrendChart';
-
+import ActivityCalendar from '../components/ActivityCalendar';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import ActivityCalendar from '../components/ActivityCalendar';
 
 export default function WelcomePage() {
-  // ------------------------------
-  // 1. All hooks
-  // ------------------------------
   const navigate = useNavigate();
   const { darkMode } = useTheme();
   const { language } = useLanguage();
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
 
   const dropdownRef = useRef(null);
-
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statsLoading, setStatsLoading] = useState(true);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
-  const [stats, setStats] = useState({
-    totalInterviews: 0,
-    averageScore: 0,
-    change: '+0%',
-    streak: 0,
-  });
-
-  const [recentActivities, setRecentActivities] = useState([]);
+  const [stats, setStats] = useState({ totalInterviews: 0, streak: 0 });
   const [activities, setActivities] = useState([]);
+  const [dailyTip, setDailyTip] = useState({ tip: '', quote: '' });
 
-  // ------------------------------
-  // 2. Helper functions
-  // ------------------------------
+  // ---------- Translations ----------
   const t = (key) => {
     const translations = {
       en: {
-        interviewsCompleted: 'Completed',
-        averageScore: 'Avg Score',
-        streak: 'Current Streak',
-        recentActivity: 'Recent Activity',
-        viewAll: 'View all',
-        performanceTrend: 'Performance Trend',
-        quickActions: 'Quick Actions',
-        startNewInterview: 'Start New Interview',
-        viewDashboard: 'Performance Dashboard',
-        scheduleMock: 'Mock Interview',
-        logout: 'Sign Out',
-        settings: 'Settings',
-        helpSupport: 'Help & Support',
-        yourProfile: 'Your Profile',
-        goodMorning: 'Good Morning',
-        goodAfternoon: 'Good Afternoon',
-        goodEvening: 'Good Evening',
-        readyMessage:
-          'Ready to ace your next interview? Your AI coach is here to help.',
-        days: 'days',
+        totalSessions: 'Total Sessions', streak: 'Current Streak', days: 'days',
+        performanceTrend: 'Performance Trend', quickActions: 'Quick Actions',
+        startNewInterview: 'Start New Interview', uploadCV: 'Upload CV & Start',
+        interviewHistory: 'History', logout: 'Sign Out', settings: 'Settings',
+        helpSupport: 'Help & Support', yourProfile: 'Your Profile',
+        goodMorning: 'Good Morning', goodAfternoon: 'Good Afternoon', goodEvening: 'Good Evening',
+        readyMessage: 'Ready to ace your next interview? Your AI coach is here to help.',
+        slogan: 'Master your craft, one interview at a time.',
+        motivationTitle: '✨ Daily Growth & Inspiration',
+        helpfulTip: '💡 Tip for today',
+        inspiringQuote: '🌟 Fuel your mind',
       },
       vi: {
-        interviewsCompleted: 'Đã hoàn thành',
-        averageScore: 'Điểm TB',
-        streak: 'Chuỗi hiện tại',
-        recentActivity: 'Hoạt động gần đây',
-        viewAll: 'Xem tất cả',
-        performanceTrend: 'Xu hướng điểm',
-        quickActions: 'Thao tác nhanh',
-        startNewInterview: 'Phỏng vấn mới',
-        viewDashboard: 'Bảng điều khiển',
-        scheduleMock: 'Lên lịch thử',
-        logout: 'Đăng xuất',
-        settings: 'Cài đặt',
-        helpSupport: 'Trợ giúp',
-        yourProfile: 'Hồ sơ',
-        goodMorning: 'Chào buổi sáng',
-        goodAfternoon: 'Chào buổi chiều',
-        goodEvening: 'Chào buổi tối',
-        readyMessage:
-          'Sẵn sàng chinh phục? Trợ lý AI luôn đồng hành.',
-        days: 'ngày',
+        totalSessions: 'Tổng buổi', streak: 'Chuỗi hiện tại', days: 'ngày',
+        performanceTrend: 'Xu hướng điểm', quickActions: 'Thao tác nhanh',
+        startNewInterview: 'Phỏng vấn mới', uploadCV: 'Tải CV & Bắt đầu',
+        interviewHistory: 'Lịch sử', logout: 'Đăng xuất', settings: 'Cài đặt',
+        helpSupport: 'Trợ giúp', yourProfile: 'Hồ sơ',
+        goodMorning: 'Chào buổi sáng', goodAfternoon: 'Chào buổi chiều', goodEvening: 'Chào buổi tối',
+        readyMessage: 'Sẵn sàng chinh phục? Trợ lý AI luôn đồng hành.',
+        slogan: 'Làm chủ kỹ năng, từng buổi phỏng vấn một.',
+        motivationTitle: '✨ Khơi nguồn cảm hứng mỗi ngày',
+        helpfulTip: '💡 Lời khuyên hôm nay',
+        inspiringQuote: '🌟 Nạp năng lượng tri thức',
       },
     };
     return translations[language]?.[key] || translations.en[key];
   };
 
-  const formatRelativeTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
-    if (diffHours < 1) return 'Just now';
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays === 1) return 'Yesterday';
-    return `${diffDays} days ago`;
+  const tipsList = {
+    en: [
+      "Notice a knowledge gap? Turn it into your next mini-project. Master it step by step.",
+      "Admit what you don't know – then go find the answer. Curiosity beats pretending.",
+      "After each interview, write down one thing that felt shaky. That's your growth area.",
+      "The best time to learn something is right after you realize you don't know it.",
+      "Don't fear gaps. Every expert was once a beginner who kept asking questions.",
+      "Set a small learning goal each week: one concept, one question type, one skill.",
+      "Use 'I'm still learning' as a superpower. It opens doors to improvement.",
+      "Compare yourself only to yesterday. Small daily progress wins the race.",
+      "Stuck on a question? Save it, research it, and master it before the next interview.",
+      "Your future self will thank you for every hour you spend learning today.",
+    ],
+    vi: [
+      "Thấy còn lúng túng một mảng nào? Hãy biến nó thành dự án nhỏ tiếp theo. Làm chủ từng bước.",
+      "Thừa nhận điều mình chưa biết – rồi đi tìm câu trả lời. Tò mò tốt hơn giả vờ.",
+      "Sau mỗi buổi phỏng vấn, ghi lại một điều bạn thấy chưa vững. Đó là vùng cần phát triển.",
+      "Thời điểm tốt nhất để học điều mới là ngay sau khi bạn nhận ra mình chưa biết nó.",
+      "Đừng sợ lỗ hổng. Mọi chuyên gia đều từng là người mới và không ngừng hỏi.",
+      "Đặt mục tiêu học nhỏ mỗi tuần: một khái niệm, một dạng câu hỏi, một kỹ năng.",
+      "Coi 'mình vẫn đang học' như siêu năng lực. Nó mở ra cánh cửa cải thiện.",
+      "Chỉ so sánh với chính mình ngày hôm qua. Tiến bộ nhỏ mỗi ngày sẽ thắng cuộc đua.",
+      "Bí một câu hỏi? Lưu lại, nghiên cứu, làm chủ trước buổi phỏng vấn tiếp theo.",
+      "Bản thân tương lai sẽ cảm ơn bạn vì mỗi giờ bạn học hôm nay.",
+    ],
   };
+
+  const quotesList = {
+    en: [
+      "The expert in anything was once a beginner. – Helen Hayes",
+      "It’s not that I’m so smart, it’s that I stay with problems longer. – Einstein",
+      "Live as if you were to die tomorrow. Learn as if you were to live forever. – Gandhi",
+      "The beautiful thing about learning is no one can take it away from you. – B.B. King",
+      "Don’t let what you cannot do interfere with what you can do. – John Wooden",
+      "Success is no accident. It is hard work, learning, sacrifice, and persistence.",
+      "There is no end to learning. The more you know, the more you realize you don’t know.",
+      "Mistakes are the portals of discovery. – James Joyce",
+      "The only limit to your impact is your imagination and commitment.",
+      "Do the best you can until you know better. Then when you know better, do better. – M. Angelou",
+    ],
+    vi: [
+      "Chuyên gia trong bất cứ lĩnh vực nào cũng từng là người mới bắt đầu. – Helen Hayes",
+      "Không phải tôi thông minh, mà là tôi kiên trì với vấn đề lâu hơn. – Einstein",
+      "Hãy sống như thể bạn sẽ chết vào ngày mai. Hãy học như thể bạn sẽ sống mãi mãi. – Gandhi",
+      "Điều tuyệt vời của việc học là không ai có thể lấy nó đi khỏi bạn. – B.B. King",
+      "Đừng để điều bạn không thể làm cản trở điều bạn có thể làm. – John Wooden",
+      "Thành công không phải ngẫu nhiên. Đó là chăm chỉ, học hỏi, hy sinh và kiên trì.",
+      "Học không bao giờ cùng. Bạn càng biết nhiều, bạn càng thấy mình chưa biết nhiều.",
+      "Sai lầm là cánh cổng dẫn đến khám phá. – James Joyce",
+      "Giới hạn duy nhất cho tác động của bạn là trí tưởng tượng và sự cam kết.",
+      "Hãy làm tốt nhất có thể cho đến khi bạn biết nhiều hơn. Khi biết nhiều hơn, hãy làm tốt hơn. – M. Angelou",
+    ],
+  };
+
+  const getRandomMotivation = () => {
+    const lang = language;
+    const tips = tipsList[lang] || tipsList.en;
+    const quotes = quotesList[lang] || quotesList.en;
+    setDailyTip({
+      tip: tips[Math.floor(Math.random() * tips.length)],
+      quote: quotes[Math.floor(Math.random() * quotes.length)],
+    });
+  };
+
+  useEffect(() => {
+    getRandomMotivation();
+  }, [language]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -129,44 +141,23 @@ export default function WelcomePage() {
     return t('goodEvening');
   };
 
-  const getScoreBadgeClass = (score) => {
-    if (score >= 80) return 'bg-emerald-500 text-white';
-    if (score >= 50) return 'bg-amber-500 text-white';
-    return 'bg-rose-500 text-white';
-  };
-
-  const getScoreColorClass = (score) => {
-    if (score >= 80) return 'text-emerald-600 dark:text-emerald-400';
-    if (score >= 50) return 'text-amber-600 dark:text-amber-400';
-    return 'text-rose-600 dark:text-rose-400';
-  };
-
-  const formatDate = (date) => {
-    return date.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+  const formatDate = (date) =>
+    date.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
+      weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
     });
-  };
-
-  const formatTime = (date) => {
-    return date.toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
+  const formatTime = (date) =>
+    date.toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
     });
-  };
 
-  // Tính current streak (chuỗi hiện tại)
   const calculateStreak = (sessions) => {
     if (!sessions.length) return 0;
     const dates = sessions.map(s => new Date(s.createdAt).toDateString());
     const uniqueDates = [...new Set(dates)].sort((a, b) => new Date(b) - new Date(a));
-    let streak = 0;
     const today = new Date().toDateString();
     const yesterday = new Date(Date.now() - 86400000).toDateString();
     if (uniqueDates[0] !== today && uniqueDates[0] !== yesterday) return 0;
+    let streak = 0;
     let currentDate = uniqueDates[0] === today ? today : yesterday;
     for (let i = 0; i < uniqueDates.length; i++) {
       if (uniqueDates[i] === currentDate) {
@@ -174,73 +165,27 @@ export default function WelcomePage() {
         const prevDate = new Date(currentDate);
         prevDate.setDate(prevDate.getDate() - 1);
         currentDate = prevDate.toDateString();
-      } else {
-        break;
-      }
+      } else break;
     }
     return streak;
   };
 
-  // ------------------------------
-  // 3. Data fetching
-  // ------------------------------
   const fetchDashboardData = async () => {
     if (!user) return;
     setStatsLoading(true);
     try {
-      const [normalRes, cvRes] = await Promise.all([
+      const [normalRes, cvRes, adaptiveRes] = await Promise.all([
         api.get('/interview/history').catch(() => ({ data: { success: false, history: [] } })),
         api.get('/cv/history').catch(() => ({ data: { success: false, history: [] } })),
+        api.get('/adaptive/history').catch(() => ({ data: { success: false, history: [] } })),
       ]);
-
       const normalList = normalRes.data?.success ? normalRes.data.history : [];
       const cvList = cvRes.data?.success ? cvRes.data.history : [];
-      const allSessions = [...normalList, ...cvList];
-
+      const adaptiveList = adaptiveRes.data?.success ? adaptiveRes.data.history : [];
+      const allSessions = [...normalList, ...cvList, ...adaptiveList.map(s => ({ ...s, createdAt: s.createdAt }))];
       const total = allSessions.length;
-      const avgScore = total === 0 ? 0 : Math.round(allSessions.reduce((sum, item) => sum + (item.totalScore || 0), 0) / total);
-
-      const now = new Date();
-      const monthAgo = new Date();
-      monthAgo.setMonth(monthAgo.getMonth() - 1);
-
-      const recentSessions = allSessions.filter((item) => new Date(item.createdAt) >= monthAgo);
-      const prevSessions = allSessions.filter((item) => new Date(item.createdAt) < monthAgo);
-
-      const recentAvg = recentSessions.length ? recentSessions.reduce((sum, item) => sum + (item.totalScore || 0), 0) / recentSessions.length : 0;
-      const prevAvg = prevSessions.length ? prevSessions.reduce((sum, item) => sum + (item.totalScore || 0), 0) / prevSessions.length : 0;
-
-      const change = prevAvg === 0 ? '+0%' : `${recentAvg > prevAvg ? '+' : ''}${Math.round((recentAvg - prevAvg))}%`;
       const streak = calculateStreak(allSessions);
-
-      setStats({
-        totalInterviews: total,
-        averageScore: avgScore,
-        change,
-        streak,
-      });
-
-      const sorted = [...allSessions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      const latest = sorted.slice(0, 3).map((session) => {
-        let actionText = '';
-        if (Array.isArray(session.topic)) {
-          actionText = session.topic.join(' • ');
-        } else if (typeof session.topic === 'string') {
-          actionText = session.topic;
-        } else if (session.cvName) {
-          actionText = `CV: ${session.cvName}`;
-        } else {
-          actionText = 'Interview';
-        }
-        return {
-          id: session._id || session.id,
-          action: actionText,
-          score: session.totalScore !== undefined && session.totalScore !== null ? session.totalScore : null,
-          date: formatRelativeTime(session.createdAt),
-          icon: session.cvName ? FileText : MessageCircle,
-        };
-      });
-      setRecentActivities(latest);
+      setStats({ totalInterviews: total, streak });
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
@@ -248,9 +193,19 @@ export default function WelcomePage() {
     }
   };
 
-  // ------------------------------
-  // 4. useEffect hooks
-  // ------------------------------
+  const fetchActivities = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/activity/calendar', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) setActivities(data.activities);
+    } catch (err) {
+      console.error('Fetch activities error:', err);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && !isAuthenticated) navigate('/login');
   }, [authLoading, isAuthenticated, navigate]);
@@ -279,40 +234,11 @@ export default function WelcomePage() {
     fetchActivities();
   }, []);
 
-  const fetchActivities = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/activity/calendar', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setActivities(data.activities);
-    } catch (err) {
-      console.error('Fetch activities error:', err);
-    }
-  };
-
   useEffect(() => {
     const interval = setInterval(() => setCurrentDateTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // ------------------------------
-  // 5. Early returns
-  // ------------------------------
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !user) return null;
-
-  // ------------------------------
-  // 6. Event handlers
-  // ------------------------------
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
@@ -324,7 +250,6 @@ export default function WelcomePage() {
 
   const handleStartInterview = (data) => {
     console.log('Starting interview:', data);
-    alert(`Starting ${data.difficulty} interview on ${data.topic}`);
     fetchDashboardData();
   };
 
@@ -333,40 +258,29 @@ export default function WelcomePage() {
   const displayName = user.fullName || user.userName;
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
-  // Chỉ 3 card: Completed, Avg Score, Current Streak
   const statsCards = [
-    {
-      icon: Zap,
-      label: t('interviewsCompleted'),
-      value: stats.totalInterviews.toString(),
-      change: stats.change,
-      color: 'text-yellow-500',
-      bg: 'bg-yellow-50 dark:bg-yellow-900/20',
-    },
-    {
-      icon: Award,
-      label: t('averageScore'),
-      value: `${stats.averageScore}%`,
-      change: stats.change,
-      color: getScoreColorClass(stats.averageScore),
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-    },
-    {
-      icon: Flame,
-      label: t('streak'),
-      value: `${stats.streak} ${t('days')}`,
-      change: null,
-      color: 'text-orange-500',
-      bg: 'bg-orange-50 dark:bg-orange-900/20',
-    },
+    { icon: Zap, label: t('totalSessions'), value: stats.totalInterviews, color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20', gradient: 'from-yellow-500/10 to-orange-500/10' },
+    { icon: Flame, label: t('streak'), value: `${stats.streak} ${t('days')}`, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20', gradient: 'from-orange-500/10 to-red-500/10' },
   ];
 
-  // ------------------------------
-  // 7. JSX
-  // ------------------------------
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) return null;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 transition-colors duration-500">
-      {/* Logout overlay */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 transition-colors duration-500">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-10 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-10 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-10 animate-blob animation-delay-4000"></div>
+      </div>
+
       {isLoggingOut && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl text-center animate-fadeIn">
@@ -376,11 +290,10 @@ export default function WelcomePage() {
         </div>
       )}
 
-      {/* Header */}
-      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 dark:border-gray-800/50 sticky top-0 z-40">
+      <header className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-gray-200/30 dark:border-gray-800/30 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/welcome')}>
-            <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full flex items-center justify-center">
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/welcome')}>
+            <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
               <span className="text-white font-bold text-xl">AI</span>
             </div>
             <div>
@@ -391,24 +304,24 @@ export default function WelcomePage() {
 
           <div className="relative" ref={dropdownRef}>
             <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 focus:outline-none group">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-800 group-hover:ring-indigo-300 dark:group-hover:ring-indigo-700 transition-all">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-800 group-hover:ring-indigo-300 transition-all">
                 <span className="text-white font-semibold text-base">{avatarLetter}</span>
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-semibold text-gray-800 dark:text-white">{displayName}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
               </div>
-              <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             {dropdownOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-1.5 z-50 animate-fadeIn overflow-hidden">
-                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-indigo-50/80 to-blue-50/80 dark:from-indigo-900/30 dark:to-blue-900/30 flex items-center gap-3">
+                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-indigo-50/80 to-blue-50/80 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center">
                     <span className="text-white text-sm font-bold">{avatarLetter}</span>
                   </div>
                   <div>
                     <p className="text-sm font-bold text-gray-800 dark:text-white">{displayName}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{user.email}</p>
+                    <p className="text-xs text-gray-500 truncate max-w-[150px]">{user.email}</p>
                   </div>
                 </div>
                 <div className="py-1">
@@ -416,20 +329,15 @@ export default function WelcomePage() {
                     { icon: User, label: t('yourProfile'), path: '/profile' },
                     { icon: Settings, label: t('settings'), path: '/settings' },
                     { icon: HelpCircle, label: t('helpSupport'), path: '/help' },
-                    { icon: FileText, label: 'Interview History', path: '/history' },
+                    { icon: FileText, label: t('interviewHistory'), path: '/history' },
                   ].map((item) => (
-                    <button
-                      key={item.path}
-                      onClick={() => { setDropdownOpen(false); navigate(item.path); }}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors"
-                    >
-                      <item.icon className="w-4 h-4 text-indigo-500" />
-                      {item.label}
+                    <button key={item.path} onClick={() => { setDropdownOpen(false); navigate(item.path); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors">
+                      <item.icon className="w-4 h-4 text-indigo-500" /> {item.label}
                     </button>
                   ))}
                 </div>
                 <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
-                <button onClick={handleLogout} disabled={isLoggingOut} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+                <button onClick={handleLogout} disabled={isLoggingOut} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
                   <LogOut className="w-4 h-4" /> {t('logout')}
                 </button>
               </div>
@@ -438,18 +346,16 @@ export default function WelcomePage() {
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 py-8 animate-fadeIn">
-        {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 mb-8 text-white shadow-2xl">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 py-8 animate-fadeIn">
+        {/* Hero */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 mb-10 text-white shadow-2xl">
           <div className="absolute inset-0 bg-black/10 rounded-3xl"></div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/3"></div>
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-2 drop-shadow-lg">
-                {getGreeting()}, {displayName}!
-                <Sparkles className="w-7 h-7 text-yellow-300 animate-pulse" />
+                {getGreeting()}, {displayName}! <Sparkles className="w-7 h-7 text-yellow-300 animate-pulse" />
               </h2>
               <p className="text-indigo-100 text-base md:text-lg max-w-2xl drop-shadow-md">{t('readyMessage')}</p>
             </div>
@@ -466,140 +372,124 @@ export default function WelcomePage() {
           </div>
         </div>
 
-        {/* Stats Cards - 3 cột */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          {statsCards.map((stat, index) => (
-            <div key={index} className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="flex justify-between items-center mb-3">
-                <div className={`p-3 rounded-xl ${stat.bg}`}>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
+          {statsCards.map((stat, idx) => (
+            <div key={idx} className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200/50 dark:border-gray-700/50 hover:scale-[1.02]">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ background: `linear-gradient(135deg, ${stat.gradient})` }}></div>
+              <div className="flex items-center gap-4 relative z-10">
+                <div className={`p-3 rounded-xl ${stat.bg} group-hover:scale-110 transition-transform duration-300`}>
+                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
                 </div>
-                {stat.change && (
-                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${stat.change.startsWith('+')
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-                      : stat.change.startsWith('-')
-                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                    }`}>
-                    {stat.change}
-                  </span>
-                )}
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">{stat.label}</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                    {statsLoading ? <span className="inline-block w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></span> : stat.value}
+                  </p>
+                </div>
               </div>
-              <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                {statsLoading ? <div className="w-12 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div> : stat.value}
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Two-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column (2/3) */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Recent Activity */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-              <div className="px-6 py-4 border-b dark:border-gray-700 flex justify-between items-center">
-                <h3 className="text-lg font-semibold dark:text-white flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-indigo-500" />
-                  {t('recentActivity')}
+        {/* Enhanced Motivation Card */}
+        <div className="relative rounded-2xl shadow-xl overflow-hidden mb-10 bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 transition-all duration-300 hover:shadow-2xl group">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 group-hover:animate-pulse"></div>
+          <div className="p-6 md:p-7">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl shadow-sm ring-1 ring-amber-200/50 dark:ring-amber-700/30">
+                  <Sparkles className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+                </div>
+                <h3 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                  {t('motivationTitle')}
                 </h3>
-                <button onClick={() => navigate('/history')} className="text-indigo-500 text-sm hover:text-indigo-600 flex items-center gap-1">
-                  {t('viewAll')} <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-              <div>
-                {recentActivities.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">No interviews yet. Start your first one!</div>
-                ) : (
-                  recentActivities.map((activity) => {
-                    const Icon = activity.icon;
-                    return (
-                      <div key={activity.id} className="flex items-center gap-4 p-4 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
-                          <Icon className="w-5 h-5 text-indigo-500" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium dark:text-white">{activity.action}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{activity.date}</p>
-                        </div>
-                        {activity.score !== null && (
-                          <div className={`px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${getScoreBadgeClass(activity.score)}`}>
-                            {activity.score}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
               </div>
             </div>
-
-            {/* Performance Chart */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold dark:text-white mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-indigo-500" />
-                {t('performanceTrend')}
-              </h3>
-              <PerformanceTrendChart />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 backdrop-blur-sm p-5 border border-blue-200/50 dark:border-blue-800/50 shadow-sm hover:shadow-md transition-all duration-200">
+                <div className="absolute -right-6 -top-6 w-16 h-16 bg-blue-200/30 dark:bg-blue-500/10 rounded-full blur-xl"></div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 bg-white/60 dark:bg-gray-800/60 rounded-full shadow-sm">
+                    <Lightbulb className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm uppercase tracking-wide">{t('helpfulTip')}</h4>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300 text-md leading-relaxed relative z-10">{dailyTip.tip}</p>
+              </div>
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-50/80 to-pink-50/80 dark:from-purple-900/20 dark:to-pink-900/20 backdrop-blur-sm p-5 border border-purple-200/50 dark:border-purple-800/50 shadow-sm hover:shadow-md transition-all duration-200">
+                <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-purple-200/30 dark:bg-purple-500/10 rounded-full blur-xl"></div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 bg-white/60 dark:bg-gray-800/60 rounded-full shadow-sm">
+                    <Quote className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm uppercase tracking-wide">{t('inspiringQuote')}</h4>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300 text-md italic leading-relaxed relative z-10">“{dailyTip.quote}”</p>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 text-center border-t border-gray-200/60 dark:border-gray-700/60">
+              <p className="text-xs text-gray-500 dark:text-gray-400 italic flex items-center justify-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-indigo-400" />
+                <span>{t('slogan')}</span>
+                <Sparkles className="w-3 h-3 text-indigo-400" />
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Right Column (1/3) */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+        {/* Two columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-gray-200/50 dark:border-gray-700/50">
               <h3 className="text-lg font-semibold dark:text-white mb-4 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-yellow-500" />
+                <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg"><TrendingUp className="w-5 h-5 text-indigo-500" /></div>
+                {t('performanceTrend')}
+              </h3>
+              {/* Fixed chart container - ensures proper sizing and no overflow */}
+              <div className="w-full">
+  <PerformanceTrendChart />
+</div>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-5 border border-gray-200/50 dark:border-gray-700/50">
+              <h3 className="text-md font-semibold dark:text-white mb-3 flex items-center gap-2">
+                <div className="p-1.5 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg"><Zap className="w-5 h-5 text-yellow-500" /></div>
                 {t('quickActions')}
               </h3>
               <div className="space-y-3">
-                <button onClick={() => setIsModalOpen(true)} className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
-                  <MessageCircle className="w-4 h-4" />
-                  {t('startNewInterview')}
+                <button onClick={() => setIsModalOpen(true)} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
+                  <MessageCircle className="w-4 h-4" /> {t('startNewInterview')}
                 </button>
                 <UploadCV onUploadSuccess={handleCVUploadSuccess} />
-                <button
-                  onClick={() => navigate('/history')}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
-                >
-                  <Brain className="w-4 h-4" />
-                  Interview History
+                <button onClick={() => navigate('/history')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
+                  <Brain className="w-4 h-4" /> {t('interviewHistory')}
                 </button>
               </div>
             </div>
-
-            {/* Activity Calendar */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 border border-gray-200/50 dark:border-gray-700/50">
+              <div className="flex items-center gap-2 mb-3 px-1"><CalendarDays className="w-4 h-4 text-indigo-500" /><h3 className="text-sm font-semibold dark:text-white">Activity Calendar</h3></div>
               <ActivityCalendar sessions={activities} />
             </div>
-
-            {/* AI Feedback */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
               <AIFeedback />
             </div>
           </div>
         </div>
       </main>
 
-      {/* Modal */}
       <StartInterviewModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onStart={handleStartInterview} />
 
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out;
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-        .animate-pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+        @keyframes blob { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-50px) scale(1.1); } 66% { transform: translate(-20px,20px) scale(0.9); } }
+        .animate-blob { animation: blob 7s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
       `}</style>
     </div>
   );

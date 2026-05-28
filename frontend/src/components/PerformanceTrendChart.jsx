@@ -1,333 +1,631 @@
-// PerformanceTrendChart.jsx – Fixed tooltip flicker + clear date/time labels
-import { useState, useEffect, useRef } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+// PerformanceTrendChart.jsx
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Area } from 'recharts';
 import api from '../services/api';
-import { 
-  Loader2, TrendingUp, CalendarDays, Sparkles, BarChart3, Clock, 
-  TrendingDown, Award, Target, AlertCircle, Info, Zap, ChevronLeft, ChevronRight
+import {
+  Loader2, TrendingUp, CalendarDays, Lightbulb, TrendingDown,
+  ChevronLeft, ChevronRight, MessageCircle, FolderOpen, Cpu, BarChart3, Award, Target, AlertCircle
 } from 'lucide-react';
 
-export default function PerformanceTrendChart() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [timeRange, setTimeRange] = useState('30days');
-  const [analysis, setAnalysis] = useState({
-    latestScore: { score: 0, label: '', type: '', timestamp: null, previousScore: null, trend: 0 },
-    avgScore: 0,
-    trendOverall: '+0%',
-    bestScore: { score: 0, label: '', type: '' },
-    worstScore: { score: 100, label: '', type: '' },
-    totalSessions: 0,
-    recommendation: ''
-  });
+// ==================== HELPERS (outside component — stable references) ====================
+
+const getScoreColor = (score, isAdaptive) => {
+  if (isAdaptive) {
+    if (score >= 8) return '#10b981';
+    if (score >= 5) return '#f59e0b';
+    return '#ef4444';
+  }
+  if (score >= 80) return '#10b981';
+  if (score >= 50) return '#f59e0b';
+  return '#ef4444';
+};
+
+const getScoreColorClass = (score, isAdaptive) => {
+  if (isAdaptive) {
+    return score >= 8 ? 'text-emerald-400' : score >= 5 ? 'text-amber-400' : 'text-rose-400';
+  }
+  return score >= 80 ? 'text-emerald-400' : score >= 60 ? 'text-amber-400' : 'text-rose-400';
+};
+
+// ==================== CUSTOM TOOLTIP (outside — never re-created) ====================
+// FIX 1: Move CustomTooltip outside parent so its reference is stable.
+// Recharts re-renders tooltip on every mousemove; if the component reference
+// changes each render it unmounts/remounts → visible flicker.
+const CustomTooltip = memo(({ active, payload }) => {
+  if (active && payload?.length) {
+    const p = payload[0].payload;
+    return (
+      <div
+        className="bg-gray-900 border border-gray-700 p-4 rounded-xl shadow-2xl text-xs max-w-xs z-50"
+        style={{ pointerEvents: 'none' }}
+      >
+        <p className="font-bold text-white mb-1 flex items-center gap-1">
+          <CalendarDays className="w-3 h-3" /> {p.tooltipDate}
+        </p>
+        <p className="text-gray-400 text-[10px]">Time: {p.tooltipTime}</p>
+        <div className="flex items-center gap-2 my-2">
+          <span className="text-gray-400">Score:</span>
+          <span className="font-semibold text-indigo-400 text-base">{p.score}</span>
+        </div>
+        <div className="text-gray-300 text-xs border-t border-gray-700 pt-3">
+          <span className="font-medium text-gray-400">Session:</span>
+          <br />
+          {p.label}
+        </div>
+      </div>
+    );
+  }
+  return null;
+});
+
+// ==================== ANALYSIS (pure data — no JSX, so useMemo works correctly) ====================
+// FIX 2: Return plain data object instead of JSX so useMemo can do a stable
+// reference comparison and avoid re-running on every render.
+const computeAnalysis = (data, type, miniStats) => {
+  if (!data.length || !miniStats) return null;
+
+  const isAdaptive = type === 'adaptive';
+  const unit = isAdaptive ? '/10' : '/100';
+  const { avg, trend, total } = miniStats;
+  const scores = data.map(d => d.score);
+  const maxScore = Math.max(...scores);
+  const minScore = Math.min(...scores);
+
+  let performanceLevel = '';
+  let levelColor = '';
+  let summary = '';
+  let recommendation = '';
+  let percentileHint = '';
+
+  if (isAdaptive) {
+    if (avg >= 8.5) {
+      performanceLevel = 'Outstanding'; levelColor = 'text-emerald-400';
+      summary = 'Your adaptive interview performance is exceptional. You consistently demonstrate deep understanding.';
+      recommendation = 'Challenge yourself with expert-level topics and consider mentoring others.';
+      percentileHint = 'Top 10% of learners';
+    } else if (avg >= 7) {
+      performanceLevel = 'Proficient'; levelColor = 'text-teal-400';
+      summary = 'You have solid grasp of topics. The adaptive system finds your sweet spot.';
+      recommendation = 'Focus on topics where you scored below 7. Review missed questions.';
+      percentileHint = 'Top 30% of learners';
+    } else if (avg >= 5) {
+      performanceLevel = 'Developing'; levelColor = 'text-amber-400';
+      summary = 'You are making progress but have room for improvement.';
+      recommendation = "Practice foundational concepts more. Use the system's hints and explanations.";
+      percentileHint = 'Average range';
+    } else {
+      performanceLevel = 'Needs Attention'; levelColor = 'text-rose-400';
+      summary = "Your scores indicate significant gaps. Don't worry – we'll help you improve.";
+      recommendation = "Start with beginner-level topics. Review each question's explanation thoroughly.";
+      percentileHint = 'Bottom 20% – room to grow';
+    }
+  } else {
+    if (avg >= 85) {
+      performanceLevel = 'Outstanding'; levelColor = 'text-emerald-400';
+      summary = "Excellent command of interview topics. You're well-prepared for real interviews.";
+      recommendation = 'Practice with timed mock interviews and focus on communication clarity.';
+      percentileHint = 'Top 15% of users';
+    } else if (avg >= 70) {
+      performanceLevel = 'Proficient'; levelColor = 'text-teal-400';
+      summary = 'Good understanding with some weak spots. Targeted practice will help.';
+      recommendation = 'Review questions you scored low on. Practice similar topics.';
+      percentileHint = 'Above average';
+    } else if (avg >= 50) {
+      performanceLevel = 'Developing'; levelColor = 'text-amber-400';
+      summary = 'You have basic knowledge but need deeper understanding.';
+      recommendation = 'Focus on core concepts first. Use the learning resources provided.';
+      percentileHint = 'Average range';
+    } else {
+      performanceLevel = 'Needs Attention'; levelColor = 'text-rose-400';
+      summary = "Your scores suggest you're new to these topics. Start from basics.";
+      recommendation = 'Begin with introductory materials. Practice each topic multiple times.';
+      percentileHint = 'Beginner level';
+    }
+  }
+
+  let trendText = '';
+  let trendVariant = 'neutral'; // 'up-fast' | 'up-slow' | 'up-tiny' | 'down-fast' | 'down-slow' | 'neutral'
+  if (trend > 8) {
+    trendText = `Your performance is improving rapidly (+${trend}% over last session). Keep up the momentum!`;
+    trendVariant = 'up-fast';
+  } else if (trend > 3) {
+    trendText = `Steady improvement detected (+${trend}%). Consistent practice is paying off.`;
+    trendVariant = 'up-slow';
+  } else if (trend > 0) {
+    trendText = `Slight improvement (+${trend}%). Small steps matter – continue regular practice.`;
+    trendVariant = 'up-tiny';
+  } else if (trend < -8) {
+    trendText = `Your score dropped significantly (${trend}%). Consider reviewing fundamentals before attempting harder topics.`;
+    trendVariant = 'down-fast';
+  } else if (trend < 0) {
+    trendText = `Mild decline (${trend}%). Identify challenging topics and focus there.`;
+    trendVariant = 'down-slow';
+  } else {
+    trendText = 'Your performance is stable. To advance, try increasing difficulty or new topics.';
+    trendVariant = 'neutral';
+  }
+
+  const range = maxScore - minScore;
+  let consistencyText = '';
+  if (range < (isAdaptive ? 1.5 : 15)) {
+    consistencyText = '⭐ Very consistent performer – you deliver reliable results.';
+  } else if (range < (isAdaptive ? 3 : 30)) {
+    consistencyText = '📊 Moderately consistent – some variation based on topic difficulty.';
+  } else {
+    consistencyText = '🎢 High variation – your performance depends heavily on topic familiarity.';
+  }
+
+  const bestSession = data.reduce((best, curr) => curr.score > best.score ? curr : best, data[0]);
+  const worstSession = data.reduce((worst, curr) => curr.score < worst.score ? curr : worst, data[0]);
+
+  let insightMessage = '';
+  if (total >= 5) {
+    const recentAvg = scores.slice(-3).reduce((a, b) => a + b, 0) / Math.min(3, scores.length);
+    if (recentAvg > avg + (isAdaptive ? 0.5 : 5)) {
+      insightMessage = '🔝 Your recent sessions show improvement over your historical average. Great trend!';
+    } else if (recentAvg < avg - (isAdaptive ? 0.5 : 5)) {
+      insightMessage = '⚠️ Recent scores are below your average. Maybe try easier topics or review mistakes.';
+    } else {
+      insightMessage = '📈 Your performance is stable. Try increasing difficulty to challenge yourself.';
+    }
+  } else {
+    insightMessage = '📚 Keep practicing – more sessions will give you better insights.';
+  }
+
+  return {
+    unit, performanceLevel, levelColor, summary, recommendation, percentileHint,
+    trendText, trendVariant, consistencyText, insightMessage,
+    bestSession, worstSession, total,
+  };
+};
+
+// ==================== ANALYSIS DISPLAY (reads plain data, renders JSX) ====================
+const AnalysisPanel = memo(({ analysisData }) => {
+  if (!analysisData) return null;
+
+  const {
+    unit, performanceLevel, levelColor, summary, recommendation, percentileHint,
+    trendText, trendVariant, consistencyText, insightMessage,
+    bestSession, worstSession, total,
+  } = analysisData;
+
+  const trendIcon = (() => {
+    if (trendVariant === 'up-fast') return <TrendingUp className="w-4 h-4 text-emerald-400" />;
+    if (trendVariant === 'up-slow') return <TrendingUp className="w-4 h-4 text-teal-400" />;
+    if (trendVariant === 'up-tiny') return <TrendingUp className="w-4 h-4 text-blue-400" />;
+    if (trendVariant === 'down-fast') return <TrendingDown className="w-4 h-4 text-rose-400" />;
+    if (trendVariant === 'down-slow') return <TrendingDown className="w-4 h-4 text-amber-400" />;
+    return null;
+  })();
+
+  return (
+    <div className="space-y-5 text-sm leading-relaxed text-gray-300">
+      <div className="flex items-start gap-2">
+        <Award className="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+        <div>
+          <span className="font-semibold text-white">Performance Summary:</span> {summary}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-900/50 rounded-xl p-4">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-white">Level:</span>
+            <span className={`font-bold ${levelColor}`}>{performanceLevel}</span>
+          </div>
+          <div className="mt-2 text-xs text-gray-400">{percentileHint}</div>
+        </div>
+        <div>
+          <div className="flex items-center gap-1.5">
+            {trendIcon}
+            <span>{trendText}</span>
+          </div>
+          <div className="mt-2 text-xs text-gray-400">
+            Based on {total} session{total !== 1 ? 's' : ''}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-4 justify-between border-t border-gray-700 pt-3 text-xs">
+        <div>
+          <span className="text-gray-400">Best session:</span>{' '}
+          <span className="text-white font-medium">{bestSession.score}{unit}</span>
+          <br />
+          <span className="text-gray-500">{bestSession.label.substring(0, 40)}</span>
+        </div>
+        <div>
+          <span className="text-gray-400">Lowest session:</span>{' '}
+          <span className="text-white font-medium">{worstSession.score}{unit}</span>
+          <br />
+          <span className="text-gray-500">{worstSession.label.substring(0, 40)}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-amber-300 text-xs">
+        <Target className="w-4 h-4" />
+        <span>{consistencyText}</span>
+      </div>
+
+      <div className="bg-indigo-950/70 border border-indigo-800 p-4 rounded-xl">
+        <div className="flex items-center gap-2 font-medium mb-2 text-indigo-300">
+          <Lightbulb className="w-5 h-5" />
+          Personalized Recommendation
+        </div>
+        <p className="text-indigo-100 text-sm">{recommendation}</p>
+        {insightMessage && (
+          <div className="mt-3 pt-2 border-t border-indigo-800/50 text-xs text-indigo-200 flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" /> {insightMessage}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+// ==================== SCROLL BUTTONS ====================
+const ScrollButtons = memo(({ scroll }) => (
+  <>
+    <button
+      onClick={() => scroll('left')}
+      className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-gray-800 border border-gray-600 rounded-full p-1.5 hover:bg-gray-700"
+    >
+      <ChevronLeft className="w-5 h-5 text-gray-300" />
+    </button>
+    <button
+      onClick={() => scroll('right')}
+      className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-gray-800 border border-gray-600 rounded-full p-1.5 hover:bg-gray-700"
+    >
+      <ChevronRight className="w-5 h-5 text-gray-300" />
+    </button>
+  </>
+));
+
+// ==================== CHART CARD ====================
+const ChartCard = memo(({ title, icon, color, data, type }) => {
   const scrollContainerRef = useRef(null);
+  const [showScrollButtons, setShowScrollButtons] = useState(false);
+  const isAdaptive = type === 'adaptive';
+  const scoreSuffix = isAdaptive ? '/10' : '/100';
+
+  // FIX 2a: miniStats only recomputes when data array reference changes
+  const miniStats = useMemo(() => {
+    if (!data.length) return null;
+    const scores = data.map(d => d.score);
+    const latest = scores[scores.length - 1];
+    const avg = parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1));
+    let trend = 0;
+    if (scores.length >= 2) {
+      const prev = scores[scores.length - 2];
+      if (prev > 0) trend = parseFloat(((latest - prev) / prev * 100).toFixed(1));
+    }
+    return { latest, avg, trend, total: data.length };
+  }, [data]);
+
+  // FIX 2b: analysis is plain data (no JSX) → useMemo reference stays stable between renders
+  const analysisData = useMemo(() => computeAnalysis(data, type, miniStats), [data, type, miniStats]);
 
   useEffect(() => {
-    fetchHistoryAndBuildChart();
-  }, [filter, timeRange]);
+    if (scrollContainerRef.current) {
+      const saved = sessionStorage.getItem(`scroll-${type}`);
+      if (saved) scrollContainerRef.current.scrollLeft = parseInt(saved, 10);
+    }
+  }, [data, type]);
 
-  const parseUTCDate = (utcString) => {
-    const d = new Date(utcString);
-    return isNaN(d.getTime()) ? null : d;
+  const handleScroll = useCallback(() => {
+    if (scrollContainerRef.current) {
+      sessionStorage.setItem(`scroll-${type}`, scrollContainerRef.current.scrollLeft);
+    }
+  }, [type]);
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const checkScroll = () => setShowScrollButtons(el.scrollWidth > el.clientWidth);
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    el.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('resize', checkScroll);
+      el.removeEventListener('scroll', handleScroll);
+    };
+  }, [data, handleScroll]);
+
+  const scroll = useCallback((direction) => {
+    if (scrollContainerRef.current) {
+      const amount = direction === 'left' ? -350 : 350;
+      scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  }, []);
+
+  const legendItems = useMemo(() => isAdaptive ? [
+    { color: '#10b981', label: '≥8.0 (Excellent)' },
+    { color: '#f59e0b', label: '5.0–7.9 (Good)' },
+    { color: '#ef4444', label: '<5.0 (Needs improvement)' },
+  ] : [
+    { color: '#10b981', label: '≥80 (Excellent)' },
+    { color: '#f59e0b', label: '50–79 (Good)' },
+    { color: '#ef4444', label: '<50 (Needs improvement)' },
+  ], [isAdaptive]);
+
+  if (!data.length) {
+    return (
+      <div className="bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`p-2 rounded-xl bg-${color}-900/30`}>{icon}</div>
+          <h3 className="text-xl font-bold text-white">{title}</h3>
+        </div>
+        <div className="h-64 flex flex-col items-center justify-center text-gray-500">
+          <BarChart3 className="w-12 h-12 mb-3" />
+          <p>No data available in this period</p>
+        </div>
+      </div>
+    );
+  }
+
+  const chartWidth = Math.max(400, data.length * 70);
+  const yDomain = isAdaptive ? [0, 10] : [0, 100];
+  // FIX 3: shared XAxis / tooltip props to avoid inline-object recreation
+  const xAxisProps = {
+    dataKey: 'date',
+    tick: { fontSize: data.length > 10 ? 9 : 10, fill: '#e5e7eb' },
+    tickLine: false,
+    axisLine: { stroke: '#4b5563' },
+    interval: 0,
+    angle: data.length > 8 ? -25 : 0,
+    textAnchor: data.length > 8 ? 'end' : 'middle',
+  };
+  const tooltipProps = {
+    content: <CustomTooltip />,
+    // FIX 1b: keep wrapper style as a constant (not a new object each render)
+    wrapperStyle: TOOLTIP_WRAPPER_STYLE,
   };
 
-  const fetchHistoryAndBuildChart = async () => {
-    setLoading(true);
-    try {
-      const [normalRes, cvRes] = await Promise.all([
-        api.get('/interview/history').catch(() => ({ data: { success: false, history: [] } })),
-        api.get('/cv/history').catch(() => ({ data: { success: false, history: [] } }))
-      ]);
+  const renderChart = () => {
+    if (type === 'standard') {
+      return (
+        <div className="relative">
+          {showScrollButtons && <ScrollButtons scroll={scroll} />}
+          <div ref={scrollContainerRef} className="overflow-x-auto pb-2 custom-scrollbar" onScroll={handleScroll}>
+            <div style={{ width: chartWidth, height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 45 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} vertical={false} />
+                  <XAxis {...xAxisProps} />
+                  <YAxis domain={yDomain} tick={{ fontSize: 10, fill: '#e5e7eb' }} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipProps} />
+                  <Line type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} dot={{ fill: '#6366f1', r: 4, strokeWidth: 0 }} activeDot={{ r: 10, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }} isAnimationActive={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-      let combined = [];
+    if (type === 'cv') {
+      return (
+        <div className="relative">
+          {showScrollButtons && <ScrollButtons scroll={scroll} />}
+          <div ref={scrollContainerRef} className="overflow-x-auto pb-2 custom-scrollbar" onScroll={handleScroll}>
+            <div style={{ width: chartWidth, height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 45 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} vertical={false} />
+                  <XAxis {...xAxisProps} />
+                  <YAxis domain={yDomain} tick={{ fontSize: 10, fill: '#e5e7eb' }} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipProps} />
+                  <Bar dataKey="score" radius={[6, 6, 0, 0]} isAnimationActive={false}>
+                    {data.map((entry, idx) => (
+                      <Cell key={idx} fill={getScoreColor(entry.score, false)} fillOpacity={0.8} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-      if (filter === 'all' || filter === 'interview') {
-        const normalList = normalRes.data?.success ? normalRes.data.history : [];
-        normalList.forEach(item => {
-          let topicStr = '';
-          if (Array.isArray(item.topic)) topicStr = item.topic.join(' • ');
-          else if (typeof item.topic === 'string') topicStr = item.topic;
-          else topicStr = 'Interview';
-          
-          const timestamp = parseUTCDate(item.createdAt);
-          if (!timestamp) return;
-          
-          combined.push({
-            timestamp,
-            score: item.totalScore,
-            type: 'standard',
-            label: `${topicStr} (${item.difficulty || 'N/A'})`,
-            rawDate: item.createdAt
+    // Adaptive
+    return (
+      <div className="relative">
+        {showScrollButtons && <ScrollButtons scroll={scroll} />}
+        <div ref={scrollContainerRef} className="overflow-x-auto pb-2 custom-scrollbar" onScroll={handleScroll}>
+          <div style={{ width: chartWidth, height: 300 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 45 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} vertical={false} />
+                <XAxis {...xAxisProps} />
+                <YAxis domain={yDomain} tick={{ fontSize: 10, fill: '#e5e7eb' }} tickLine={false} axisLine={false} />
+                <Tooltip {...tooltipProps} />
+                <defs>
+                  <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="score" stroke="none" fill="url(#scoreGradient)" isAnimationActive={false} />
+                <Line type="monotone" dataKey="score" stroke="#10b981" strokeWidth={2.5} dot={{ fill: '#10b981', r: 5, strokeWidth: 0 }} activeDot={{ r: 10, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700 overflow-hidden">
+      <div className="p-5 border-b border-gray-700">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl bg-${color}-900/30`}>{icon}</div>
+            <h3 className="text-xl font-bold text-white">{title}</h3>
+          </div>
+          {miniStats && (
+            <div className="flex gap-5 text-sm text-gray-300">
+              <div>Latest: <span className={`font-bold ${getScoreColorClass(miniStats.latest, isAdaptive)}`}>{miniStats.latest}{scoreSuffix}</span></div>
+              <div>Avg: <span className={`font-bold ${getScoreColorClass(miniStats.avg, isAdaptive)}`}>{miniStats.avg}{scoreSuffix}</span></div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="p-5">
+        {renderChart()}
+
+        <div className="flex justify-center gap-5 mt-6 text-xs border-t border-gray-700 pt-4 text-gray-400">
+          {legendItems.map((item, idx) => (
+            <div key={idx} className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {analysisData && (
+          <div className="mt-6 bg-gray-900/70 border border-gray-700 rounded-xl p-5">
+            <div className="flex items-center gap-2 text-indigo-400 font-medium mb-3">
+              <Lightbulb className="w-5 h-5" />
+              Insights &amp; Analysis
+            </div>
+            <AnalysisPanel analysisData={analysisData} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+// Constant outside any component — never recreated
+const TOOLTIP_WRAPPER_STYLE = { pointerEvents: 'none' };
+
+// ==================== MAIN COMPONENT ====================
+export default function PerformanceTrendChart() {
+  const [dataSets, setDataSets] = useState({ standard: [], cv: [], adaptive: [] });
+  const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState('30days');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAllHistories = async () => {
+      setLoading(true);
+      try {
+        const [normalRes, cvRes, adaptiveRes] = await Promise.all([
+          api.get('/interview/history').catch(() => ({ data: { success: false, history: [] } })),
+          api.get('/cv/history').catch(() => ({ data: { success: false, history: [] } })),
+          api.get('/adaptive/history').catch(() => ({ data: { success: false, history: [] } })),
+        ]);
+
+        if (!isMounted) return;
+
+        const standardRaw = normalRes.data?.success ? normalRes.data.history : [];
+        const cvRaw = cvRes.data?.success ? cvRes.data.history : [];
+        const adaptiveRaw = adaptiveRes.data?.success ? adaptiveRes.data.history : [];
+
+        const processSessions = (sessions, type) => {
+          const items = [];
+          sessions.forEach(session => {
+            let label = 'Unknown Session';
+
+            if (type === 'standard') {
+              label = Array.isArray(session.topic) ? session.topic.join(' • ') : (session.topic || 'Standard Interview');
+              if (session.difficulty) label += ` (${session.difficulty})`;
+            } else if (type === 'cv') {
+              const cvName = session.cvName || 'CV Interview';
+              let topicText = '';
+              if (session.topic) topicText = Array.isArray(session.topic) ? session.topic.join(' • ') : session.topic;
+              else if (session.topics) topicText = Array.isArray(session.topics) ? session.topics.join(' • ') : session.topics;
+              else if (session.cvTopic) topicText = session.cvTopic;
+              else if (session.position) topicText = session.position;
+              else if (session.cvData && typeof session.cvData === 'object') topicText = session.cvData.topic || '';
+              label = topicText ? `${cvName} - ${topicText}` : cvName;
+            } else {
+              let topicPart = session.topic || 'Adaptive Interview';
+              if (Array.isArray(topicPart)) topicPart = topicPart.join(' • ');
+              const difficultyPart = session.difficulty ? ` (${session.difficulty})` : '';
+              label = topicPart + difficultyPart;
+            }
+
+            const timestamp = new Date(session.createdAt || session.startedAt);
+            if (isNaN(timestamp.getTime())) return;
+
+            let score = 0;
+            if (type === 'adaptive') {
+              score = session.finalScore ?? (session.totalScore ? session.totalScore / 10 : 0);
+              score = Math.round(score * 10) / 10;
+            } else {
+              score = session.totalScore ?? 0;
+            }
+
+            items.push({ timestamp, score, type, label, id: session._id || session.id });
           });
-        });
-      }
-
-      if (filter === 'all' || filter === 'cv') {
-        const cvList = cvRes.data?.success ? cvRes.data.history : [];
-        cvList.forEach(item => {
-          let skillStr = '';
-          if (Array.isArray(item.topic)) skillStr = item.topic.join(' • ');
-          else if (typeof item.topic === 'string') skillStr = item.topic;
-          
-          const displayLabel = item.cvName
-            ? `${item.cvName}${skillStr ? ` (${skillStr})` : ''}`
-            : (skillStr || 'CV Interview');
-          
-          const timestamp = parseUTCDate(item.createdAt);
-          if (!timestamp) return;
-          
-          combined.push({
-            timestamp,
-            score: item.totalScore,
-            type: 'cv',
-            label: displayLabel,
-            rawDate: item.createdAt
-          });
-        });
-      }
-
-      const now = new Date();
-      let cutoffTime = null;
-      if (timeRange === '7days') {
-        cutoffTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      } else if (timeRange === '30days') {
-        cutoffTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      }
-      
-      let filtered = combined;
-      if (cutoffTime) {
-        filtered = filtered.filter(d => d.timestamp >= cutoffTime);
-      }
-
-      filtered.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-
-      const chartData = filtered.map((item, idx) => {
-        const date = item.timestamp;
-        let displayDate;
-        // If same day as previous -> show time, else show date
-        if (idx > 0 && date.toDateString() === filtered[idx-1].timestamp.toDateString()) {
-          displayDate = `🕐 ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-        } else {
-          let dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          if (date.getFullYear() !== now.getFullYear()) {
-            dateStr += `, ${date.getFullYear()}`;
-          }
-          displayDate = `📅 ${dateStr}`;
-        }
-        return {
-          date: displayDate,
-          fullTimestamp: item.timestamp,
-          score: item.score,
-          type: item.type,
-          label: item.label,
-          rawDate: item.rawDate,
-          tooltipDate: date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }),
-          tooltipTime: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          return items;
         };
-      });
 
-      setData(chartData);
-      computeAnalysis(filtered);
-    } catch (err) {
-      console.error('Failed to fetch chart data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const now = new Date();
+        let cutoffTime = null;
+        if (timeRange === '7days') cutoffTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        else if (timeRange === '30days') cutoffTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const computeAnalysis = (sessions) => {
-    if (!sessions.length) {
-      setAnalysis({
-        latestScore: { score: 0, label: '', type: '', timestamp: null, previousScore: null, trend: 0 },
-        avgScore: 0,
-        trendOverall: '+0%',
-        bestScore: { score: 0, label: '', type: '' },
-        worstScore: { score: 100, label: '', type: '' },
-        totalSessions: 0,
-        recommendation: 'Start your first interview to see insights!'
-      });
-      return;
-    }
+        const filterAndSort = (sessions) => {
+          let s = cutoffTime ? sessions.filter(x => x.timestamp >= cutoffTime) : sessions;
+          return s.sort((a, b) => a.timestamp - b.timestamp);
+        };
 
-    const sorted = [...sessions].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-    const latest = sorted[sorted.length - 1];
-    const previous = sorted.length > 1 ? sorted[sorted.length - 2] : null;
-    
-    let trendValue = 0;
-    if (previous && previous.score > 0) {
-      trendValue = Math.round(((latest.score - previous.score) / previous.score) * 100);
-    } else if (previous && previous.score === 0) {
-      trendValue = latest.score > 0 ? 100 : 0;
-    }
-    
-    const scores = sorted.map(s => s.score);
-    const avg = Math.round(scores.reduce((a,b) => a+b,0) / scores.length);
-    const best = Math.max(...scores);
-    const worst = Math.min(...scores);
-    const bestSession = sorted.find(s => s.score === best);
-    const worstSession = sorted.find(s => s.score === worst);
+        const buildChartData = (sessions) =>
+          sessions.map((item, idx, arr) => {
+            const date = item.timestamp;
+            const displayDate = idx > 0 && date.toDateString() === arr[idx - 1].timestamp.toDateString()
+              ? `🕐 ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              : `📅 ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}${date.getFullYear() !== now.getFullYear() ? `, ${date.getFullYear()}` : ''}`;
 
-    const mid = Math.floor(sorted.length / 2);
-    const recentHalf = sorted.slice(0, mid);
-    const olderHalf = sorted.slice(mid);
-    const recentAvg = recentHalf.length ? recentHalf.reduce((a,b) => a+b.score,0)/recentHalf.length : avg;
-    const olderAvg = olderHalf.length ? olderHalf.reduce((a,b) => a+b.score,0)/olderHalf.length : avg;
-    const overallTrendValue = olderAvg === 0 ? (recentAvg > 0 ? 100 : 0) : Math.round(((recentAvg - olderAvg) / olderAvg) * 100);
-    const overallTrend = overallTrendValue >= 0 ? `+${overallTrendValue}%` : `${overallTrendValue}%`;
+            return {
+              date: displayDate,
+              fullTimestamp: item.timestamp,
+              score: item.score,
+              label: item.label,
+              tooltipDate: date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }),
+              tooltipTime: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+          });
 
-    let recommendation = '';
-    const latestScore = latest.score;
-    if (latestScore < 50) {
-      recommendation = '🔴 Your latest score is low. Focus on fundamentals and practice more. Try reviewing the questions you got wrong.';
-    } else if (latestScore < 70) {
-      recommendation = '🟡 Your latest score shows potential. Keep practicing and target your weak topics.';
-    } else if (latestScore < 85) {
-      recommendation = '🟢 Great job! Maintain this momentum by challenging yourself with harder difficulty levels.';
-    } else {
-      recommendation = '🌟 Excellent! You\'re mastering interviews. Consider sharing your strategies with the community.';
-    }
+        setDataSets({
+          standard: buildChartData(filterAndSort(processSessions(standardRaw, 'standard'))),
+          cv: buildChartData(filterAndSort(processSessions(cvRaw, 'cv'))),
+          adaptive: buildChartData(filterAndSort(processSessions(adaptiveRaw, 'adaptive'))),
+        });
+      } catch (err) {
+        console.error('Failed to fetch chart data:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
 
-    if (trendValue < -10) {
-      recommendation += ' ⚠️ Your score dropped significantly compared to previous attempt. Take time to review mistakes.';
-    } else if (trendValue > 10) {
-      recommendation += ' 🚀 Impressive improvement! Keep up the good work.';
-    }
-
-    if (latest.type === 'cv' && latestScore < 60) {
-      recommendation += ' Your CV-based score is low – improve your CV content and practice describing experiences clearly.';
-    } else if (latest.type === 'standard' && latestScore < 60) {
-      const topic = latest.label.split('(')[0].trim();
-      recommendation += ` Focus on "${topic}" to boost your score.`;
-    }
-
-    setAnalysis({
-      latestScore: {
-        score: latestScore,
-        label: latest.label,
-        type: latest.type,
-        timestamp: latest.timestamp,
-        previousScore: previous?.score || null,
-        trend: trendValue
-      },
-      avgScore: avg,
-      trendOverall: overallTrend,
-      bestScore: { score: best, label: bestSession?.label || 'N/A', type: bestSession?.type || '' },
-      worstScore: { score: worst, label: worstSession?.label || 'N/A', type: worstSession?.type || '' },
-      totalSessions: sessions.length,
-      recommendation
-    });
-  };
-
-  const chartMinWidth = Math.max(600, data.length * 70);
-  const scrollLeft = () => scrollContainerRef.current?.scrollBy({ left: -350, behavior: 'smooth' });
-  const scrollRight = () => scrollContainerRef.current?.scrollBy({ left: 350, behavior: 'smooth' });
+    fetchAllHistories();
+    return () => { isMounted = false; };
+  }, [timeRange]); // only re-fetch when time range changes
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-80">
+      <div className="flex items-center justify-center h-96">
         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
       </div>
     );
   }
 
-  if (data.length === 0) {
-    return (
-      <div className="text-center text-gray-500 dark:text-gray-400 h-80 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 rounded-xl">
-        <BarChart3 className="w-12 h-12 mb-2 opacity-40" />
-        <p className="text-sm font-medium">No performance data yet.</p>
-        <p className="text-xs mt-1">Start an interview to see your trend!</p>
-      </div>
-    );
-  }
-
-  // Custom Tooltip – no animation to prevent flickering
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const p = payload[0].payload;
-      return (
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md p-4 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 text-xs max-w-xs z-50">
-          <p className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-1">
-            <CalendarDays className="w-3 h-3" /> {p.tooltipDate}
-          </p>
-          <p className="text-gray-500 dark:text-gray-400 text-[10px] mb-2">Time: {p.tooltipTime}</p>
-          <div className="flex items-center gap-2 mb-2 mt-1">
-            <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-            <span className="text-gray-600 dark:text-gray-300">Score:</span>
-            <span className="font-semibold text-indigo-600 dark:text-indigo-400 text-base">{p.score}<span className="text-xs">/100</span></span>
-          </div>
-          <div className="text-gray-500 dark:text-gray-400 text-xs border-t border-gray-100 dark:border-gray-700 pt-2 mt-1">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 mr-1">
-              {p.type === 'cv' ? '📄 CV based' : '🎤 Standard'}
-            </span>
-            <p className="mt-2 break-words whitespace-pre-wrap text-gray-700 dark:text-gray-300 text-[11px] leading-relaxed">{p.label}</p>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Custom legend for dot colors
-  const renderLegend = () => {
-    return (
-      <div className="flex justify-center gap-4 mt-2 text-xs">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-          <span className="text-gray-600 dark:text-gray-300">≥80 (Excellent)</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-          <span className="text-gray-600 dark:text-gray-300">50-79 (Good)</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-rose-500"></div>
-          <span className="text-gray-600 dark:text-gray-300">&lt;50 (Needs improvement)</span>
-        </div>
-      </div>
-    );
-  };
-
-  const getScoreColorClass = (score) => {
-    if (score >= 80) return 'text-emerald-600 dark:text-emerald-400';
-    if (score >= 60) return 'text-amber-600 dark:text-amber-400';
-    return 'text-rose-600 dark:text-rose-400';
-  };
-
-  const getTrendIcon = (trend) => {
-    if (trend > 0) return <TrendingUp className="w-4 h-4 text-emerald-500" />;
-    if (trend < 0) return <TrendingDown className="w-4 h-4 text-rose-500" />;
-    return <span className="w-4 h-4 text-gray-400">→</span>;
-  };
-
   return (
     <div className="w-full">
-      {/* Filters */}
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-3">
-        <div className="flex gap-2 bg-gray-100/60 dark:bg-gray-800/60 p-1 rounded-full backdrop-blur-sm">
-          {['all', 'interview', 'cv'].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${
-                filter === f
-                  ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-md scale-105'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              {f === 'all' ? 'All' : f === 'interview' ? 'Topic' : 'CV'}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-1 bg-gray-100/60 dark:bg-gray-800/60 p-1 rounded-full backdrop-blur-sm">
+      <div className="flex justify-end mb-6">
+        <div className="flex gap-1 bg-gray-800 p-1 rounded-full">
           {['7days', '30days', 'all'].map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`px-3 py-1.5 text-xs rounded-full transition-all duration-200 ${
-                timeRange === range
-                  ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm font-semibold ring-1 ring-indigo-200 dark:ring-indigo-800'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              className={`px-4 py-1.5 text-xs rounded-full transition-all ${
+                timeRange === range ? 'bg-gray-700 text-white shadow' : 'text-gray-400 hover:bg-gray-700'
               }`}
             >
               {range === '7days' ? '7 days' : range === '30days' ? '30 days' : 'All time'}
@@ -336,246 +634,17 @@ export default function PerformanceTrendChart() {
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="relative">
-        {data.length > 7 && (
-          <>
-            <button
-              onClick={scrollLeft}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 dark:bg-gray-800/80 rounded-full p-1.5 shadow-md hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-all backdrop-blur-sm"
-              aria-label="Scroll left"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-            </button>
-            <button
-              onClick={scrollRight}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 dark:bg-gray-800/80 rounded-full p-1.5 shadow-md hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-all backdrop-blur-sm"
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-            </button>
-          </>
-        )}
-        <div
-          ref={scrollContainerRef}
-          className="overflow-x-auto overflow-y-hidden pb-2 custom-scrollbar"
-          style={{ scrollbarWidth: 'thin' }}
-        >
-          <div style={{ width: chartMinWidth, height: 360 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.2} vertical={false} />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ 
-                    fontSize: data.length > 12 ? 9 : (data.length > 8 ? 10 : 11), 
-                    fill: '#374151',
-                    angle: data.length > 8 ? -25 : 0,
-                    textAnchor: data.length > 8 ? 'end' : 'middle'
-                  }}
-                  tickLine={false}
-                  axisLine={{ stroke: '#9ca3af', opacity: 0.4 }}
-                  dy={8}
-                  interval={0}
-                  height={55}
-                />
-                <YAxis 
-                  domain={[0, 100]} 
-                  tick={{ fontSize: 11, fill: '#374151' }}
-                  tickLine={false}
-                  axisLine={{ stroke: '#9ca3af', opacity: 0.4 }}
-                  label={{ value: 'Score', angle: -90, position: 'insideLeft', style: { fill: '#4b5563', fontSize: 11, fontWeight: 500 } }}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#818cf8', strokeWidth: 1.5, strokeDasharray: '4 4' }} />
-                <Legend content={renderLegend} verticalAlign="top" height={36} />
-                <Line 
-                  type="monotone" 
-                  dataKey="score" 
-                  stroke="#4f46e5" 
-                  strokeWidth={2.5} 
-                  dot={(props) => {
-                    const { cx, cy, payload } = props;
-                    const score = payload.score;
-                    let fillColor = '#f59e0b';
-                    if (score >= 80) fillColor = '#10b981';
-                    else if (score < 50) fillColor = '#ef4444';
-                    return (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={6}
-                        fill={fillColor}
-                        stroke="#ffffff"
-                        strokeWidth={2.5}
-                        style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))', cursor: 'pointer' }}
-                      />
-                    );
-                  }}
-                  activeDot={{ r: 8, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }}
-                  name="score"
-                  animationDuration={0} // Disable animation to prevent flickering
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        {data.length > 7 && (
-          <div className="text-center text-xs text-gray-400 mt-2 flex justify-center items-center gap-1">
-            <span>← Scroll to see more →</span>
-          </div>
-        )}
-      </div>
-
-      {/* Performance Analysis (unchanged, keep as is) */}
-      <div className="mt-8 border-t border-gray-200 dark:border-gray-800 pt-6">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-indigo-500" />
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white">Performance Analysis</h3>
-          <div className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-            Based on {analysis.totalSessions} session(s)
-          </div>
-        </div>
-
-        {/* Latest + Average */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/60 dark:to-indigo-900/30 rounded-2xl p-5 border border-indigo-200 dark:border-indigo-800/50 shadow-md">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-indigo-500" />
-                <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Latest Score</span>
-              </div>
-              {analysis.latestScore.trend !== 0 && (
-                <div className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${analysis.latestScore.trend > 0 ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700' : 'bg-rose-100 dark:bg-rose-900/50 text-rose-700'}`}>
-                  {getTrendIcon(analysis.latestScore.trend)}
-                  <span>{analysis.latestScore.trend > 0 ? '+' : ''}{analysis.latestScore.trend}% vs previous</span>
-                </div>
-              )}
-            </div>
-            <div className={`text-4xl font-bold ${getScoreColorClass(analysis.latestScore.score)}`}>
-              {analysis.latestScore.score}<span className="text-lg font-normal text-gray-500 dark:text-gray-400">/100</span>
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-300 mt-2 break-words">
-              {analysis.latestScore.label}
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
-                {analysis.latestScore.type === 'cv' ? '📄 CV based' : '🎤 Topic based'}
-              </span>
-              {analysis.latestScore.previousScore !== null && (
-                <span className="text-[10px] text-gray-400">Previous: {analysis.latestScore.previousScore}/100</span>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/30 rounded-2xl p-5 border border-gray-200 dark:border-gray-700/50 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-amber-500" />
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Average Score</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs">
-                {getTrendIcon(parseInt(analysis.trendOverall))}
-                <span className={analysis.trendOverall.startsWith('+') && analysis.trendOverall !== '+0%' ? 'text-emerald-600' : analysis.trendOverall.startsWith('-') ? 'text-rose-600' : 'text-gray-500'}>
-                  {analysis.trendOverall}
-                </span>
-              </div>
-            </div>
-            <div className={`text-4xl font-bold ${getScoreColorClass(analysis.avgScore)}`}>
-              {analysis.avgScore}<span className="text-lg font-normal text-gray-500 dark:text-gray-400">/100</span>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">overall trend (recent vs older)</p>
-          </div>
-        </div>
-
-        {/* Best, Worst, Total */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800/50">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Best</span>
-              <Target className="w-4 h-4 text-emerald-500" />
-            </div>
-            <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1">
-              {analysis.bestScore.score}<span className="text-sm font-normal">/100</span>
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 break-words line-clamp-2" title={analysis.bestScore.label}>
-              {analysis.bestScore.label}
-            </div>
-            <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
-              {analysis.bestScore.type === 'cv' ? 'CV' : 'Topic'}
-            </span>
-          </div>
-
-          <div className="bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/40 dark:to-rose-900/20 rounded-xl p-4 border border-rose-200 dark:border-rose-800/50">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase tracking-wide">Lowest</span>
-              <AlertCircle className="w-4 h-4 text-rose-500" />
-            </div>
-            <div className="text-2xl font-bold text-rose-700 dark:text-rose-400 mt-1">
-              {analysis.worstScore.score}<span className="text-sm font-normal">/100</span>
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 break-words line-clamp-2" title={analysis.worstScore.label}>
-              {analysis.worstScore.label}
-            </div>
-            <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300">
-              {analysis.worstScore.type === 'cv' ? 'CV' : 'Topic'}
-            </span>
-          </div>
-
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-800/20 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Sessions</span>
-              <Clock className="w-4 h-4 text-gray-500" />
-            </div>
-            <div className="text-3xl font-bold text-gray-800 dark:text-white mt-1">
-              {analysis.totalSessions}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">in selected period</p>
-          </div>
-        </div>
-
-        {/* Recommendation */}
-        <div className="bg-gradient-to-r from-indigo-50/80 via-purple-50/80 to-pink-50/80 dark:from-indigo-950/30 dark:via-purple-950/30 dark:to-pink-950/30 rounded-xl p-4 border border-indigo-200 dark:border-indigo-800/50">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-white/50 dark:bg-gray-800/50 rounded-full shrink-0">
-              <Info className="w-5 h-5 text-indigo-500" />
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-gray-800 dark:text-white mb-1">Personalized Recommendation</h4>
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{analysis.recommendation}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="text-xs text-center text-gray-400 dark:text-gray-500 mt-5 flex items-center justify-center gap-2 border-t border-gray-100 dark:border-gray-800 pt-3">
-        <Sparkles className="w-3 h-3 text-indigo-400" />
-        <span>{data.length} session(s) displayed on chart</span>
-        <Clock className="w-3 h-3 text-gray-400" />
+      <div className="flex flex-col space-y-8">
+        <ChartCard title="Standard (Topic-based)" icon={<MessageCircle className="w-5 h-5 text-indigo-400" />} color="indigo" data={dataSets.standard} type="standard" />
+        <ChartCard title="CV-based (Resume-focused)" icon={<FolderOpen className="w-5 h-5 text-purple-400" />} color="purple" data={dataSets.cv} type="cv" />
+        <ChartCard title="Adaptive (Smart Difficulty)" icon={<Cpu className="w-5 h-5 text-emerald-400" />} color="emerald" data={dataSets.adaptive} type="adaptive" />
       </div>
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
       `}</style>
     </div>
   );

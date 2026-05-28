@@ -4,8 +4,7 @@ const activitySchema =
   new mongoose.Schema({
 
     userId: {
-      type:
-        mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
 
       ref: 'User',
 
@@ -19,7 +18,8 @@ const activitySchema =
         'upload_cv',
         'interview',
         'submit_answer',
-        'cv_interview'
+        'cv_interview',
+        'adaptive_interview' // thêm mới
       ],
 
       required: true

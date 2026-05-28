@@ -9,6 +9,7 @@ const groqService = new GroqService(
 );
 
 const TOTAL_QUESTIONS = 8;
+const SESSION_TIMEOUT_HOURS = 24; // [FIX 4] abandoned session timeout
 
 // ========== ĐỘ KHÓ ==========
 const DIFFICULTY_RULES = {
@@ -48,6 +49,17 @@ const DIFFICULTY_RULES = {
     scoreNote: `Hard: Penalize surface-level or purely definitional answers. Require the specific depth the question asks for.`
   }
 };
+
+// [FIX 7] Adaptive difficulty step-up/down dựa theo score gần nhất
+const DIFFICULTY_ORDER = ['easy', 'medium', 'hard'];
+
+function getAdaptiveDifficulty(baseDifficulty, lastScore) {
+  if (lastScore === null || lastScore === undefined) return baseDifficulty;
+  const idx = DIFFICULTY_ORDER.indexOf(baseDifficulty);
+  if (lastScore <= 4 && idx > 0) return DIFFICULTY_ORDER[idx - 1]; // hỏi dễ hơn
+  if (lastScore >= 8 && idx < DIFFICULTY_ORDER.length - 1) return DIFFICULTY_ORDER[idx + 1]; // hỏi sâu hơn
+  return baseDifficulty;
+}
 
 // ========== ROADMAP ==========
 const TOPIC_ROADMAPS = {
@@ -120,31 +132,30 @@ const EXPECTED_CONCEPTS = {
 // ========== FALLBACK QUESTIONS theo difficulty ==========
 const QUESTION_BANK = {
   easy: {
-    conceptual:    (sub, topic) => `What is "${sub}" and what problem does it solve in ${topic}?`,
-    comparison:    (sub, topic) => `What is the basic difference between "${sub}" and a simpler alternative in ${topic}?`,
-    scenario:      (sub, topic) => `Give a simple real-world example of when you would use "${sub}" in a ${topic} project.`,
+    conceptual: (sub, topic) => `What is "${sub}" and what problem does it solve in ${topic}?`,
+    comparison: (sub, topic) => `What is the basic difference between "${sub}" and a simpler alternative in ${topic}?`,
+    scenario: (sub, topic) => `Give a simple real-world example of when you would use "${sub}" in a ${topic} project.`,
   },
   medium: {
-    conceptual:    (sub, topic) => `How does "${sub}" work in ${topic}? Explain with a practical example.`,
-    comparison:    (sub, topic) => `What are the key differences between "${sub}" and its alternatives in ${topic}? When would you choose one over the other?`,
-    scenario:      (sub, topic) => `Describe a scenario where "${sub}" would be the right choice in a ${topic} project and explain why.`,
-    debugging:     (sub, topic) => `What common bugs do developers hit with "${sub}" in ${topic}? Walk through how you'd debug one.`,
+    conceptual: (sub, topic) => `How does "${sub}" work in ${topic}? Explain with a practical example.`,
+    comparison: (sub, topic) => `What are the key differences between "${sub}" and its alternatives in ${topic}? When would you choose one over the other?`,
+    scenario: (sub, topic) => `Describe a scenario where "${sub}" would be the right choice in a ${topic} project and explain why.`,
+    debugging: (sub, topic) => `What common bugs do developers hit with "${sub}" in ${topic}? Walk through how you'd debug one.`,
     best_practice: (sub, topic) => `What best practices should you follow when working with "${sub}" in ${topic}?`,
   },
   hard: {
-    conceptual:    (sub, topic) => `Explain how "${sub}" works internally in ${topic}. What are the performance implications?`,
-    comparison:    (sub, topic) => `What are the architectural tradeoffs of "${sub}" vs its alternatives in ${topic} at scale?`,
-    scenario:      (sub, topic) => `Describe an edge case or production issue caused by "${sub}" in ${topic} and how you resolved it.`,
-    debugging:     (sub, topic) => `What subtle bugs or performance issues can "${sub}" cause in ${topic}? Walk through your debugging approach.`,
+    conceptual: (sub, topic) => `Explain how "${sub}" works internally in ${topic}. What are the performance implications?`,
+    comparison: (sub, topic) => `What are the architectural tradeoffs of "${sub}" vs its alternatives in ${topic} at scale?`,
+    scenario: (sub, topic) => `Describe an edge case or production issue caused by "${sub}" in ${topic} and how you resolved it.`,
+    debugging: (sub, topic) => `What subtle bugs or performance issues can "${sub}" cause in ${topic}? Walk through your debugging approach.`,
     best_practice: (sub, topic) => `What advanced patterns and anti-patterns exist around "${sub}" in ${topic}? When should you avoid it entirely?`,
   }
 };
 
-// Easy hỏi simple types, Hard mở rộng tất cả
 const QUESTION_TYPES_BY_DIFFICULTY = {
-  easy:   ['conceptual', 'comparison', 'scenario'],
+  easy: ['conceptual', 'comparison', 'scenario'],
   medium: ['conceptual', 'comparison', 'scenario', 'debugging', 'best_practice'],
-  hard:   ['conceptual', 'comparison', 'scenario', 'debugging', 'best_practice']
+  hard: ['conceptual', 'comparison', 'scenario', 'debugging', 'best_practice']
 };
 
 // ========== SUBTOPICS CÓ THỂ CẦN CODE ==========
@@ -170,16 +181,11 @@ function getRoadmapForTopic(topic) {
   return { structured: roadmapObj, flattened: flattened.slice(0, TOTAL_QUESTIONS) };
 }
 
-// FIX 1: Chọn subtopic đầu tiên ngẫu nhiên trong phase đầu thay vì luôn lấy index 0
 function pickFirstSubtopic(roadmapObj) {
   const phases = Object.values(roadmapObj);
   if (!phases.length) return null;
-
-  // Lấy phase đầu (fundamentals), random trong đó
   const firstPhase = phases[0];
   if (!firstPhase || !firstPhase.length) return null;
-
-  // Random trong 3 subtopic đầu để không bao giờ cứng là cái đầu tiên
   const pool = firstPhase.slice(0, Math.min(3, firstPhase.length));
   return pool[Math.floor(Math.random() * pool.length)];
 }
@@ -250,6 +256,13 @@ function needsCodeExample(subtopic, questionType) {
     || CODE_SUBTOPICS.some(s => subLower.includes(s));
 }
 
+// [FIX 4] Kiểm tra session có bị timeout không
+function isSessionTimedOut(session) {
+  if (!session.updatedAt) return false;
+  const hoursInactive = (new Date() - new Date(session.updatedAt)) / (1000 * 60 * 60);
+  return hoursInactive > SESSION_TIMEOUT_HOURS;
+}
+
 // ========== JSON REPAIR ==========
 function repairAndParseJSON(raw) {
   if (!raw || typeof raw !== 'string') throw new Error('Empty response');
@@ -257,7 +270,7 @@ function repairAndParseJSON(raw) {
   const start = text.indexOf('{');
   if (start === -1) throw new Error('No JSON object found');
   text = text.slice(start);
-  try { return JSON.parse(text); } catch (_) {}
+  try { return JSON.parse(text); } catch (_) { }
 
   let depth = 0, inString = false, escape = false;
   for (let i = 0; i < text.length; i++) {
@@ -286,7 +299,7 @@ function repairAndParseJSON(raw) {
       if (ch === '[') stack.push(']');
       if (ch === '}' || ch === ']') stack.pop();
     }
-    try { return JSON.parse(truncated + stack.reverse().join('')); } catch (_) {}
+    try { return JSON.parse(truncated + stack.reverse().join('')); } catch (_) { }
   }
   throw new Error('Cannot repair JSON');
 }
@@ -392,18 +405,15 @@ Rules: feedback must mention exact missing concepts. Short/vague answers max 3-5
 }
 
 // ========== PHASE 2: Sinh idealAnswer ==========
-// FIX 2: Prompt súc tích hơn, giới hạn rõ "đủ ý, không dài dòng"
-// Output: { explanation, codeExample|null, codeLanguage|null }
 async function generateIdealAnswer(subtopic, question, topic, difficulty, questionType = 'conceptual') {
   const diffConfig = DIFFICULTY_RULES[difficulty] || DIFFICULTY_RULES.medium;
   const withCode = needsCodeExample(subtopic, questionType);
 
-  // Hướng dẫn focus theo loại câu hỏi — không ấn định số từ/câu
   const focusMap = {
-    conceptual:    `what it is + why it exists + one concrete example`,
-    comparison:    `key difference(s) + when to use each + one tradeoff`,
-    scenario:      `the problem + how this concept solves it + one pitfall`,
-    debugging:     `the bug + root cause + how to fix/prevent`,
+    conceptual: `what it is + why it exists + one concrete example`,
+    comparison: `key difference(s) + when to use each + one tradeoff`,
+    scenario: `the problem + how this concept solves it + one pitfall`,
+    debugging: `the bug + root cause + how to fix/prevent`,
     best_practice: `the rule + why it matters + what breaks if ignored`
   };
   const focus = focusMap[questionType] || focusMap.conceptual;
@@ -446,11 +456,10 @@ Return ONLY this JSON (no markdown, no backticks):
     console.warn(`[generateIdealAnswer] Failed for "${subtopic}": ${err.message}`);
   }
 
-  // Fallback
   const fallbacks = {
-    easy:   `A correct definition of "${subtopic}" with one simple example is sufficient.`,
+    easy: `A correct definition of "${subtopic}" with one simple example is sufficient.`,
     medium: `A good answer explains how "${subtopic}" works, gives a practical example, and mentions one common mistake.`,
-    hard:   `A strong answer covers internals, tradeoffs, and at least one edge case for "${subtopic}" in ${topic}.`
+    hard: `A strong answer covers internals, tradeoffs, and at least one edge case for "${subtopic}" in ${topic}.`
   };
   return { explanation: fallbacks[difficulty] || fallbacks.medium, codeExample: null, codeLanguage: null };
 }
@@ -649,31 +658,43 @@ Ask ONE opening question about "${safeSub}" in ${topic}.
 }
 
 // ========== SINH CÂU HỎI TIẾP THEO ==========
-async function generateNextQuestion(session) {
+async function generateNextQuestion(session, lastScore = null) {
   const roadmapFlat = session.roadmapFlattened;
-  const difficulty = session.difficulty || 'medium';
-  const diffConfig = DIFFICULTY_RULES[difficulty] || DIFFICULTY_RULES.medium;
-  const questionType = getNextQuestionType(difficulty, session.questionTypeHistory || []);
+  const baseDifficulty = session.difficulty || 'medium';
+
+  // [FIX 7] Tính adaptive difficulty dựa vào score câu vừa trả lời
+  const adaptiveDifficulty = getAdaptiveDifficulty(baseDifficulty, lastScore);
+  const diffConfig = DIFFICULTY_RULES[adaptiveDifficulty] || DIFFICULTY_RULES.medium;
+
+  const questionType = getNextQuestionType(adaptiveDifficulty, session.questionTypeHistory || []);
   const recentAsked = (session.askedQuestions || []).slice(-3).join('\n');
 
   let targetSubtopic = session.currentSubtopic;
+
+  // [FIX 5] Random trong remaining thay vì luôn lấy [0]
   const remaining = roadmapFlat.filter(r => !(session.coveredTopics || []).includes(r));
   if (remaining.length > 0) {
-    targetSubtopic = remaining[0];
+    targetSubtopic = remaining[Math.floor(Math.random() * remaining.length)];
     session.currentSubtopic = targetSubtopic;
     session.coveredTopics.push(targetSubtopic);
   } else {
     const resetRemaining = roadmapFlat.filter(r => r !== session.currentSubtopic);
-    targetSubtopic = resetRemaining[0] || roadmapFlat[0];
+    const pool = resetRemaining.length > 0 ? resetRemaining : roadmapFlat;
+    targetSubtopic = pool[Math.floor(Math.random() * pool.length)];
     session.currentSubtopic = targetSubtopic;
     session.coveredTopics = [targetSubtopic];
   }
 
   const safeSub = targetSubtopic || session.topic;
 
+  // [FIX 7] Thông báo difficulty trong prompt nếu bị điều chỉnh adaptive
+  const adaptiveNote = adaptiveDifficulty !== baseDifficulty
+    ? `\nNOTE: Difficulty adjusted to "${adaptiveDifficulty}" based on candidate's last answer performance.`
+    : '';
+
   const prompt = `You are a senior technical interviewer.
 
-${diffConfig.description}
+${diffConfig.description}${adaptiveNote}
 
 Ask ONE ${questionType} question about "${safeSub}" in ${session.topic}.
 - 1-2 sentences max (under 40 words)
@@ -684,13 +705,13 @@ ${recentAsked || '(none)'}`;
   const response = await groqService.invokeWithRetry([{ role: 'user', content: prompt }]);
   let question = (response || '').trim();
   if (!isValidAiQuestion(question) || isQuestionTooSimilar(question, session.askedQuestions)) {
-    question = getFallbackQuestion(safeSub, questionType, session.topic, difficulty);
+    question = getFallbackQuestion(safeSub, questionType, session.topic, adaptiveDifficulty);
   }
 
   session.questionTypeHistory = [...(session.questionTypeHistory || []), questionType];
   session.askedQuestions = [...(session.askedQuestions || []), normalizeQuestion(question)];
 
-  return { question, subtopic: safeSub, questionType };
+  return { question, subtopic: safeSub, questionType, adaptiveDifficulty };
 }
 
 // ========== BẮT ĐẦU PHIÊN PHỎNG VẤN ==========
@@ -698,12 +719,7 @@ async function startSession(userId, topic, difficulty = 'medium', interviewStyle
   if (!topic || !topic.trim()) throw new Error('Topic is required.');
 
   const { structured, flattened } = getRoadmapForTopic(topic);
-
-  // FIX 1 APPLIED: random trong 3 subtopic đầu thay vì luôn lấy index 0
   const firstSubtopic = pickFirstSubtopic(structured) || flattened[0] || topic;
-
-  // coveredTopics bắt đầu với firstSubtopic đã chọn
-  // Đảm bảo flattened vẫn đủ subtopics cho các câu tiếp theo
   const remainingFlattened = flattened.includes(firstSubtopic)
     ? flattened : [firstSubtopic, ...flattened].slice(0, TOTAL_QUESTIONS);
 
@@ -722,6 +738,9 @@ async function startSession(userId, topic, difficulty = 'medium', interviewStyle
       content: firstQuestion,
       subtopic: firstSubtopic,
       questionType: 'conceptual',
+      // [FIX 6] Thêm metadata vào question message
+      difficulty,
+      topic: topic.trim(),
       createdAt: new Date()
     }],
     coveredTopics: [firstSubtopic],
@@ -737,15 +756,32 @@ async function startSession(userId, topic, difficulty = 'medium', interviewStyle
   return {
     sessionId: session._id,
     firstQuestion,
-    progress: { current: 1, total: TOTAL_QUESTIONS }
+    // [FIX 1] Thêm completionPercentage ngay từ đầu
+    progress: {
+      current: 1,
+      total: TOTAL_QUESTIONS,
+      percentage: Math.round((1 / TOTAL_QUESTIONS) * 100)
+    }
   };
 }
 
 // ========== XỬ LÝ CÂU TRẢ LỜI ==========
 async function processAnswer(sessionId, userId, answer) {
+  // [FIX 3] Chặn spam answer rỗng
+  if (!answer || !answer.trim()) {
+    throw new Error('Answer is required');
+  }
+
   const session = await AdaptiveSession.findOne({ _id: sessionId, userId });
   if (!session) throw new Error('Session not found');
   if (session.status !== 'active') throw new Error('Interview already completed');
+
+  // [FIX 4] Kiểm tra session timeout
+  if (isSessionTimedOut(session)) {
+    session.status = 'abandoned';
+    await session.save();
+    throw new Error('Session expired due to inactivity. Please start a new interview.');
+  }
 
   if (!Array.isArray(session.askedQuestions)) session.askedQuestions = [];
   if (!Array.isArray(session.questionTypeHistory)) session.questionTypeHistory = [];
@@ -758,8 +794,9 @@ async function processAnswer(sessionId, userId, answer) {
   if (!session.currentSubtopic) session.currentSubtopic = session.roadmapFlattened[0] || session.topic;
 
   session.conversation.push({
-    role: 'user', type: 'answer',
-    content: answer || '',
+    role: 'user',
+    type: 'answer',
+    content: answer.trim(),
     createdAt: new Date()
   });
 
@@ -769,6 +806,14 @@ async function processAnswer(sessionId, userId, answer) {
   if (answersGiven >= TOTAL_QUESTIONS) {
     session.status = 'completed';
     session.endedAt = new Date();
+
+    // [FIX 2] Lưu duration khi completed
+    if (session.startedAt) {
+      session.durationInSeconds = Math.floor(
+        (session.endedAt - new Date(session.startedAt)) / 1000
+      );
+    }
+
     const { report, finalScore } = await generateFinalReport(session);
     session.finalScore = finalScore;
     await session.save();
@@ -777,6 +822,8 @@ async function processAnswer(sessionId, userId, answer) {
       isFinished: true,
       sessionId: session._id,
       finalScore: session.finalScore,
+      // [FIX 2] Expose duration trong response
+      durationInSeconds: session.durationInSeconds || null,
       summary: session.summary,
       conversation: session.conversation.map(msg => ({
         role: msg.role, type: msg.type, content: msg.content,
@@ -788,13 +835,24 @@ async function processAnswer(sessionId, userId, answer) {
     };
   }
 
-  const { question: nextQuestion, subtopic: nextSubtopic, questionType } = await generateNextQuestion(session);
+  // [FIX 7] Lấy score của câu trả lời vừa rồi (nếu có) để điều chỉnh adaptive difficulty
+  // Score của câu vừa trả lời chưa có (chấm sau), dùng score của câu trước đó nếu có
+  const lastScoredAnswer = [...session.conversation]
+    .reverse()
+    .find(m => m.role === 'user' && m.type === 'answer' && typeof m.score === 'number');
+  const lastScore = lastScoredAnswer ? lastScoredAnswer.score : null;
+
+  const { question: nextQuestion, subtopic: nextSubtopic, questionType, adaptiveDifficulty } = await generateNextQuestion(session, lastScore);
 
   session.conversation.push({
-    role: 'assistant', type: 'question',
+    role: 'assistant',
+    type: 'question',
     content: nextQuestion,
     subtopic: nextSubtopic,
     questionType,
+    // [FIX 6] Metadata đầy đủ trên mỗi question message
+    difficulty: adaptiveDifficulty,
+    topic: session.topic,
     createdAt: new Date()
   });
   await session.save();
@@ -804,7 +862,14 @@ async function processAnswer(sessionId, userId, answer) {
     sessionId: session._id,
     nextQuestion,
     currentSubtopic: nextSubtopic,
-    progress: { current: questionsAsked + 1, total: TOTAL_QUESTIONS }
+    // [FIX 7] Expose adaptive difficulty cho frontend biết
+    adaptiveDifficulty,
+    // [FIX 1] completionPercentage đầy đủ
+    progress: {
+      current: questionsAsked + 1,
+      total: TOTAL_QUESTIONS,
+      percentage: Math.round(((questionsAsked + 1) / TOTAL_QUESTIONS) * 100)
+    }
   };
 }
 
