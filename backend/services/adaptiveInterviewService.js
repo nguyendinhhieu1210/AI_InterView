@@ -8,12 +8,10 @@ const groqService = new GroqService(
   0.1
 );
 
-// ========== CẤU HÌNH ==========
 const TOTAL_QUESTIONS = 8;
+const SESSION_TIMEOUT_HOURS = 24; // [FIX 4] abandoned session timeout
 
-// ========== QUY TẮC ĐỘ KHÓ ==========
-// Difficulty chỉ kiểm soát ĐỘ SÂU KỸ THUẬT của câu hỏi và tiêu chí chấm điểm.
-// Độ dài ideal answer do AI tự quyết theo nội dung câu hỏi cụ thể — không cứng theo level.
+// ========== ĐỘ KHÓ ==========
 const DIFFICULTY_RULES = {
   easy: {
     description: `DIFFICULTY: Easy (Beginner level)
@@ -22,13 +20,9 @@ const DIFFICULTY_RULES = {
 - NO performance analysis, NO architectural tradeoffs, NO edge cases
 - Target: someone who just started learning the topic`,
 
-    // Độ sâu kỹ thuật yêu cầu trong ideal answer — KHÔNG phải giới hạn độ dài
-    answerDepth: `DEPTH REQUIRED (Easy):
-- A correct definition + one clear, concrete example is sufficient
-- No need for internals or tradeoffs
-- Write only as much as the question actually needs — don't pad`,
+    answerDepth: `DEPTH: Easy — definition + one simple example is enough. No internals, no tradeoffs.`,
 
-    scoreNote: `Easy difficulty: Accept correct definitions and basic examples. Do NOT penalize for missing depth or brevity — a short accurate answer is better than a long vague one.`
+    scoreNote: `Easy: Accept correct definitions + basic examples. Do NOT penalize brevity — a short accurate answer beats a long vague one.`
   },
 
   medium: {
@@ -38,13 +32,9 @@ const DIFFICULTY_RULES = {
 - May involve one common pitfall or trade-off
 - Target: developer with 1-2 years experience`,
 
-    answerDepth: `DEPTH REQUIRED (Medium):
-- Cover the "how" and "why", not just the "what"
-- Include at least one practical example or real scenario
-- Mention one common mistake or trade-off if the question calls for it
-- Length should match the complexity of the question — don't over-explain simple parts`,
+    answerDepth: `DEPTH: Medium — explain how/why + one practical example + one common mistake if relevant. Don't over-explain simple parts.`,
 
-    scoreNote: `Medium difficulty: Expect understanding of how/why, not just definitions. Penalize answers that only define without explaining usage. A concise answer that covers the key points scores higher than a long vague one.`
+    scoreNote: `Medium: Expect how/why understanding, not just definitions. Penalize answers that only define without explaining usage.`
   },
 
   hard: {
@@ -54,15 +44,22 @@ const DIFFICULTY_RULES = {
 - Questions should expose gaps in deep understanding
 - Target: developer with 3+ years experience`,
 
-    answerDepth: `DEPTH REQUIRED (Hard):
-- Must address the specific angle the question is asking (internals / tradeoffs / edge case)
-- Include technical specifics — not just buzzwords
-- Cover implications (performance, correctness, maintainability) where relevant
-- Length must match the scope of the question: a narrow internals question may need 3 focused sentences; a broad architecture question may need more`,
+    answerDepth: `DEPTH: Hard — address the specific angle asked (internals / tradeoffs / edge case). Include technical specifics, not buzzwords. A short precise answer can score well if it directly hits the point.`,
 
-    scoreNote: `Hard difficulty: Penalize surface-level or purely definitional answers. Require the specific depth the question asks for — internals, tradeoffs, or edge cases. A short but technically precise answer can still score well if it directly addresses the question.`
+    scoreNote: `Hard: Penalize surface-level or purely definitional answers. Require the specific depth the question asks for.`
   }
 };
+
+// [FIX 7] Adaptive difficulty step-up/down dựa theo score gần nhất
+const DIFFICULTY_ORDER = ['easy', 'medium', 'hard'];
+
+function getAdaptiveDifficulty(baseDifficulty, lastScore) {
+  if (lastScore === null || lastScore === undefined) return baseDifficulty;
+  const idx = DIFFICULTY_ORDER.indexOf(baseDifficulty);
+  if (lastScore <= 4 && idx > 0) return DIFFICULTY_ORDER[idx - 1]; // hỏi dễ hơn
+  if (lastScore >= 8 && idx < DIFFICULTY_ORDER.length - 1) return DIFFICULTY_ORDER[idx + 1]; // hỏi sâu hơn
+  return baseDifficulty;
+}
 
 // ========== ROADMAP ==========
 const TOPIC_ROADMAPS = {
@@ -132,19 +129,18 @@ const EXPECTED_CONCEPTS = {
   'bst': ['left smaller', 'right larger', 'search', 'insert', 'balance'],
 };
 
-// ========== FALLBACK QUESTION BANK theo difficulty ==========
-// FIX 2: Fallback cũng phân biệt theo difficulty
+// ========== FALLBACK QUESTIONS theo difficulty ==========
 const QUESTION_BANK = {
   easy: {
     conceptual: (sub, topic) => `What is "${sub}" and what problem does it solve in ${topic}?`,
-    comparison: (sub, topic) => `What is the difference between "${sub}" and a basic alternative in ${topic}?`,
-    scenario: (sub, topic) => `Can you give a simple example of when you would use "${sub}" in a ${topic} project?`,
+    comparison: (sub, topic) => `What is the basic difference between "${sub}" and a simpler alternative in ${topic}?`,
+    scenario: (sub, topic) => `Give a simple real-world example of when you would use "${sub}" in a ${topic} project.`,
   },
   medium: {
     conceptual: (sub, topic) => `How does "${sub}" work in ${topic}? Explain with a practical example.`,
     comparison: (sub, topic) => `What are the key differences between "${sub}" and its alternatives in ${topic}? When would you choose one over the other?`,
     scenario: (sub, topic) => `Describe a scenario where "${sub}" would be the right choice in a ${topic} project and explain why.`,
-    debugging: (sub, topic) => `What common bugs do developers encounter with "${sub}"? How would you debug one?`,
+    debugging: (sub, topic) => `What common bugs do developers hit with "${sub}" in ${topic}? Walk through how you'd debug one.`,
     best_practice: (sub, topic) => `What best practices should you follow when working with "${sub}" in ${topic}?`,
   },
   hard: {
@@ -156,13 +152,21 @@ const QUESTION_BANK = {
   }
 };
 
-// ========== QUESTION TYPE theo difficulty ==========
-// FIX 3: Easy chỉ dùng conceptual/comparison đơn giản, Hard mở rộng tất cả
 const QUESTION_TYPES_BY_DIFFICULTY = {
   easy: ['conceptual', 'comparison', 'scenario'],
   medium: ['conceptual', 'comparison', 'scenario', 'debugging', 'best_practice'],
   hard: ['conceptual', 'comparison', 'scenario', 'debugging', 'best_practice']
 };
+
+// ========== SUBTOPICS CÓ THỂ CẦN CODE ==========
+const CODE_SUBTOPICS = [
+  'usestate', 'useeffect', 'usememo', 'usecallback', 'useref', 'custom hooks',
+  'closures', 'promises', 'async/await', 'event loop', 'this binding', 'prototypes',
+  'map/filter/reduce', 'destructuring', 'spread/rest', 'arrow functions', 'currying',
+  'middleware', 'jwt', 'streams', 'sorting', 'bst', 'binary trees',
+  'generics', 'lambda & streams', 'asyncio', 'generators'
+];
+const CODE_QUESTION_TYPES = ['scenario', 'debugging', 'best_practice'];
 
 // ========== UTILITIES ==========
 function getRoadmapForTopic(topic) {
@@ -175,6 +179,15 @@ function getRoadmapForTopic(topic) {
   const flattened = [];
   for (const phase of Object.values(roadmapObj)) flattened.push(...phase);
   return { structured: roadmapObj, flattened: flattened.slice(0, TOTAL_QUESTIONS) };
+}
+
+function pickFirstSubtopic(roadmapObj) {
+  const phases = Object.values(roadmapObj);
+  if (!phases.length) return null;
+  const firstPhase = phases[0];
+  if (!firstPhase || !firstPhase.length) return null;
+  const pool = firstPhase.slice(0, Math.min(3, firstPhase.length));
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function normalizeQuestion(text) {
@@ -237,47 +250,45 @@ function analyzeAnswerQuality(answer = '') {
   };
 }
 
+function needsCodeExample(subtopic, questionType) {
+  const subLower = (subtopic || '').toLowerCase();
+  return CODE_QUESTION_TYPES.includes(questionType)
+    || CODE_SUBTOPICS.some(s => subLower.includes(s));
+}
+
+// [FIX 4] Kiểm tra session có bị timeout không
+function isSessionTimedOut(session) {
+  if (!session.updatedAt) return false;
+  const hoursInactive = (new Date() - new Date(session.updatedAt)) / (1000 * 60 * 60);
+  return hoursInactive > SESSION_TIMEOUT_HOURS;
+}
+
 // ========== JSON REPAIR ==========
 function repairAndParseJSON(raw) {
   if (!raw || typeof raw !== 'string') throw new Error('Empty response');
-
   let text = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
-
   const start = text.indexOf('{');
   if (start === -1) throw new Error('No JSON object found');
   text = text.slice(start);
+  try { return JSON.parse(text); } catch (_) { }
 
-  try {
-    return JSON.parse(text);
-  } catch (_) {}
-
-  let depth = 0;
-  let inString = false;
-  let escape = false;
-
+  let depth = 0, inString = false, escape = false;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (escape) { escape = false; continue; }
     if (ch === '\\' && inString) { escape = true; continue; }
     if (ch === '"') { inString = !inString; continue; }
     if (inString) continue;
-    if (ch === '{' || ch === '[') { depth++; }
-    if (ch === '}' || ch === ']') { depth--; }
+    if (ch === '{' || ch === '[') depth++;
+    if (ch === '}' || ch === ']') depth--;
   }
 
   if (depth > 0) {
     let truncated = text;
-    const lastCommaOrBrace = Math.max(
-      truncated.lastIndexOf(',"'),
-      truncated.lastIndexOf('}'),
-      truncated.lastIndexOf(']')
-    );
-    if (lastCommaOrBrace > 0) {
-      truncated = truncated.slice(0, lastCommaOrBrace + 1);
-    }
+    const last = Math.max(truncated.lastIndexOf(',"'), truncated.lastIndexOf('}'), truncated.lastIndexOf(']'));
+    if (last > 0) truncated = truncated.slice(0, last + 1);
     const stack = [];
-    let inS = false;
-    let esc = false;
+    let inS = false, esc = false;
     for (let i = 0; i < truncated.length; i++) {
       const ch = truncated[i];
       if (esc) { esc = false; continue; }
@@ -288,12 +299,8 @@ function repairAndParseJSON(raw) {
       if (ch === '[') stack.push(']');
       if (ch === '}' || ch === ']') stack.pop();
     }
-    const repaired = truncated + stack.reverse().join('');
-    try {
-      return JSON.parse(repaired);
-    } catch (_) {}
+    try { return JSON.parse(truncated + stack.reverse().join('')); } catch (_) { }
   }
-
   throw new Error('Cannot repair JSON');
 }
 
@@ -312,9 +319,7 @@ function validateDetailedReport(report) {
 // ========== SYSTEM PROMPT ==========
 function buildSystemPrompt(difficulty) {
   const diffConfig = DIFFICULTY_RULES[difficulty] || DIFFICULTY_RULES.medium;
-
   return `You are a senior software engineer conducting technical interviews.
-
 Evaluate candidate answers fairly but rigorously. Return ONLY valid JSON — no markdown, no backticks, no text outside JSON.
 
 SCORING GUIDE:
@@ -332,7 +337,7 @@ IMPORTANT:
 - Prefer technical accuracy over politeness`;
 }
 
-// ========== PHASE 1: Chấm điểm từng câu ==========
+// ========== PHASE 1: Chấm điểm theo batch ==========
 async function scoreQAPairs(qaPairs, topic, difficulty) {
   const systemPrompt = buildSystemPrompt(difficulty);
   const BATCH_SIZE = 4;
@@ -340,7 +345,6 @@ async function scoreQAPairs(qaPairs, topic, difficulty) {
 
   for (let i = 0; i < qaPairs.length; i += BATCH_SIZE) {
     const batch = qaPairs.slice(i, i + BATCH_SIZE);
-
     const qaText = batch.map(qa => {
       const qualityNote = qa.answerQuality.tooShort ? ' [Very short answer]'
         : qa.answerQuality.medium ? ' [Brief answer]' : '';
@@ -353,7 +357,7 @@ async function scoreQAPairs(qaPairs, topic, difficulty) {
 
 ${qaText}
 
-For each question return a JSON array (${batch.length} items):
+Return a JSON array (${batch.length} items):
 [
   {
     "questionNumber": <number>,
@@ -364,11 +368,7 @@ For each question return a JSON array (${batch.length} items):
     "feedback": "2-3 sentences: what was good, what was missing, why score given"
   }
 ]
-
-Rules:
-- feedback must be specific (mention exact missing concepts)
-- Short/vague answers should score 3-5 max
-- Return ONLY the JSON array, no other text`;
+Rules: feedback must mention exact missing concepts. Short/vague answers max 3-5. Return ONLY the JSON array.`;
 
     let batchResult = null;
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -377,7 +377,6 @@ Rules:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ]);
-
         const text = response.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
         const arrStart = text.indexOf('[');
         const arrEnd = text.lastIndexOf(']');
@@ -395,84 +394,56 @@ Rules:
       for (const qa of batch) {
         allScored.push({
           questionNumber: qa.questionNumber,
-          score: 3,
-          verdict: 'Poor',
-          correctConcepts: [],
-          missingConcepts: qa.ruleMissingConcepts || [],
+          score: 3, verdict: 'Poor',
+          correctConcepts: [], missingConcepts: qa.ruleMissingConcepts || [],
           feedback: 'Could not evaluate automatically. Please review manually.'
         });
       }
     }
   }
-
   return allScored;
 }
 
-// ========== PHASE 2: Sinh idealAnswer theo câu hỏi cụ thể ==========
-// Output là JSON gồm 2 phần: explanation (văn xuôi ngắn) + codeExample (optional)
-// Độ dài do AI tự quyết theo nội dung câu hỏi — không ấn định số từ cứng
+// ========== PHASE 2: Sinh idealAnswer ==========
 async function generateIdealAnswer(subtopic, question, topic, difficulty, questionType = 'conceptual') {
   const diffConfig = DIFFICULTY_RULES[difficulty] || DIFFICULTY_RULES.medium;
+  const withCode = needsCodeExample(subtopic, questionType);
 
-  // Gợi ý điểm cần cover theo loại câu hỏi
-  const answerFocus = {
-    conceptual:    `what it is + why it exists + one concrete example`,
-    comparison:    `the key difference(s) + when to choose each + one tradeoff`,
-    scenario:      `the problem context + how this concept solves it + one pitfall`,
-    debugging:     `the common bug + root cause + how to fix/prevent it`,
-    best_practice: `the core rule + why it matters + what goes wrong if ignored`
+  const focusMap = {
+    conceptual: `what it is + why it exists + one concrete example`,
+    comparison: `key difference(s) + when to use each + one tradeoff`,
+    scenario: `the problem + how this concept solves it + one pitfall`,
+    debugging: `the bug + root cause + how to fix/prevent`,
+    best_practice: `the rule + why it matters + what breaks if ignored`
   };
+  const focus = focusMap[questionType] || focusMap.conceptual;
 
-  const focus = answerFocus[questionType] || answerFocus.conceptual;
-
-  // Quyết định có cần code example không dựa trên loại câu hỏi và subtopic
-  const codeRequiringTypes = ['scenario', 'debugging', 'best_practice'];
-  const codeRequiringSubtopics = [
-    'usestate', 'useeffect', 'usememo', 'usecallback', 'useref',
-    'closures', 'promises', 'async/await', 'event loop',
-    'map/filter/reduce', 'destructuring', 'spread/rest',
-    'middleware', 'jwt', 'streams', 'sorting', 'bst'
-  ];
-  const subtopicLower = (subtopic || '').toLowerCase();
-  const needsCode = codeRequiringTypes.includes(questionType)
-    || codeRequiringSubtopics.some(s => subtopicLower.includes(s));
-
-  const codeInstruction = needsCode
-    ? `"codeExample": "A short, focused code snippet (max 8-10 lines) in the most relevant language. ONLY include if it directly clarifies the explanation. If not needed, return null."`
+  const codeField = withCode
+    ? `"codeExample": "<short focused snippet max 8 lines, or null if not needed>"`
     : `"codeExample": null`;
 
-  const prompt = `You are a senior ${topic} developer writing a model interview answer.
+  const prompt = `You are a senior ${topic} developer. Write a concise model answer for this interview question.
 
 Question: "${question}"
 Subtopic: ${subtopic} | Difficulty: ${difficulty}
 
 ${diffConfig.answerDepth}
-
 Cover: ${focus}
 
 Return ONLY this JSON (no markdown, no backticks):
 {
-  "explanation": "Plain prose. Answer ONLY what the question asks. No repetition, no padding. Write as many sentences as the question needs — short for simple questions, more for complex ones. No bullet points, no markdown inside this field.",
-  ${codeInstruction},
-  "codeLanguage": "javascript|python|java|etc or null"
-}
-
-STRICT RULES for explanation:
-- Do NOT repeat the same point twice
-- Do NOT say things like "In conclusion" or "As mentioned above"
-- Do NOT embed raw code inside the explanation text — put code in codeExample only
-- Stop writing when the question is fully answered`;
+  "explanation": "<plain prose, no bullets, no markdown — answer exactly what's asked, stop when done, do NOT repeat points, do NOT embed code here>",
+  ${codeField},
+  "codeLanguage": "<javascript|python|java|etc or null>"
+}`;
 
   try {
-    const raw = await groqService.invokeWithRetry([
-      { role: 'user', content: prompt }
-    ]);
-
+    const raw = await groqService.invokeWithRetry([{ role: 'user', content: prompt }]);
     const text = (raw || '').replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
-    const start = text.indexOf('{');
-    const end = text.lastIndexOf('}');
-    if (start !== -1 && end !== -1) {
-      const parsed = JSON.parse(text.slice(start, end + 1));
+    const s = text.indexOf('{');
+    const e = text.lastIndexOf('}');
+    if (s !== -1 && e !== -1) {
+      const parsed = JSON.parse(text.slice(s, e + 1));
       if (parsed.explanation && parsed.explanation.length > 30) {
         return {
           explanation: parsed.explanation.trim(),
@@ -485,43 +456,36 @@ STRICT RULES for explanation:
     console.warn(`[generateIdealAnswer] Failed for "${subtopic}": ${err.message}`);
   }
 
-  // Fallback: plain text, không có code
   const fallbacks = {
-    easy:   `A correct definition of "${subtopic}" with one simple, concrete example is sufficient.`,
-    medium: `A good answer explains how "${subtopic}" works, shows a practical usage example, and mentions one common mistake to avoid.`,
-    hard:   `A strong answer covers how "${subtopic}" works internally, its performance or correctness tradeoffs, and at least one edge case in ${topic} development.`
+    easy: `A correct definition of "${subtopic}" with one simple example is sufficient.`,
+    medium: `A good answer explains how "${subtopic}" works, gives a practical example, and mentions one common mistake.`,
+    hard: `A strong answer covers internals, tradeoffs, and at least one edge case for "${subtopic}" in ${topic}.`
   };
-  return {
-    explanation: fallbacks[difficulty] || fallbacks.medium,
-    codeExample: null,
-    codeLanguage: null
-  };
+  return { explanation: fallbacks[difficulty] || fallbacks.medium, codeExample: null, codeLanguage: null };
 }
 
-// ========== PHASE 3: Sinh overall summary ==========
+// ========== PHASE 3: Overall summary ==========
 async function generateOverallSummary(qaPairs, scoredItems, topic, difficulty) {
   const avgScore = scoredItems.length
-    ? scoredItems.reduce((a, b) => a + (b.score || 0), 0) / scoredItems.length
-    : 3;
+    ? scoredItems.reduce((a, b) => a + (b.score || 0), 0) / scoredItems.length : 3;
 
   const scoreText = scoredItems.map(s =>
     `Q${s.questionNumber} (${qaPairs[s.questionNumber - 1]?.subtopic || 'unknown'}): ${s.score}/10`
   ).join(', ');
 
-  const prompt = `You are evaluating a technical interview for ${topic} (difficulty: ${difficulty}).
-
-Question scores: ${scoreText}
+  const prompt = `Evaluate a technical interview for ${topic} (difficulty: ${difficulty}).
+Scores: ${scoreText}
 Average: ${avgScore.toFixed(1)}/10
 
 Return ONLY this JSON (no markdown):
 {
-  "overallScore": <0-100, average * 10>,
+  "overallScore": <0-100>,
   "grade": "A+|A|B+|B|C+|C|D|F",
   "overallEvaluation": "Beginner|Junior-ready|Mid-level|Strong|Expert",
   "hireRecommendation": "Strong Yes|Yes|Maybe|No|Strong No",
-  "strengths": ["one strength", "another strength"],
-  "weaknesses": ["one weakness", "another weakness"],
-  "learningRoadmap": ["topic to study 1", "topic to study 2", "topic to study 3"],
+  "strengths": ["strength 1", "strength 2"],
+  "weaknesses": ["weakness 1", "weakness 2"],
+  "learningRoadmap": ["topic 1", "topic 2", "topic 3"],
   "communicationScore": <1-10>,
   "technicalDepth": <1-10>,
   "problemSolving": <1-10>,
@@ -530,9 +494,7 @@ Return ONLY this JSON (no markdown):
 }`;
 
   try {
-    const response = await groqService.invokeWithRetry([
-      { role: 'user', content: prompt }
-    ]);
+    const response = await groqService.invokeWithRetry([{ role: 'user', content: prompt }]);
     const parsed = repairAndParseJSON(response);
     if (parsed && parsed.grade) return parsed;
   } catch (err) {
@@ -548,11 +510,9 @@ Return ONLY this JSON (no markdown):
     strengths: ['Participated in the interview'],
     weaknesses: ['Needs improvement in technical depth'],
     learningRoadmap: [`Review ${topic} fundamentals`, 'Practice coding problems', 'Study system design basics'],
-    communicationScore: 5,
-    technicalDepth: Math.round(avgScore),
-    problemSolving: Math.round(avgScore),
-    confidence: 5,
-    summary: `Candidate completed the ${topic} interview with an average score of ${avgScore.toFixed(1)}/10. Further review is recommended.`
+    communicationScore: 5, technicalDepth: Math.round(avgScore),
+    problemSolving: Math.round(avgScore), confidence: 5,
+    summary: `Candidate completed the ${topic} interview with an average score of ${avgScore.toFixed(1)}/10.`
   };
 }
 
@@ -569,7 +529,6 @@ async function generateFinalReport(session) {
         subtopic: msg.subtopic || session.topic,
         question: msg.content,
         answer: next.content,
-        // FIX 5: Lưu questionType vào message để dùng khi generate idealAnswer
         questionType: msg.questionType || 'conceptual',
         ruleMissingConcepts: detectMissingConcepts(msg.subtopic, next.content),
         answerQuality: analyzeAnswerQuality(next.content)
@@ -579,14 +538,9 @@ async function generateFinalReport(session) {
 
   const scoredItems = await scoreQAPairs(qaPairs, session.topic, session.difficulty);
 
-  // FIX 6: Pass questionType vào generateIdealAnswer
   const idealAnswers = await Promise.all(
     qaPairs.map(qa => generateIdealAnswer(
-      qa.subtopic,
-      qa.question,
-      session.topic,
-      session.difficulty,
-      qa.questionType
+      qa.subtopic, qa.question, session.topic, session.difficulty, qa.questionType
     ))
   );
 
@@ -594,9 +548,7 @@ async function generateFinalReport(session) {
 
   const questionBreakdown = qaPairs.map((qa, i) => {
     const scored = scoredItems.find(s => s.questionNumber === qa.questionNumber) || {
-      score: 3,
-      verdict: 'Poor',
-      correctConcepts: [],
+      score: 3, verdict: 'Poor', correctConcepts: [],
       missingConcepts: qa.ruleMissingConcepts,
       feedback: 'Could not evaluate automatically.'
     };
@@ -628,11 +580,7 @@ async function generateFinalReport(session) {
     };
   });
 
-  const report = {
-    questionBreakdown,
-    ...summary,
-    topicBreakdown: buildTopicBreakdown(questionBreakdown)
-  };
+  const report = { questionBreakdown, ...summary, topicBreakdown: buildTopicBreakdown(questionBreakdown) };
 
   for (const q of questionBreakdown) {
     let count = 0;
@@ -663,20 +611,13 @@ async function generateFinalReport(session) {
 
   session.finalScore = finalScore;
   session.summary = {
-    overallScore: report.overallScore,
-    grade: report.grade,
-    overallEvaluation: report.overallEvaluation,
-    hireRecommendation: report.hireRecommendation,
-    questionBreakdown,
-    topicBreakdown: report.topicBreakdown,
-    strengths: report.strengths,
-    weaknesses: report.weaknesses,
-    learningRoadmap: report.learningRoadmap,
-    communicationScore: report.communicationScore,
-    technicalDepth: report.technicalDepth,
-    problemSolving: report.problemSolving,
-    confidence: report.confidence,
-    summary: report.summary
+    overallScore: report.overallScore, grade: report.grade,
+    overallEvaluation: report.overallEvaluation, hireRecommendation: report.hireRecommendation,
+    questionBreakdown, topicBreakdown: report.topicBreakdown,
+    strengths: report.strengths, weaknesses: report.weaknesses,
+    learningRoadmap: report.learningRoadmap, communicationScore: report.communicationScore,
+    technicalDepth: report.technicalDepth, problemSolving: report.problemSolving,
+    confidence: report.confidence, summary: report.summary
   };
 
   return { report, finalScore };
@@ -696,7 +637,6 @@ function buildTopicBreakdown(questionBreakdown) {
 }
 
 // ========== SINH CÂU HỎI ĐẦU TIÊN ==========
-// FIX 7: Câu đầu tiên luôn là conceptual, nhưng prompt theo difficulty
 async function generateFirstQuestion(topic, difficulty, firstSubtopic) {
   const safeSub = firstSubtopic || topic;
   const diffConfig = DIFFICULTY_RULES[difficulty] || DIFFICULTY_RULES.medium;
@@ -706,7 +646,7 @@ async function generateFirstQuestion(topic, difficulty, firstSubtopic) {
 ${diffConfig.description}
 
 Ask ONE opening question about "${safeSub}" in ${topic}.
-- This is the FIRST question, so start with fundamentals for the given difficulty
+- Start with this subtopic's fundamentals at the given difficulty level
 - 1-2 sentences max (under 40 words)
 - No preamble, no numbering, no markdown`;
 
@@ -718,33 +658,43 @@ Ask ONE opening question about "${safeSub}" in ${topic}.
 }
 
 // ========== SINH CÂU HỎI TIẾP THEO ==========
-// FIX 8: generateNextQuestion truyền difficulty vào getNextQuestionType + getFallbackQuestion
-async function generateNextQuestion(session) {
+async function generateNextQuestion(session, lastScore = null) {
   const roadmapFlat = session.roadmapFlattened;
-  const difficulty = session.difficulty || 'medium';
-  const diffConfig = DIFFICULTY_RULES[difficulty] || DIFFICULTY_RULES.medium;
+  const baseDifficulty = session.difficulty || 'medium';
 
-  const questionType = getNextQuestionType(difficulty, session.questionTypeHistory || []);
+  // [FIX 7] Tính adaptive difficulty dựa vào score câu vừa trả lời
+  const adaptiveDifficulty = getAdaptiveDifficulty(baseDifficulty, lastScore);
+  const diffConfig = DIFFICULTY_RULES[adaptiveDifficulty] || DIFFICULTY_RULES.medium;
+
+  const questionType = getNextQuestionType(adaptiveDifficulty, session.questionTypeHistory || []);
   const recentAsked = (session.askedQuestions || []).slice(-3).join('\n');
 
   let targetSubtopic = session.currentSubtopic;
+
+  // [FIX 5] Random trong remaining thay vì luôn lấy [0]
   const remaining = roadmapFlat.filter(r => !(session.coveredTopics || []).includes(r));
   if (remaining.length > 0) {
-    targetSubtopic = remaining[0];
+    targetSubtopic = remaining[Math.floor(Math.random() * remaining.length)];
     session.currentSubtopic = targetSubtopic;
     session.coveredTopics.push(targetSubtopic);
   } else {
     const resetRemaining = roadmapFlat.filter(r => r !== session.currentSubtopic);
-    targetSubtopic = resetRemaining[0] || roadmapFlat[0];
+    const pool = resetRemaining.length > 0 ? resetRemaining : roadmapFlat;
+    targetSubtopic = pool[Math.floor(Math.random() * pool.length)];
     session.currentSubtopic = targetSubtopic;
     session.coveredTopics = [targetSubtopic];
   }
 
   const safeSub = targetSubtopic || session.topic;
 
+  // [FIX 7] Thông báo difficulty trong prompt nếu bị điều chỉnh adaptive
+  const adaptiveNote = adaptiveDifficulty !== baseDifficulty
+    ? `\nNOTE: Difficulty adjusted to "${adaptiveDifficulty}" based on candidate's last answer performance.`
+    : '';
+
   const prompt = `You are a senior technical interviewer.
 
-${diffConfig.description}
+${diffConfig.description}${adaptiveNote}
 
 Ask ONE ${questionType} question about "${safeSub}" in ${session.topic}.
 - 1-2 sentences max (under 40 words)
@@ -755,13 +705,13 @@ ${recentAsked || '(none)'}`;
   const response = await groqService.invokeWithRetry([{ role: 'user', content: prompt }]);
   let question = (response || '').trim();
   if (!isValidAiQuestion(question) || isQuestionTooSimilar(question, session.askedQuestions)) {
-    question = getFallbackQuestion(safeSub, questionType, session.topic, difficulty);
+    question = getFallbackQuestion(safeSub, questionType, session.topic, adaptiveDifficulty);
   }
 
   session.questionTypeHistory = [...(session.questionTypeHistory || []), questionType];
   session.askedQuestions = [...(session.askedQuestions || []), normalizeQuestion(question)];
 
-  return { question, subtopic: safeSub, questionType };
+  return { question, subtopic: safeSub, questionType, adaptiveDifficulty };
 }
 
 // ========== BẮT ĐẦU PHIÊN PHỎNG VẤN ==========
@@ -769,7 +719,10 @@ async function startSession(userId, topic, difficulty = 'medium', interviewStyle
   if (!topic || !topic.trim()) throw new Error('Topic is required.');
 
   const { structured, flattened } = getRoadmapForTopic(topic);
-  const firstSubtopic = flattened[0] || topic;
+  const firstSubtopic = pickFirstSubtopic(structured) || flattened[0] || topic;
+  const remainingFlattened = flattened.includes(firstSubtopic)
+    ? flattened : [firstSubtopic, ...flattened].slice(0, TOTAL_QUESTIONS);
+
   const firstQuestion = await generateFirstQuestion(topic, difficulty, firstSubtopic);
 
   const session = new AdaptiveSession({
@@ -784,13 +737,16 @@ async function startSession(userId, topic, difficulty = 'medium', interviewStyle
       type: 'question',
       content: firstQuestion,
       subtopic: firstSubtopic,
-      questionType: 'conceptual',  // FIX 9: lưu questionType vào message
+      questionType: 'conceptual',
+      // [FIX 6] Thêm metadata vào question message
+      difficulty,
+      topic: topic.trim(),
       createdAt: new Date()
     }],
     coveredTopics: [firstSubtopic],
     currentSubtopic: firstSubtopic,
     roadmapStructured: structured,
-    roadmapFlattened: flattened,
+    roadmapFlattened: remainingFlattened,
     askedQuestions: [normalizeQuestion(firstQuestion)],
     questionTypeHistory: ['conceptual'],
     startedAt: new Date()
@@ -800,15 +756,32 @@ async function startSession(userId, topic, difficulty = 'medium', interviewStyle
   return {
     sessionId: session._id,
     firstQuestion,
-    progress: { current: 1, total: TOTAL_QUESTIONS }
+    // [FIX 1] Thêm completionPercentage ngay từ đầu
+    progress: {
+      current: 1,
+      total: TOTAL_QUESTIONS,
+      percentage: Math.round((1 / TOTAL_QUESTIONS) * 100)
+    }
   };
 }
 
 // ========== XỬ LÝ CÂU TRẢ LỜI ==========
 async function processAnswer(sessionId, userId, answer) {
+  // [FIX 3] Chặn spam answer rỗng
+  if (!answer || !answer.trim()) {
+    throw new Error('Answer is required');
+  }
+
   const session = await AdaptiveSession.findOne({ _id: sessionId, userId });
   if (!session) throw new Error('Session not found');
   if (session.status !== 'active') throw new Error('Interview already completed');
+
+  // [FIX 4] Kiểm tra session timeout
+  if (isSessionTimedOut(session)) {
+    session.status = 'abandoned';
+    await session.save();
+    throw new Error('Session expired due to inactivity. Please start a new interview.');
+  }
 
   if (!Array.isArray(session.askedQuestions)) session.askedQuestions = [];
   if (!Array.isArray(session.questionTypeHistory)) session.questionTypeHistory = [];
@@ -823,7 +796,7 @@ async function processAnswer(sessionId, userId, answer) {
   session.conversation.push({
     role: 'user',
     type: 'answer',
-    content: answer || '',
+    content: answer.trim(),
     createdAt: new Date()
   });
 
@@ -834,6 +807,13 @@ async function processAnswer(sessionId, userId, answer) {
     session.status = 'completed';
     session.endedAt = new Date();
 
+    // [FIX 2] Lưu duration khi completed
+    if (session.startedAt) {
+      session.durationInSeconds = Math.floor(
+        (session.endedAt - new Date(session.startedAt)) / 1000
+      );
+    }
+
     const { report, finalScore } = await generateFinalReport(session);
     session.finalScore = finalScore;
     await session.save();
@@ -842,31 +822,37 @@ async function processAnswer(sessionId, userId, answer) {
       isFinished: true,
       sessionId: session._id,
       finalScore: session.finalScore,
+      // [FIX 2] Expose duration trong response
+      durationInSeconds: session.durationInSeconds || null,
       summary: session.summary,
       conversation: session.conversation.map(msg => ({
-        role: msg.role,
-        type: msg.type,
-        content: msg.content,
-        subtopic: msg.subtopic || null,
-        questionType: msg.questionType || null,
-        score: msg.score || null,
-        strengths: msg.strengths || [],
-        weaknesses: msg.weaknesses || [],
-        missingConcepts: msg.missingConcepts || [],
+        role: msg.role, type: msg.type, content: msg.content,
+        subtopic: msg.subtopic || null, questionType: msg.questionType || null,
+        score: msg.score || null, strengths: msg.strengths || [],
+        weaknesses: msg.weaknesses || [], missingConcepts: msg.missingConcepts || [],
         createdAt: msg.createdAt
       }))
     };
   }
 
-  // FIX 10: destructure questionType từ generateNextQuestion
-  const { question: nextQuestion, subtopic: nextSubtopic, questionType } = await generateNextQuestion(session);
+  // [FIX 7] Lấy score của câu trả lời vừa rồi (nếu có) để điều chỉnh adaptive difficulty
+  // Score của câu vừa trả lời chưa có (chấm sau), dùng score của câu trước đó nếu có
+  const lastScoredAnswer = [...session.conversation]
+    .reverse()
+    .find(m => m.role === 'user' && m.type === 'answer' && typeof m.score === 'number');
+  const lastScore = lastScoredAnswer ? lastScoredAnswer.score : null;
+
+  const { question: nextQuestion, subtopic: nextSubtopic, questionType, adaptiveDifficulty } = await generateNextQuestion(session, lastScore);
 
   session.conversation.push({
     role: 'assistant',
     type: 'question',
     content: nextQuestion,
     subtopic: nextSubtopic,
-    questionType,  // lưu vào message để dùng sau
+    questionType,
+    // [FIX 6] Metadata đầy đủ trên mỗi question message
+    difficulty: adaptiveDifficulty,
+    topic: session.topic,
     createdAt: new Date()
   });
   await session.save();
@@ -876,7 +862,14 @@ async function processAnswer(sessionId, userId, answer) {
     sessionId: session._id,
     nextQuestion,
     currentSubtopic: nextSubtopic,
-    progress: { current: questionsAsked + 1, total: TOTAL_QUESTIONS }
+    // [FIX 7] Expose adaptive difficulty cho frontend biết
+    adaptiveDifficulty,
+    // [FIX 1] completionPercentage đầy đủ
+    progress: {
+      current: questionsAsked + 1,
+      total: TOTAL_QUESTIONS,
+      percentage: Math.round(((questionsAsked + 1) / TOTAL_QUESTIONS) * 100)
+    }
   };
 }
 
