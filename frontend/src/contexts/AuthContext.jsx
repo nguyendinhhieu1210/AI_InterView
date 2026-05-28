@@ -1,4 +1,3 @@
-
 // contexts/AuthContext.js
 import React, {
   createContext,
@@ -8,20 +7,25 @@ import React, {
   useCallback,
   useRef
 } from 'react';
+
 import api from '../services/api';
+import { authDebug } from '../utils/authDebugger';
 
 const AuthContext = createContext();
 
 // ================= CONFIG =================
-const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 phút
-const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 phút
-const REFRESH_THROTTLE = 60 * 1000; // 1 phút
+const IDLE_TIMEOUT = 30 * 60 * 1000;
+const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000;
+const REFRESH_THROTTLE = 60 * 1000;
 
-// ================= JWT PARSE =================
+// ================= JWT =================
 const parseJwt = (token) => {
   try {
     const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+
+    const base64 = base64Url
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
 
     const jsonPayload = decodeURIComponent(
       atob(base64)
@@ -58,8 +62,15 @@ export const AuthProvider = ({ children }) => {
 
   // ================= LOGOUT =================
   const logout = useCallback(
-    (isCrossTab = false) => {
-      if (logoutLock.current) return;
+    (crossTab = false) => {
+      authDebug('LOGOUT', {
+        crossTab
+      });
+
+      if (logoutLock.current) {
+        authDebug('LOGOUT BLOCKED');
+        return;
+      }
 
       logoutLock.current = true;
 
@@ -68,13 +79,13 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('lastActivity');
 
-      sessionStorage.removeItem('lastRefreshCheck');
+      sessionStorage.clear();
 
       setToken(null);
       setUser(null);
       setIsAuthenticated(false);
 
-      if (!isCrossTab) {
+      if (!crossTab) {
         localStorage.setItem(
           'logout_event',
           Date.now().toString()
@@ -82,7 +93,7 @@ export const AuthProvider = ({ children }) => {
 
         setTimeout(() => {
           localStorage.removeItem('logout_event');
-        }, 1000);
+        }, 500);
       }
 
       setTimeout(() => {
@@ -94,7 +105,9 @@ export const AuthProvider = ({ children }) => {
 
   // ================= LOGIN =================
   const login = useCallback(
-    (newToken, userData, refreshTokenValue = null) => {
+    (newToken, userData, refreshTokenValue) => {
+      authDebug('LOGIN START');
+
       localStorage.setItem('token', newToken);
 
       localStorage.setItem(
@@ -117,6 +130,10 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
       setUser(userData);
       setIsAuthenticated(true);
+
+      authDebug('LOGIN SUCCESS', {
+        email: userData?.email
+      });
     },
     []
   );
@@ -124,15 +141,21 @@ export const AuthProvider = ({ children }) => {
   // ================= REFRESH TOKEN =================
   const refreshToken = useCallback(async () => {
     if (refreshPromise.current) {
+      authDebug('REFRESH WAITING EXISTING PROMISE');
+
       return refreshPromise.current;
     }
 
     refreshPromise.current = (async () => {
       try {
+        authDebug('REFRESH TOKEN START');
+
         const rt =
           localStorage.getItem('refreshToken');
 
         if (!rt) {
+          authDebug('NO REFRESH TOKEN');
+
           throw new Error('No refresh token');
         }
 
@@ -175,9 +198,18 @@ export const AuthProvider = ({ children }) => {
 
         setIsAuthenticated(true);
 
+        authDebug('REFRESH SUCCESS');
+
         return true;
       } catch (err) {
+        authDebug('REFRESH FAILED', {
+          message: err?.message
+        });
+
+        console.error('Refresh token failed');
+
         logout();
+
         return false;
       } finally {
         refreshPromise.current = null;
@@ -187,19 +219,73 @@ export const AuthProvider = ({ children }) => {
     return refreshPromise.current;
   }, [logout]);
 
-  // ================= UPDATE ACTIVITY =================
-  const updateActivity = useCallback(() => {
+  // ================= CHECK TOKEN =================
+  const ensureValidToken =
+    useCallback(async () => {
+      const t = localStorage.getItem('token');
+
+      if (!t) {
+        authDebug('NO TOKEN');
+
+        return false;
+      }
+
+      const decoded = parseJwt(t);
+
+      if (!decoded?.exp) {
+        authDebug('INVALID TOKEN');
+
+        return false;
+      }
+
+      const expiresIn =
+        decoded.exp * 1000 - Date.now();
+
+      authDebug('CHECK TOKEN', {
+        expiresInSeconds: Math.floor(
+          expiresIn / 1000
+        )
+      });
+
+      // token expired
+      if (expiresIn <= 0) {
+        authDebug('TOKEN EXPIRED');
+
+        return await refreshToken();
+      }
+
+      // token gần hết hạn
+      if (
+        expiresIn <
+        TOKEN_REFRESH_THRESHOLD
+      ) {
+        authDebug('TOKEN NEAR EXPIRE');
+
+        return await refreshToken();
+      }
+
+      authDebug('TOKEN STILL VALID');
+
+      return true;
+    }, [refreshToken]);
+
+  // ================= ACTIVITY =================
+  const updateActivity = useCallback(async () => {
     const now = Date.now();
 
-    // ALWAYS update activity
+    authDebug('USER ACTIVITY');
+
     localStorage.setItem(
       'lastActivity',
       String(now)
     );
 
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      authDebug('NOT AUTHENTICATED');
 
-    // throttle ONLY refresh check
+      return;
+    }
+
     const lastRefreshCheck = Number(
       sessionStorage.getItem(
         'lastRefreshCheck'
@@ -210,6 +296,8 @@ export const AuthProvider = ({ children }) => {
       now - lastRefreshCheck <
       REFRESH_THROTTLE
     ) {
+      authDebug('REFRESH THROTTLED');
+
       return;
     }
 
@@ -218,63 +306,88 @@ export const AuthProvider = ({ children }) => {
       String(now)
     );
 
-    const t = localStorage.getItem('token');
-
-    if (!t) return;
-
-    const decoded = parseJwt(t);
-
-    if (!decoded?.exp) return;
-
-    const expiresIn =
-      decoded.exp * 1000 - now;
-
-    if (
-      expiresIn < TOKEN_REFRESH_THRESHOLD
-    ) {
-      refreshToken();
-    }
-  }, [isAuthenticated, refreshToken]);
+    await ensureValidToken();
+  }, [
+    isAuthenticated,
+    ensureValidToken
+  ]);
 
   // ================= INIT =================
   useEffect(() => {
-    const storedToken =
-      localStorage.getItem('token');
+    const init = async () => {
+      try {
+        authDebug('INIT START');
 
-    const storedUser =
-      localStorage.getItem('user');
+        const storedToken =
+          localStorage.getItem('token');
 
-    if (storedToken && storedUser) {
-      const decoded = parseJwt(storedToken);
+        const storedUser =
+          localStorage.getItem('user');
 
-      if (
-        decoded?.exp * 1000 >
-        Date.now()
-      ) {
-        setToken(storedToken);
+        if (
+          !storedToken ||
+          !storedUser
+        ) {
+          authDebug('NO STORED AUTH');
 
-        setUser(
-          JSON.parse(storedUser)
-        );
+          setLoading(false);
 
-        setIsAuthenticated(true);
+          return;
+        }
 
-        localStorage.setItem(
-          'lastActivity',
-          Date.now().toString()
-        );
-      } else {
-        localStorage.clear();
+        const decoded =
+          parseJwt(storedToken);
+
+        if (
+          decoded?.exp * 1000 >
+          Date.now()
+        ) {
+          authDebug('RESTORE SESSION');
+
+          setToken(storedToken);
+
+          setUser(
+            JSON.parse(storedUser)
+          );
+
+          setIsAuthenticated(true);
+
+          localStorage.setItem(
+            'lastActivity',
+            Date.now().toString()
+          );
+        } else {
+          authDebug('TOKEN EXPIRED ON INIT');
+
+          const ok =
+            await refreshToken();
+
+          if (!ok) {
+            logout();
+          }
+        }
+      } catch (err) {
+        authDebug('INIT FAILED', {
+          message: err?.message
+        });
+
+        logout();
+      } finally {
+        setLoading(false);
+
+        authDebug('INIT DONE');
       }
-    }
+    };
 
-    setLoading(false);
-  }, []);
+    init();
+  }, [logout, refreshToken]);
 
-  // ================= MULTI TAB LOGOUT =================
+  // ================= MULTI TAB =================
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'logout_event') {
+        authDebug('CROSS TAB LOGOUT');
+
         logout(true);
       }
     };
@@ -292,206 +405,172 @@ export const AuthProvider = ({ children }) => {
     };
   }, [logout]);
 
-  // ================= SYNC TOKEN =================
-  useEffect(() => {
-    const handler = (e) => {
-      if (
-        e.key === 'token' &&
-        e.newValue
-      ) {
-        setToken(e.newValue);
-
-        const u =
-          localStorage.getItem('user');
-
-        if (u) {
-          setUser(JSON.parse(u));
-
-          setIsAuthenticated(true);
-        }
-      }
-
-      if (
-        e.key === 'user' &&
-        e.newValue
-      ) {
-        setUser(
-          JSON.parse(e.newValue)
-        );
-      }
-    };
-
-    window.addEventListener(
-      'storage',
-      handler
-    );
-
-    return () => {
-      window.removeEventListener(
-        'storage',
-        handler
-      );
-    };
-  }, []);
-
-  // ================= IDLE LOGOUT =================
+  // ================= IDLE CHECK =================
+  // ================= IDLE CHECK =================
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const interval = setInterval(() => {
-      const last = Number(
-        localStorage.getItem(
-          'lastActivity'
-        ) || 0
-      );
-
-      const idle =
-        Date.now() - last;
-
-      if (idle >= IDLE_TIMEOUT) {
-        logout();
-      }
-    }, 30000);
-
-    return () =>
-      clearInterval(interval);
-  }, [isAuthenticated, logout]);
-
-  // ================= AUTO REFRESH TOKEN =================
-  useEffect(() => {
-    if (!isAuthenticated) return;
+    authDebug('IDLE CHECK START');
 
     const interval = setInterval(
       async () => {
-        if (document.hidden) return;
-
-        const t =
+        const last = Number(
           localStorage.getItem(
-            'token'
+            'lastActivity'
+          ) || 0
+        );
+
+        const idle =
+          Date.now() - last;
+
+        const remaining =
+          IDLE_TIMEOUT - idle;
+
+        const remainingMinutes =
+          Math.floor(
+            remaining / 1000 / 60
           );
 
-        if (!t) return;
+        const remainingSeconds =
+          Math.floor(
+            (remaining / 1000) % 60
+          );
 
-        const decoded =
-          parseJwt(t);
+        authDebug('IDLE COUNTDOWN', {
+          idleSeconds: Math.floor(
+            idle / 1000
+          ),
 
-        if (!decoded?.exp) return;
+          remainingTime: `${remainingMinutes}m ${remainingSeconds}s`
+        });
 
-        const expiresIn =
-          decoded.exp * 1000 -
-          Date.now();
+        // TEST realtime trên browser
+        console.clear();
 
-        // token expired
-        if (expiresIn <= 0) {
+        console.log(
+          '%cAUTH IDLE TIMER',
+          'color:#00ff88;font-size:18px;font-weight:bold'
+        );
+
+        console.table({
+          Idle_Seconds: Math.floor(
+            idle / 1000
+          ),
+
+          Remaining_Minutes:
+            remainingMinutes,
+
+          Remaining_Seconds:
+            remainingSeconds,
+
+          Logout_At:
+            idle >= IDLE_TIMEOUT
+        });
+
+        if (idle < IDLE_TIMEOUT) {
+          return;
+        }
+
+        authDebug('USER IDLE TIMEOUT');
+
+        if (
+          document.visibilityState ===
+          'visible'
+        ) {
+          authDebug(
+            'VISIBLE TAB - TRY REFRESH'
+          );
+
+          localStorage.setItem(
+            'lastActivity',
+            Date.now().toString()
+          );
+
           const ok =
-            await refreshToken();
+            await ensureValidToken();
 
-          if (!ok) {
-            logout();
+          if (ok) {
+            authDebug(
+              'RECOVER SESSION SUCCESS'
+            );
+
+            return;
           }
+        }
+
+        authDebug('AUTO LOGOUT');
+
+        logout();
+      },
+
+      // update mỗi giây
+      1000
+    );
+
+    return () => {
+      clearInterval(interval);
+
+      authDebug('IDLE CHECK STOP');
+    };
+  }, [
+    isAuthenticated,
+    logout,
+    ensureValidToken
+  ]);
+
+  // ================= AUTO REFRESH =================
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    authDebug('AUTO REFRESH START');
+
+    const interval = setInterval(
+      async () => {
+        if (document.hidden) {
+          authDebug(
+            'TAB HIDDEN - SKIP REFRESH'
+          );
 
           return;
         }
 
-        // token near expired
-        if (
-          expiresIn <
-          TOKEN_REFRESH_THRESHOLD
-        ) {
-          await refreshToken();
-        }
+        authDebug('AUTO REFRESH RUN');
+
+        await ensureValidToken();
       },
       60000
     );
 
-    return () =>
+    return () => {
       clearInterval(interval);
+
+      authDebug('AUTO REFRESH STOP');
+    };
   }, [
     isAuthenticated,
-    refreshToken,
-    logout
-  ]);
-
-  // ================= FOCUS + VISIBILITY =================
-  useEffect(() => {
-    const handleFocus = async () => {
-      updateActivity();
-
-      const t =
-        localStorage.getItem(
-          'token'
-        );
-
-      if (!t) return;
-
-      const decoded =
-        parseJwt(t);
-
-      if (!decoded?.exp) return;
-
-      const expiresIn =
-        decoded.exp * 1000 -
-        Date.now();
-
-      if (
-        expiresIn <
-        TOKEN_REFRESH_THRESHOLD
-      ) {
-        await refreshToken();
-      }
-    };
-
-    const handleVisibility = () => {
-      if (!document.hidden) {
-        updateActivity();
-      }
-    };
-
-    window.addEventListener(
-      'focus',
-      handleFocus
-    );
-
-    document.addEventListener(
-      'visibilitychange',
-      handleVisibility
-    );
-
-    return () => {
-      window.removeEventListener(
-        'focus',
-        handleFocus
-      );
-
-      document.removeEventListener(
-        'visibilitychange',
-        handleVisibility
-      );
-    };
-  }, [
-    refreshToken,
-    updateActivity
+    ensureValidToken
   ]);
 
   // ================= USER EVENTS =================
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    authDebug('REGISTER USER EVENTS');
+
     const events = [
       'mousedown',
-      'click',
+      'mousemove',
       'keydown',
       'scroll',
-      'touchstart'
+      'touchstart',
+      'click'
     ];
 
     events.forEach((event) => {
       window.addEventListener(
         event,
         updateActivity,
-        {
-          passive: true
-        }
+        { passive: true }
       );
     });
 
@@ -502,22 +581,63 @@ export const AuthProvider = ({ children }) => {
           updateActivity
         );
       });
+
+      authDebug('REMOVE USER EVENTS');
     };
   }, [
     isAuthenticated,
     updateActivity
   ]);
 
+  // ================= FOCUS =================
+  useEffect(() => {
+    const handleFocus = async () => {
+      authDebug('WINDOW FOCUS');
+
+      await updateActivity();
+    };
+
+    const handleVisible = async () => {
+      if (!document.hidden) {
+        authDebug('TAB VISIBLE');
+
+        await updateActivity();
+      }
+    };
+
+    window.addEventListener(
+      'focus',
+      handleFocus
+    );
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisible
+    );
+
+    return () => {
+      window.removeEventListener(
+        'focus',
+        handleFocus
+      );
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisible
+      );
+    };
+  }, [updateActivity]);
+
   // ================= CONTEXT =================
   const value = {
     isAuthenticated,
     user,
     token,
+    loading,
     login,
     logout,
-    loading,
-    updateActivity,
-    refreshToken
+    refreshToken,
+    updateActivity
   };
 
   return (

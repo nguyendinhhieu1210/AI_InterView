@@ -28,9 +28,6 @@ const getScoreColorClass = (score, isAdaptive) => {
 };
 
 // ==================== CUSTOM TOOLTIP (outside — never re-created) ====================
-// FIX 1: Move CustomTooltip outside parent so its reference is stable.
-// Recharts re-renders tooltip on every mousemove; if the component reference
-// changes each render it unmounts/remounts → visible flicker.
 const CustomTooltip = memo(({ active, payload }) => {
   if (active && payload?.length) {
     const p = payload[0].payload;
@@ -58,9 +55,15 @@ const CustomTooltip = memo(({ active, payload }) => {
   return null;
 });
 
-// ==================== ANALYSIS (pure data — no JSX, so useMemo works correctly) ====================
-// FIX 2: Return plain data object instead of JSX so useMemo can do a stable
-// reference comparison and avoid re-running on every render.
+// ==================== CUSTOM DOT CHO LINE CHART (theo màu điểm) ====================
+const CustomDot = memo(({ cx, cy, payload, isAdaptive }) => {
+  if (!cx || !cy) return null;
+  const score = payload.score;
+  const fill = getScoreColor(score, isAdaptive);
+  return <circle cx={cx} cy={cy} r={5} fill={fill} stroke="#1f2937" strokeWidth={1.5} />;
+});
+
+// ==================== ANALYSIS (pure data — no JSX) ====================
 const computeAnalysis = (data, type, miniStats) => {
   if (!data.length || !miniStats) return null;
 
@@ -124,7 +127,7 @@ const computeAnalysis = (data, type, miniStats) => {
   }
 
   let trendText = '';
-  let trendVariant = 'neutral'; // 'up-fast' | 'up-slow' | 'up-tiny' | 'down-fast' | 'down-slow' | 'neutral'
+  let trendVariant = 'neutral';
   if (trend > 8) {
     trendText = `Your performance is improving rapidly (+${trend}% over last session). Keep up the momentum!`;
     trendVariant = 'up-fast';
@@ -179,7 +182,7 @@ const computeAnalysis = (data, type, miniStats) => {
   };
 };
 
-// ==================== ANALYSIS DISPLAY (reads plain data, renders JSX) ====================
+// ==================== ANALYSIS DISPLAY ====================
 const AnalysisPanel = memo(({ analysisData }) => {
   if (!analysisData) return null;
 
@@ -287,7 +290,6 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
   const isAdaptive = type === 'adaptive';
   const scoreSuffix = isAdaptive ? '/10' : '/100';
 
-  // FIX 2a: miniStats only recomputes when data array reference changes
   const miniStats = useMemo(() => {
     if (!data.length) return null;
     const scores = data.map(d => d.score);
@@ -301,7 +303,6 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
     return { latest, avg, trend, total: data.length };
   }, [data]);
 
-  // FIX 2b: analysis is plain data (no JSX) → useMemo reference stays stable between renders
   const analysisData = useMemo(() => computeAnalysis(data, type, miniStats), [data, type, miniStats]);
 
   useEffect(() => {
@@ -364,7 +365,6 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
 
   const chartWidth = Math.max(400, data.length * 70);
   const yDomain = isAdaptive ? [0, 10] : [0, 100];
-  // FIX 3: shared XAxis / tooltip props to avoid inline-object recreation
   const xAxisProps = {
     dataKey: 'date',
     tick: { fontSize: data.length > 10 ? 9 : 10, fill: '#e5e7eb' },
@@ -376,7 +376,6 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
   };
   const tooltipProps = {
     content: <CustomTooltip />,
-    // FIX 1b: keep wrapper style as a constant (not a new object each render)
     wrapperStyle: TOOLTIP_WRAPPER_STYLE,
   };
 
@@ -393,7 +392,15 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
                   <XAxis {...xAxisProps} />
                   <YAxis domain={yDomain} tick={{ fontSize: 10, fill: '#e5e7eb' }} tickLine={false} axisLine={false} />
                   <Tooltip {...tooltipProps} />
-                  <Line type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} dot={{ fill: '#6366f1', r: 4, strokeWidth: 0 }} activeDot={{ r: 10, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }} isAnimationActive={false} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="score" 
+                    stroke="#6366f1" 
+                    strokeWidth={2.5} 
+                    dot={<CustomDot isAdaptive={false} />}
+                    activeDot={{ r: 10, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }}
+                    isAnimationActive={false} 
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -446,7 +453,15 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
                   </linearGradient>
                 </defs>
                 <Area type="monotone" dataKey="score" stroke="none" fill="url(#scoreGradient)" isAnimationActive={false} />
-                <Line type="monotone" dataKey="score" stroke="#10b981" strokeWidth={2.5} dot={{ fill: '#10b981', r: 5, strokeWidth: 0 }} activeDot={{ r: 10, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }} isAnimationActive={false} />
+                <Line 
+                  type="monotone" 
+                  dataKey="score" 
+                  stroke="#10b981" 
+                  strokeWidth={2.5} 
+                  dot={<CustomDot isAdaptive={true} />}
+                  activeDot={{ r: 10, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }}
+                  isAnimationActive={false} 
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -498,7 +513,6 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
   );
 });
 
-// Constant outside any component — never recreated
 const TOOLTIP_WRAPPER_STYLE = { pointerEvents: 'none' };
 
 // ==================== MAIN COMPONENT ====================
@@ -606,7 +620,7 @@ export default function PerformanceTrendChart() {
 
     fetchAllHistories();
     return () => { isMounted = false; };
-  }, [timeRange]); // only re-fetch when time range changes
+  }, [timeRange]);
 
   if (loading) {
     return (
