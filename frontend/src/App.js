@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { InterviewProvider } from './contexts/InterviewContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import './i18n';
+import { Toaster } from 'react-hot-toast';
 
 import Register from './Pages/Register';
 import Login from './Pages/Login';
@@ -28,14 +29,15 @@ import AdaptiveHistoryPage from './Pages/AdaptiveHistoryPage';
 import InterviewHistoryPage from './Pages/InterviewHistoryPage';
 import CVHistoryPage from './Pages/CVHistoryPage';
 import AdaptiveSessionDetailPage from './Pages/AdaptiveSessionDetailPage';
-
+import LiveCodingPage from './Pages/LiveCodingPage';
 
 function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <AuthProvider>   {/* 👈 BỌC AuthProvider */}
+        <AuthProvider>
           <InterviewProvider>
+            <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<Register />} />
@@ -59,8 +61,10 @@ function App() {
               <Route path="/adaptive-history" element={<ProtectedRoute><AdaptiveHistoryPage /></ProtectedRoute>} />
               <Route path="/interview-history" element={<ProtectedRoute><InterviewHistoryPage /></ProtectedRoute>} />
               <Route path="/cv-history" element={<ProtectedRoute><CVHistoryPage /></ProtectedRoute>} />
-    
               <Route path="/adaptive-history/:sessionId" element={<ProtectedRoute><AdaptiveSessionDetailPage /></ProtectedRoute>} />
+              
+              {/* Route cho Live Coding */}
+              <Route path="/live-coding" element={<ProtectedRoute><LiveCodingPage /></ProtectedRoute>} />
             </Routes>
           </InterviewProvider>
         </AuthProvider>
