@@ -13,6 +13,7 @@ const interviewRoutes = require('./routes/interviewRoutes');
 const weaknessRoutes = require('./routes/weaknessRoutes');
 const cvRoutes = require('./routes/cv');
 const adaptiveRoutes = require('./routes/adaptiveInterviewRoutes');
+const liveCodingRoutes = require('./routes/liveCodingRoutes');
 
 const app = express();
 
@@ -44,6 +45,8 @@ app.use(
 );
 
 app.use('/api/adaptive', adaptiveRoutes);
+
+app.use('/api/live-coding', liveCodingRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

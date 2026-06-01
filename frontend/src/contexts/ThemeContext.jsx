@@ -9,22 +9,23 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-    const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+    // Lưu theme dưới dạng chuỗi 'dark' hoặc 'light'
+    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
 
     useEffect(() => {
-        if (darkMode) {
+        const isDark = theme === 'dark';
+        if (isDark) {
             document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
         } else {
             document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
         }
-    }, [darkMode]);
+        localStorage.setItem('theme', theme);
+    }, [theme]);
 
-    const toggleDarkMode = () => setDarkMode(prev => !prev);
+    const toggleDarkMode = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
     return (
-        <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
+        <ThemeContext.Provider value={{ theme, toggleDarkMode }}>
             {children}
         </ThemeContext.Provider>
     );

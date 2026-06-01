@@ -6,9 +6,11 @@ import {
   Loader2, TrendingUp, CalendarDays, Lightbulb, TrendingDown,
   ChevronLeft, ChevronRight, MessageCircle, FolderOpen, Cpu, BarChart3, Award, Target, AlertCircle
 } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
-// ==================== HELPERS (outside component — stable references) ====================
+// ... rest of the component remains unchanged
 
+// ==================== HELPERS ====================
 const getScoreColor = (score, isAdaptive) => {
   if (isAdaptive) {
     if (score >= 8) return '#10b981';
@@ -22,33 +24,30 @@ const getScoreColor = (score, isAdaptive) => {
 
 const getScoreColorClass = (score, isAdaptive) => {
   if (isAdaptive) {
-    return score >= 8 ? 'text-emerald-400' : score >= 5 ? 'text-amber-400' : 'text-rose-400';
+    return score >= 8 ? 'text-emerald-600 dark:text-emerald-400' : score >= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
   }
-  return score >= 80 ? 'text-emerald-400' : score >= 60 ? 'text-amber-400' : 'text-rose-400';
+  return score >= 80 ? 'text-emerald-600 dark:text-emerald-400' : score >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
 };
 
-// ==================== CUSTOM TOOLTIP (outside — never re-created) ====================
-// FIX 1: Move CustomTooltip outside parent so its reference is stable.
-// Recharts re-renders tooltip on every mousemove; if the component reference
-// changes each render it unmounts/remounts → visible flicker.
+// ==================== CUSTOM TOOLTIP (theme‑aware via Tailwind classes) ====================
 const CustomTooltip = memo(({ active, payload }) => {
   if (active && payload?.length) {
     const p = payload[0].payload;
     return (
       <div
-        className="bg-gray-900 border border-gray-700 p-4 rounded-xl shadow-2xl text-xs max-w-xs z-50"
+        className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-xl shadow-2xl text-xs max-w-xs z-50"
         style={{ pointerEvents: 'none' }}
       >
-        <p className="font-bold text-white mb-1 flex items-center gap-1">
+        <p className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-1">
           <CalendarDays className="w-3 h-3" /> {p.tooltipDate}
         </p>
-        <p className="text-gray-400 text-[10px]">Time: {p.tooltipTime}</p>
+        <p className="text-gray-500 dark:text-gray-400 text-[10px]">Time: {p.tooltipTime}</p>
         <div className="flex items-center gap-2 my-2">
-          <span className="text-gray-400">Score:</span>
-          <span className="font-semibold text-indigo-400 text-base">{p.score}</span>
+          <span className="text-gray-600 dark:text-gray-400">Score:</span>
+          <span className="font-semibold text-indigo-600 dark:text-indigo-400 text-base">{p.score}</span>
         </div>
-        <div className="text-gray-300 text-xs border-t border-gray-700 pt-3">
-          <span className="font-medium text-gray-400">Session:</span>
+        <div className="text-gray-700 dark:text-gray-300 text-xs border-t border-gray-100 dark:border-gray-700 pt-3">
+          <span className="font-medium text-gray-500 dark:text-gray-400">Session:</span>
           <br />
           {p.label}
         </div>
@@ -58,9 +57,7 @@ const CustomTooltip = memo(({ active, payload }) => {
   return null;
 });
 
-// ==================== ANALYSIS (pure data — no JSX, so useMemo works correctly) ====================
-// FIX 2: Return plain data object instead of JSX so useMemo can do a stable
-// reference comparison and avoid re-running on every render.
+// ==================== ANALYSIS (pure data) ====================
 const computeAnalysis = (data, type, miniStats) => {
   if (!data.length || !miniStats) return null;
 
@@ -79,44 +76,44 @@ const computeAnalysis = (data, type, miniStats) => {
 
   if (isAdaptive) {
     if (avg >= 8.5) {
-      performanceLevel = 'Outstanding'; levelColor = 'text-emerald-400';
+      performanceLevel = 'Outstanding'; levelColor = 'text-emerald-600 dark:text-emerald-400';
       summary = 'Your adaptive interview performance is exceptional. You consistently demonstrate deep understanding.';
       recommendation = 'Challenge yourself with expert-level topics and consider mentoring others.';
       percentileHint = 'Top 10% of learners';
     } else if (avg >= 7) {
-      performanceLevel = 'Proficient'; levelColor = 'text-teal-400';
+      performanceLevel = 'Proficient'; levelColor = 'text-teal-600 dark:text-teal-400';
       summary = 'You have solid grasp of topics. The adaptive system finds your sweet spot.';
       recommendation = 'Focus on topics where you scored below 7. Review missed questions.';
       percentileHint = 'Top 30% of learners';
     } else if (avg >= 5) {
-      performanceLevel = 'Developing'; levelColor = 'text-amber-400';
+      performanceLevel = 'Developing'; levelColor = 'text-amber-600 dark:text-amber-400';
       summary = 'You are making progress but have room for improvement.';
       recommendation = "Practice foundational concepts more. Use the system's hints and explanations.";
       percentileHint = 'Average range';
     } else {
-      performanceLevel = 'Needs Attention'; levelColor = 'text-rose-400';
+      performanceLevel = 'Needs Attention'; levelColor = 'text-rose-600 dark:text-rose-400';
       summary = "Your scores indicate significant gaps. Don't worry – we'll help you improve.";
       recommendation = "Start with beginner-level topics. Review each question's explanation thoroughly.";
       percentileHint = 'Bottom 20% – room to grow';
     }
   } else {
     if (avg >= 85) {
-      performanceLevel = 'Outstanding'; levelColor = 'text-emerald-400';
+      performanceLevel = 'Outstanding'; levelColor = 'text-emerald-600 dark:text-emerald-400';
       summary = "Excellent command of interview topics. You're well-prepared for real interviews.";
       recommendation = 'Practice with timed mock interviews and focus on communication clarity.';
       percentileHint = 'Top 15% of users';
     } else if (avg >= 70) {
-      performanceLevel = 'Proficient'; levelColor = 'text-teal-400';
+      performanceLevel = 'Proficient'; levelColor = 'text-teal-600 dark:text-teal-400';
       summary = 'Good understanding with some weak spots. Targeted practice will help.';
       recommendation = 'Review questions you scored low on. Practice similar topics.';
       percentileHint = 'Above average';
     } else if (avg >= 50) {
-      performanceLevel = 'Developing'; levelColor = 'text-amber-400';
+      performanceLevel = 'Developing'; levelColor = 'text-amber-600 dark:text-amber-400';
       summary = 'You have basic knowledge but need deeper understanding.';
       recommendation = 'Focus on core concepts first. Use the learning resources provided.';
       percentileHint = 'Average range';
     } else {
-      performanceLevel = 'Needs Attention'; levelColor = 'text-rose-400';
+      performanceLevel = 'Needs Attention'; levelColor = 'text-rose-600 dark:text-rose-400';
       summary = "Your scores suggest you're new to these topics. Start from basics.";
       recommendation = 'Begin with introductory materials. Practice each topic multiple times.';
       percentileHint = 'Beginner level';
@@ -124,7 +121,7 @@ const computeAnalysis = (data, type, miniStats) => {
   }
 
   let trendText = '';
-  let trendVariant = 'neutral'; // 'up-fast' | 'up-slow' | 'up-tiny' | 'down-fast' | 'down-slow' | 'neutral'
+  let trendVariant = 'neutral';
   if (trend > 8) {
     trendText = `Your performance is improving rapidly (+${trend}% over last session). Keep up the momentum!`;
     trendVariant = 'up-fast';
@@ -179,7 +176,7 @@ const computeAnalysis = (data, type, miniStats) => {
   };
 };
 
-// ==================== ANALYSIS DISPLAY (reads plain data, renders JSX) ====================
+// ==================== ANALYSIS DISPLAY ====================
 const AnalysisPanel = memo(({ analysisData }) => {
   if (!analysisData) return null;
 
@@ -190,70 +187,70 @@ const AnalysisPanel = memo(({ analysisData }) => {
   } = analysisData;
 
   const trendIcon = (() => {
-    if (trendVariant === 'up-fast') return <TrendingUp className="w-4 h-4 text-emerald-400" />;
-    if (trendVariant === 'up-slow') return <TrendingUp className="w-4 h-4 text-teal-400" />;
-    if (trendVariant === 'up-tiny') return <TrendingUp className="w-4 h-4 text-blue-400" />;
-    if (trendVariant === 'down-fast') return <TrendingDown className="w-4 h-4 text-rose-400" />;
-    if (trendVariant === 'down-slow') return <TrendingDown className="w-4 h-4 text-amber-400" />;
+    if (trendVariant === 'up-fast') return <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
+    if (trendVariant === 'up-slow') return <TrendingUp className="w-4 h-4 text-teal-600 dark:text-teal-400" />;
+    if (trendVariant === 'up-tiny') return <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />;
+    if (trendVariant === 'down-fast') return <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />;
+    if (trendVariant === 'down-slow') return <TrendingDown className="w-4 h-4 text-amber-600 dark:text-amber-400" />;
     return null;
   })();
 
   return (
-    <div className="space-y-5 text-sm leading-relaxed text-gray-300">
+    <div className="space-y-5 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
       <div className="flex items-start gap-2">
-        <Award className="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+        <Award className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
         <div>
-          <span className="font-semibold text-white">Performance Summary:</span> {summary}
+          <span className="font-semibold text-gray-800 dark:text-white">Performance Summary:</span> {summary}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-900/50 rounded-xl p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-white">Level:</span>
+            <span className="font-semibold text-gray-800 dark:text-white">Level:</span>
             <span className={`font-bold ${levelColor}`}>{performanceLevel}</span>
           </div>
-          <div className="mt-2 text-xs text-gray-400">{percentileHint}</div>
+          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">{percentileHint}</div>
         </div>
         <div>
           <div className="flex items-center gap-1.5">
             {trendIcon}
             <span>{trendText}</span>
           </div>
-          <div className="mt-2 text-xs text-gray-400">
+          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
             Based on {total} session{total !== 1 ? 's' : ''}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 justify-between border-t border-gray-700 pt-3 text-xs">
+      <div className="flex flex-wrap gap-4 justify-between border-t border-gray-200 dark:border-gray-700 pt-3 text-xs">
         <div>
-          <span className="text-gray-400">Best session:</span>{' '}
-          <span className="text-white font-medium">{bestSession.score}{unit}</span>
+          <span className="text-gray-500 dark:text-gray-400">Best session:</span>{' '}
+          <span className="text-gray-800 dark:text-white font-medium">{bestSession.score}{unit}</span>
           <br />
-          <span className="text-gray-500">{bestSession.label.substring(0, 40)}</span>
+          <span className="text-gray-400 dark:text-gray-500">{bestSession.label.substring(0, 40)}</span>
         </div>
         <div>
-          <span className="text-gray-400">Lowest session:</span>{' '}
-          <span className="text-white font-medium">{worstSession.score}{unit}</span>
+          <span className="text-gray-500 dark:text-gray-400">Lowest session:</span>{' '}
+          <span className="text-gray-800 dark:text-white font-medium">{worstSession.score}{unit}</span>
           <br />
-          <span className="text-gray-500">{worstSession.label.substring(0, 40)}</span>
+          <span className="text-gray-400 dark:text-gray-500">{worstSession.label.substring(0, 40)}</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-amber-300 text-xs">
+      <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 text-xs">
         <Target className="w-4 h-4" />
         <span>{consistencyText}</span>
       </div>
 
-      <div className="bg-indigo-950/70 border border-indigo-800 p-4 rounded-xl">
-        <div className="flex items-center gap-2 font-medium mb-2 text-indigo-300">
+      <div className="bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 p-4 rounded-xl">
+        <div className="flex items-center gap-2 font-medium mb-2 text-indigo-700 dark:text-indigo-300">
           <Lightbulb className="w-5 h-5" />
           Personalized Recommendation
         </div>
-        <p className="text-indigo-100 text-sm">{recommendation}</p>
+        <p className="text-indigo-800 dark:text-indigo-100 text-sm">{recommendation}</p>
         {insightMessage && (
-          <div className="mt-3 pt-2 border-t border-indigo-800/50 text-xs text-indigo-200 flex items-center gap-1">
+          <div className="mt-3 pt-2 border-t border-indigo-200 dark:border-indigo-800/50 text-xs text-indigo-700 dark:text-indigo-200 flex items-center gap-1">
             <AlertCircle className="w-3 h-3" /> {insightMessage}
           </div>
         )}
@@ -267,27 +264,27 @@ const ScrollButtons = memo(({ scroll }) => (
   <>
     <button
       onClick={() => scroll('left')}
-      className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-gray-800 border border-gray-600 rounded-full p-1.5 hover:bg-gray-700"
+      className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-md"
     >
-      <ChevronLeft className="w-5 h-5 text-gray-300" />
+      <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
     </button>
     <button
       onClick={() => scroll('right')}
-      className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-gray-800 border border-gray-600 rounded-full p-1.5 hover:bg-gray-700"
+      className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-md"
     >
-      <ChevronRight className="w-5 h-5 text-gray-300" />
+      <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
     </button>
   </>
 ));
 
 // ==================== CHART CARD ====================
 const ChartCard = memo(({ title, icon, color, data, type }) => {
+  const { darkMode } = useTheme(); // for dynamic chart colors
   const scrollContainerRef = useRef(null);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
   const isAdaptive = type === 'adaptive';
   const scoreSuffix = isAdaptive ? '/10' : '/100';
 
-  // FIX 2a: miniStats only recomputes when data array reference changes
   const miniStats = useMemo(() => {
     if (!data.length) return null;
     const scores = data.map(d => d.score);
@@ -301,7 +298,6 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
     return { latest, avg, trend, total: data.length };
   }, [data]);
 
-  // FIX 2b: analysis is plain data (no JSX) → useMemo reference stays stable between renders
   const analysisData = useMemo(() => computeAnalysis(data, type, miniStats), [data, type, miniStats]);
 
   useEffect(() => {
@@ -347,14 +343,19 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
     { color: '#ef4444', label: '<50 (Needs improvement)' },
   ], [isAdaptive]);
 
+  // Dynamic chart colors based on theme
+  const axisTickFill = darkMode ? '#e5e7eb' : '#374151';
+  const axisLineStroke = darkMode ? '#4b5563' : '#d1d5db';
+  const gridStroke = darkMode ? '#374151' : '#e5e7eb';
+
   if (!data.length) {
     return (
-      <div className="bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800/90 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className={`p-2 rounded-xl bg-${color}-900/30`}>{icon}</div>
-          <h3 className="text-xl font-bold text-white">{title}</h3>
+          <div className={`p-2 rounded-xl bg-${color}-100 dark:bg-${color}-900/30`}>{icon}</div>
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white">{title}</h3>
         </div>
-        <div className="h-64 flex flex-col items-center justify-center text-gray-500">
+        <div className="h-64 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
           <BarChart3 className="w-12 h-12 mb-3" />
           <p>No data available in this period</p>
         </div>
@@ -364,20 +365,15 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
 
   const chartWidth = Math.max(400, data.length * 70);
   const yDomain = isAdaptive ? [0, 10] : [0, 100];
-  // FIX 3: shared XAxis / tooltip props to avoid inline-object recreation
+
   const xAxisProps = {
     dataKey: 'date',
-    tick: { fontSize: data.length > 10 ? 9 : 10, fill: '#e5e7eb' },
+    tick: { fontSize: data.length > 10 ? 9 : 10, fill: axisTickFill },
     tickLine: false,
-    axisLine: { stroke: '#4b5563' },
+    axisLine: { stroke: axisLineStroke },
     interval: 0,
     angle: data.length > 8 ? -25 : 0,
     textAnchor: data.length > 8 ? 'end' : 'middle',
-  };
-  const tooltipProps = {
-    content: <CustomTooltip />,
-    // FIX 1b: keep wrapper style as a constant (not a new object each render)
-    wrapperStyle: TOOLTIP_WRAPPER_STYLE,
   };
 
   const renderChart = () => {
@@ -389,10 +385,10 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
             <div style={{ width: chartWidth, height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 45 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} opacity={0.3} vertical={false} />
                   <XAxis {...xAxisProps} />
-                  <YAxis domain={yDomain} tick={{ fontSize: 10, fill: '#e5e7eb' }} tickLine={false} axisLine={false} />
-                  <Tooltip {...tooltipProps} />
+                  <YAxis domain={yDomain} tick={{ fontSize: 10, fill: axisTickFill }} tickLine={false} axisLine={false} />
+                  <Tooltip content={<CustomTooltip />} wrapperStyle={{ pointerEvents: 'none' }} />
                   <Line type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} dot={{ fill: '#6366f1', r: 4, strokeWidth: 0 }} activeDot={{ r: 10, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -410,10 +406,10 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
             <div style={{ width: chartWidth, height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 45 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} opacity={0.3} vertical={false} />
                   <XAxis {...xAxisProps} />
-                  <YAxis domain={yDomain} tick={{ fontSize: 10, fill: '#e5e7eb' }} tickLine={false} axisLine={false} />
-                  <Tooltip {...tooltipProps} />
+                  <YAxis domain={yDomain} tick={{ fontSize: 10, fill: axisTickFill }} tickLine={false} axisLine={false} />
+                  <Tooltip content={<CustomTooltip />} wrapperStyle={{ pointerEvents: 'none' }} />
                   <Bar dataKey="score" radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     {data.map((entry, idx) => (
                       <Cell key={idx} fill={getScoreColor(entry.score, false)} fillOpacity={0.8} />
@@ -435,10 +431,10 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
           <div style={{ width: chartWidth, height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 45 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} opacity={0.3} vertical={false} />
                 <XAxis {...xAxisProps} />
-                <YAxis domain={yDomain} tick={{ fontSize: 10, fill: '#e5e7eb' }} tickLine={false} axisLine={false} />
-                <Tooltip {...tooltipProps} />
+                <YAxis domain={yDomain} tick={{ fontSize: 10, fill: axisTickFill }} tickLine={false} axisLine={false} />
+                <Tooltip content={<CustomTooltip />} wrapperStyle={{ pointerEvents: 'none' }} />
                 <defs>
                   <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -456,15 +452,15 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
   };
 
   return (
-    <div className="bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700 overflow-hidden">
-      <div className="p-5 border-b border-gray-700">
+    <div className="bg-white dark:bg-gray-800/90 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="p-5 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl bg-${color}-900/30`}>{icon}</div>
-            <h3 className="text-xl font-bold text-white">{title}</h3>
+            <div className={`p-2 rounded-xl bg-${color}-100 dark:bg-${color}-900/30`}>{icon}</div>
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white">{title}</h3>
           </div>
           {miniStats && (
-            <div className="flex gap-5 text-sm text-gray-300">
+            <div className="flex gap-5 text-sm text-gray-600 dark:text-gray-300">
               <div>Latest: <span className={`font-bold ${getScoreColorClass(miniStats.latest, isAdaptive)}`}>{miniStats.latest}{scoreSuffix}</span></div>
               <div>Avg: <span className={`font-bold ${getScoreColorClass(miniStats.avg, isAdaptive)}`}>{miniStats.avg}{scoreSuffix}</span></div>
             </div>
@@ -475,7 +471,7 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
       <div className="p-5">
         {renderChart()}
 
-        <div className="flex justify-center gap-5 mt-6 text-xs border-t border-gray-700 pt-4 text-gray-400">
+        <div className="flex justify-center gap-5 mt-6 text-xs border-t border-gray-200 dark:border-gray-700 pt-4 text-gray-500 dark:text-gray-400">
           {legendItems.map((item, idx) => (
             <div key={idx} className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
@@ -485,8 +481,8 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
         </div>
 
         {analysisData && (
-          <div className="mt-6 bg-gray-900/70 border border-gray-700 rounded-xl p-5">
-            <div className="flex items-center gap-2 text-indigo-400 font-medium mb-3">
+          <div className="mt-6 bg-gray-50 dark:bg-gray-900/70 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+            <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-medium mb-3">
               <Lightbulb className="w-5 h-5" />
               Insights &amp; Analysis
             </div>
@@ -497,9 +493,6 @@ const ChartCard = memo(({ title, icon, color, data, type }) => {
     </div>
   );
 });
-
-// Constant outside any component — never recreated
-const TOOLTIP_WRAPPER_STYLE = { pointerEvents: 'none' };
 
 // ==================== MAIN COMPONENT ====================
 export default function PerformanceTrendChart() {
@@ -606,12 +599,12 @@ export default function PerformanceTrendChart() {
 
     fetchAllHistories();
     return () => { isMounted = false; };
-  }, [timeRange]); // only re-fetch when time range changes
+  }, [timeRange]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-indigo-600 dark:text-indigo-500 animate-spin" />
       </div>
     );
   }
@@ -619,13 +612,15 @@ export default function PerformanceTrendChart() {
   return (
     <div className="w-full">
       <div className="flex justify-end mb-6">
-        <div className="flex gap-1 bg-gray-800 p-1 rounded-full">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-full">
           {['7days', '30days', 'all'].map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
               className={`px-4 py-1.5 text-xs rounded-full transition-all ${
-                timeRange === range ? 'bg-gray-700 text-white shadow' : 'text-gray-400 hover:bg-gray-700'
+                timeRange === range
+                  ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white shadow'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               {range === '7days' ? '7 days' : range === '30days' ? '30 days' : 'All time'}
@@ -635,16 +630,19 @@ export default function PerformanceTrendChart() {
       </div>
 
       <div className="flex flex-col space-y-8">
-        <ChartCard title="Standard (Topic-based)" icon={<MessageCircle className="w-5 h-5 text-indigo-400" />} color="indigo" data={dataSets.standard} type="standard" />
-        <ChartCard title="CV-based (Resume-focused)" icon={<FolderOpen className="w-5 h-5 text-purple-400" />} color="purple" data={dataSets.cv} type="cv" />
-        <ChartCard title="Adaptive (Smart Difficulty)" icon={<Cpu className="w-5 h-5 text-emerald-400" />} color="emerald" data={dataSets.adaptive} type="adaptive" />
+        <ChartCard title="Standard (Topic-based)" icon={<MessageCircle className="w-5 h-5 text-indigo-500" />} color="indigo" data={dataSets.standard} type="standard" />
+        <ChartCard title="CV-based (Resume-focused)" icon={<FolderOpen className="w-5 h-5 text-purple-500" />} color="purple" data={dataSets.cv} type="cv" />
+        <ChartCard title="Adaptive (Smart Difficulty)" icon={<Cpu className="w-5 h-5 text-emerald-500" />} color="emerald" data={dataSets.adaptive} type="adaptive" />
       </div>
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
       `}</style>
     </div>
   );

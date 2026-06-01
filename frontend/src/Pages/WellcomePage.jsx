@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, User, Brain, Zap, ChevronDown, Settings, HelpCircle,
   MessageCircle, TrendingUp, FileText, Sparkles, Clock, Flame,
-  CalendarDays, Lightbulb, Quote
+  CalendarDays, Lightbulb, Quote,Code2 
 } from 'lucide-react';
 
 import { StartInterviewModal } from '../components/StartInterviewModal';
@@ -448,8 +448,8 @@ export default function WelcomePage() {
               </h3>
               {/* Fixed chart container - ensures proper sizing and no overflow */}
               <div className="w-full">
-  <PerformanceTrendChart />
-</div>
+                <PerformanceTrendChart />
+              </div>
             </div>
           </div>
           <div className="space-y-6">
@@ -465,6 +465,11 @@ export default function WelcomePage() {
                 <UploadCV onUploadSuccess={handleCVUploadSuccess} />
                 <button onClick={() => navigate('/history')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
                   <Brain className="w-4 h-4" /> {t('interviewHistory')}
+                </button>
+
+                
+                <button onClick={() => navigate('/live-coding')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
+                  <Code2 className="w-4 h-4" /> Live Coding Interview
                 </button>
               </div>
             </div>
