@@ -110,10 +110,10 @@ exports.startInterview = async (req, res) => {
         type: 'code',
         answered: false,
       },
-      explainAnswers: [],
-      explainCount: 0,
-      currentCodeSubmission: null,
-      waitingForNextCode: false,
+      explainAnswers: [], // RAM only
+      explainCount: 0, // RAM only
+      currentCodeSubmission: null, // RAM only
+      waitingForNextCode: false, // RAM only
       createdAt: new Date(),
     };
 
@@ -144,7 +144,7 @@ exports.getCurrentQuestion = async (req, res) => {
 };
 
 // ===============================
-// SUBMIT CODE (dùng evaluateCodeSubmission để kiểm tra syntax và logic)
+// SUBMIT CODE
 // ===============================
 exports.submitCode = async (req, res) => {
   try {
@@ -160,7 +160,7 @@ exports.submitCode = async (req, res) => {
       return res.status(400).json({ error: 'This question has already been answered correctly' });
     }
 
-    // Đánh giá code (có kiểm tra syntax)
+    // Đánh giá code
     const evaluation = await llmProvider.evaluateCodeSubmission(
       session.language,
       code,
@@ -210,7 +210,7 @@ exports.submitCode = async (req, res) => {
 };
 
 // ===============================
-// SUBMIT EXPLANATION (loại bỏ truncate, clean ellipsis)
+// SUBMIT EXPLANATION
 // ===============================
 exports.submitExplanation = async (req, res) => {
   try {
@@ -239,7 +239,7 @@ exports.submitExplanation = async (req, res) => {
       return res.status(503).json({ error: 'AI evaluation returned invalid data, please try again' });
     }
 
-    // Lưu câu trả lời
+    // Lưu câu trả lời vào RAM (sessionStore)
     session.explainAnswers.push({
       question: session.currentQuestion.question,
       answer,
@@ -297,7 +297,7 @@ exports.submitExplanation = async (req, res) => {
       return res.status(503).json({ error: 'AI final evaluation returned invalid data.' });
     }
 
-    // Lưu vào database (không truncate)
+    // LƯU VÀO DATABASE - chỉ những dữ liệu cần thiết
     const newSessionRecord = new LiveCodingSession({
       id: sessionId,
       language: session.language,
@@ -319,11 +319,10 @@ exports.submitExplanation = async (req, res) => {
         },
       ],
       createdAt: session.createdAt,
-      updatedAt: new Date(),
     });
     await newSessionRecord.save();
 
-    // Reset session để chờ câu code tiếp theo
+    // RESET session (RAM) để chờ câu code tiếp theo
     session.waitingForNextCode = true;
     session.currentQuestion = null;
     session.explainAnswers = [];
@@ -402,6 +401,30 @@ exports.getLastEvaluation = async (req, res) => {
       return res.json({ evaluation: null, message: 'No evaluation yet' });
     }
     res.json({ evaluation: lastEntry.evaluation });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ===============================
+// LẤY TOÀN BỘ CODE HISTORY (từ DB)
+// ===============================
+exports.getSessionHistory = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await LiveCodingSession.findOne({ id: sessionId });
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+
+    res.json({
+      sessionId: session.id,
+      language: session.language,
+      domain: session.domain,
+      topic: session.topic,
+      difficulty: session.difficulty,
+      codeHistory: session.codeHistory,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
