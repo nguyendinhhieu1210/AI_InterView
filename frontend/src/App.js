@@ -30,6 +30,8 @@ import InterviewHistoryPage from './Pages/InterviewHistoryPage';
 import CVHistoryPage from './Pages/CVHistoryPage';
 import AdaptiveSessionDetailPage from './Pages/AdaptiveSessionDetailPage';
 import LiveCodingPage from './Pages/LiveCodingPage';
+import CodingHistoryPage from './Pages/CodingHistoryPage';
+import CodingHistoryDetailPage from './Pages/CodingHistoryDetailPage';
 
 function App() {
   return (
@@ -65,6 +67,8 @@ function App() {
               
               {/* Route cho Live Coding */}
               <Route path="/live-coding" element={<ProtectedRoute><LiveCodingPage /></ProtectedRoute>} />
+              <Route path="/coding-history" element={<ProtectedRoute><CodingHistoryPage /></ProtectedRoute>} />
+              <Route path="/coding-history/:sessionId" element={<ProtectedRoute><CodingHistoryDetailPage /></ProtectedRoute>} />
             </Routes>
           </InterviewProvider>
         </AuthProvider>

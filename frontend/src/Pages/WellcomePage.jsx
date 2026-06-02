@@ -471,6 +471,9 @@ export default function WelcomePage() {
                 <button onClick={() => navigate('/live-coding')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
                   <Code2 className="w-4 h-4" /> Live Coding Interview
                 </button>
+                <button onClick={() => navigate('/coding-history')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
+                  <Code2 className="w-4 h-4" /> Coding History
+                </button>
               </div>
             </div>
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 border border-gray-200/50 dark:border-gray-700/50">

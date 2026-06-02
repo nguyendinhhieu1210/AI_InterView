@@ -7,23 +7,22 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext'; // Import AuthContext
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 export default function SettingsPage() {
     const navigate = useNavigate();
-    const { darkMode, toggleDarkMode } = useTheme();
+    const { theme, toggleDarkMode } = useTheme();       // 👈 Lấy theme (string)
+    const darkMode = theme === 'dark';                 // 👈 Tính boolean
     const { language, changeLanguage, loadingLang } = useLanguage();
-    const { isAuthenticated, loading: authLoading } = useAuth(); // Lấy từ AuthContext
+    const { isAuthenticated, loading: authLoading } = useAuth();
 
-    // Chuyển hướng nếu chưa đăng nhập (sau khi authLoading hoàn tất)
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
             navigate('/login');
         }
     }, [authLoading, isAuthenticated, navigate]);
 
-    // Notification settings
     const [emailNotifications, setEmailNotifications] = useState(() => {
         return localStorage.getItem('emailNotifications') === 'true';
     });
@@ -31,7 +30,6 @@ export default function SettingsPage() {
         return localStorage.getItem('browserNotifications') === 'true';
     });
 
-    // Change password states
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -79,7 +77,6 @@ export default function SettingsPage() {
         }
     };
 
-    // Hiển thị loading khi auth đang được kiểm tra
     if (authLoading) {
         return (
             <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'}`}>
@@ -93,12 +90,11 @@ export default function SettingsPage() {
         );
     }
 
-    if (!isAuthenticated) return null; // Không render gì nếu chưa đăng nhập
+    if (!isAuthenticated) return null;
 
     return (
         <div className={`min-h-screen transition-all duration-500 ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'} py-8 px-4 sm:px-6 lg:px-8`}>
             <div className="max-w-4xl mx-auto">
-                {/* Back Button */}
                 <button
                     onClick={() => navigate('/welcome')}
                     className="group mb-8 flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 font-medium"
@@ -107,7 +103,6 @@ export default function SettingsPage() {
                     <span>Back to Dashboard</span>
                 </button>
 
-                {/* Page Title */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                         Settings
@@ -199,7 +194,7 @@ export default function SettingsPage() {
                                         <Mail className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                                         <div>
                                             <p className="font-medium text-gray-800 dark:text-white">Email Notifications</p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">Receive interview results and tips</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Receive interview results and tips</p>
                                         </div>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
@@ -212,7 +207,7 @@ export default function SettingsPage() {
                                         <BellRing className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                                         <div>
                                             <p className="font-medium text-gray-800 dark:text-white">Browser Notifications</p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">Show popups for new activity</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Show popups for new activity</p>
                                         </div>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
@@ -227,7 +222,7 @@ export default function SettingsPage() {
                         </div>
                     </div>
 
-                    {/* Security Card (Change Password) */}
+                    {/* Security Card */}
                     <div className={`group rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
                         <div className="p-6">
                             <div className="flex items-center gap-3 mb-5">
