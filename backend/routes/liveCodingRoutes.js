@@ -24,5 +24,10 @@ router.post('/session/:sessionId/next-code', asyncHandler(liveCodingController.n
 
 // === Lấy đánh giá cuối cùng (đã lưu trong DB) ===
 router.get('/session/:sessionId/last-evaluation', asyncHandler(liveCodingController.getLastEvaluation));
+// Lấy danh sách sessions (có thể cần xác thực)
+router.get('/history', asyncHandler(liveCodingController.getSessionList));
+
+// Lấy chi tiết session
+router.get('/sessions/:sessionId',asyncHandler(liveCodingController.getSessionDetail));
 
 module.exports = router;

@@ -429,3 +429,79 @@ exports.getSessionHistory = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+/**
+ * GET /api/sessions
+ * Lấy danh sách các live coding sessions (có phân trang, sắp xếp mới nhất trước)
+ * Query params: page (default 1), limit (default 10)
+ */
+exports.getSessionList = async (req, res) => {
+  try {
+    const sessions = await LiveCodingSession.find({})
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const history = sessions.map(session => ({
+      id: session.id,
+      language: session.language,
+      domain: session.domain,
+      topic: session.topic,
+      difficulty: session.difficulty,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      totalQuestions: session.codeHistory?.length || 0
+    }));
+
+    res.json({
+      success: true,
+      history
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+/**
+ * GET /api/sessions/:sessionId
+ * Lấy chi tiết một session, bao gồm toàn bộ codeHistory
+ */
+exports.getSessionDetail = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = await LiveCodingSession.findOne({ id: sessionId }).lean();
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        session: null,
+      });
+    }
+
+    return res.json({
+      success: true,
+      session: {
+        id: session.id,
+        language: session.language,
+        domain: session.domain,
+        topic: session.topic,
+        difficulty: session.difficulty,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+        codeHistory: session.codeHistory,
+      },
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      session: null,
+      error: error.message,
+    });
+  }
+};
