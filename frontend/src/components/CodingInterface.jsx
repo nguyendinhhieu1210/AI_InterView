@@ -120,14 +120,17 @@ export default function CodingInterface({
   const [feedback, setFeedback] = useState(null);
   const [explainCount, setExplainCount] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
-  const [currentCodeEvaluation, setCurrentCodeEvaluation] = useState(null);
-  const [finalSessionEvaluation, setFinalSessionEvaluation] = useState(null);
+  
+  // FIX: Rename finalSessionEvaluation -> codeEvaluation (rõ ràng hơn)
+  const [codeEvaluation, setCodeEvaluation] = useState(null);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [explainAnswersList, setExplainAnswersList] = useState([]);
   const [submittedCode, setSubmittedCode] = useState('');
   const [submittedProblem, setSubmittedProblem] = useState('');
   const [submittedExampleInput, setSubmittedExampleInput] = useState('');
   const [submittedExampleOutput, setSubmittedExampleOutput] = useState('');
+  const [showExitModal, setShowExitModal] = useState(false);
 
   const editorRef = useRef(null);
   const decorationsRef = useRef([]);
@@ -176,8 +179,7 @@ export default function CodingInterface({
     setFeedback(null);
     setExplainCount(0);
     setUserAnswer('');
-    setCurrentCodeEvaluation(null);
-    setFinalSessionEvaluation(null);
+    setCodeEvaluation(null);
     setExplainAnswersList([]);
     setSubmittedCode('');
     setSubmittedProblem('');
@@ -216,7 +218,15 @@ export default function CodingInterface({
         setPhase('completed');
       }
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to submit code');
+      const status = err.response?.status;
+      const errMsg = err.response?.data?.error;
+      // FIX: Handle session expiry
+      if (status === 404) {
+        toast.error('Session expired. Redirecting...');
+        setTimeout(() => navigate('/welcome'), 1500);
+        return;
+      }
+      toast.error(errMsg || 'Failed to submit code');
     } finally {
       setLoading(false);
     }
@@ -243,18 +253,18 @@ export default function CodingInterface({
       };
       const updatedList = [...explainAnswersList, newExplainAnswer];
       setExplainAnswersList(updatedList);
-      
-      // Display only "✅ Correct" / "❌ Incorrect"
-      setFeedback({ 
-        type: correct ? 'success' : 'error', 
-        message: correct ? '✅ Correct' : '❌ Incorrect' 
+
+      setFeedback({
+        type: correct ? 'success' : 'error',
+        message: correct ? '✅ Correct' : '❌ Incorrect'
       });
-      
+
       correct ? toast.success('✅ Correct') : toast.error('❌ Incorrect');
 
+      // FIX: Set codeEvaluation (not finalSessionEvaluation)
       if (evaluation && completedForCurrentCode) {
         console.log('✅ Completed round, opening evaluation modal...');
-        setCurrentCodeEvaluation(evaluation);
+        setCodeEvaluation(evaluation);  // FIX: Renamed from setCurrentCodeEvaluation
         setExplainAnswersList(updatedList);
         setCurrentQuestion(null);
         setPhase('review');
@@ -262,7 +272,7 @@ export default function CodingInterface({
         setLoading(false);
         return;
       }
-      
+
       if (nextQuestion?.type === 'explain') {
         setCurrentQuestion(nextQuestion);
         setExplainCount(prev => prev + 1);
@@ -282,7 +292,7 @@ export default function CodingInterface({
         setExplainCount(0);
         setUserAnswer('');
         setFeedback(null);
-        setCurrentCodeEvaluation(null);
+        setCodeEvaluation(null);
         setExplainAnswersList([]);
         setSubmittedCode('');
         setSubmittedProblem('');
@@ -293,8 +303,16 @@ export default function CodingInterface({
         setPhase('completed');
       }
     } catch (err) {
+      const status = err.response?.status;
+      const errMsg = err.response?.data?.error;
+      // FIX: Handle session expiry
+      if (status === 404) {
+        toast.error('Session expired. Redirecting...');
+        setTimeout(() => navigate('/welcome'), 1500);
+        return;
+      }
       console.error('Submit answer error:', err);
-      toast.error(err.response?.data?.error || 'Failed to submit answer');
+      toast.error(errMsg || 'Failed to submit answer');
     } finally {
       setLoading(false);
     }
@@ -319,18 +337,27 @@ export default function CodingInterface({
         setExplainCount(0);
         setUserAnswer('');
         setFeedback(null);
-        setCurrentCodeEvaluation(null);
+        setCodeEvaluation(null);
         setExplainAnswersList([]);
         setSubmittedCode('');
         setSubmittedProblem('');
         setSubmittedExampleInput('');
         setSubmittedExampleOutput('');
+        setIsModalOpen(false);  // FIX: Auto-close modal after moving to next code
         toast.success('New coding question ready!');
       } else {
         toast.error('Could not load next question');
       }
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Error loading next question');
+      const status = err.response?.status;
+      const errMsg = err.response?.data?.error;
+      // FIX: Handle session expiry
+      if (status === 404) {
+        toast.error('Session expired. Redirecting...');
+        setTimeout(() => navigate('/welcome'), 1500);
+        return;
+      }
+      toast.error(errMsg || 'Error loading next question');
     } finally {
       setLoading(false);
     }
@@ -341,41 +368,20 @@ export default function CodingInterface({
   };
 
   const handleExit = () => {
-    if (window.confirm('Are you sure you want to exit? Progress will not be saved.')) {
-      navigate('/welcome');
-    }
+    setShowExitModal(true);
   };
 
-  if (phase === 'completed' && finalSessionEvaluation) {
-    return (
-      <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-100'} flex items-center justify-center p-6`}>
-        <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-8 max-w-2xl w-full shadow-xl border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-          <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} mb-6`}>🎉 Interview Completed</h2>
-          <div className="space-y-5">
-            <div className={`${isDark ? 'bg-gray-700/50' : 'bg-gray-50'} p-4 rounded-xl`}>
-              <p className={isDark ? 'text-gray-200' : 'text-gray-800'}>{finalSessionEvaluation.summary || 'Thank you for participating.'}</p>
-              {finalSessionEvaluation.feedback && <p className={`text-sm mt-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{finalSessionEvaluation.feedback}</p>}
-            </div>
-            {finalSessionEvaluation.strengths?.length > 0 && (
-              <div><h3 className="font-semibold text-emerald-600 dark:text-emerald-400 mb-2">✅ Strengths</h3>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  {finalSessionEvaluation.strengths.map((s, i) => <li key={i} className={isDark ? 'text-gray-300' : 'text-gray-700'}>{s}</li>)}
-                </ul>
-              </div>
-            )}
-            {finalSessionEvaluation.weaknesses?.length > 0 && (
-              <div><h3 className="font-semibold text-rose-600 dark:text-rose-400 mb-2">⚠️ Areas to improve</h3>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  {finalSessionEvaluation.weaknesses.map((w, i) => <li key={i} className={isDark ? 'text-gray-300' : 'text-gray-700'}>{w}</li>)}
-                </ul>
-              </div>
-            )}
-            <button onClick={onReset} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-semibold transition">Start Over</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const confirmExit = () => {
+    setShowExitModal(false);
+    navigate('/welcome');
+  };
+
+  const cancelExit = () => {
+    setShowExitModal(false);
+  };
+
+  // FIX: Remove the "completed" screen (không cần, vì user click Next → tiếp tục)
+  // Nếu muốn show completion message, show trong phase 'review' instead
 
   const langBadgeClass = LANG_BADGE[language] || (isDark ? 'border-gray-600 text-gray-300 bg-gray-700' : 'border-gray-400 text-gray-700 bg-gray-100');
   const diffBadgeClass = DIFF_BADGE[difficulty] || (isDark ? 'border-gray-600 text-gray-300 bg-gray-700' : 'border-gray-400 text-gray-700 bg-gray-100');
@@ -398,7 +404,7 @@ export default function CodingInterface({
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${langBadgeClass}`}>{initialLanguage}</span>
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${diffBadgeClass}`}>{difficulty}</span>
           {domain && <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'} ml-auto hidden sm:inline`}>{domain}</span>}
-          {currentCodeEvaluation && (
+          {codeEvaluation && (
             <button onClick={() => setIsModalOpen(true)} className={`ml-auto sm:ml-0 text-xs ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'} px-3 py-1.5 rounded-lg transition`}>
               View Result
             </button>
@@ -458,13 +464,12 @@ export default function CodingInterface({
                 </div>
               </div>
 
-              {/* Feedback card - only one line */}
+              {/* Feedback card */}
               {feedback && (
-                <div className={`p-4 rounded-xl border text-sm ${
-                  feedback.type === 'error'
+                <div className={`p-4 rounded-xl border text-sm ${feedback.type === 'error'
                     ? (isDark ? 'bg-red-900/30 border-red-700 text-red-200' : 'bg-red-50 border-red-300 text-red-800')
                     : (isDark ? 'bg-green-900/30 border-green-700 text-green-200' : 'bg-green-50 border-green-300 text-green-800')
-                }`}>
+                  }`}>
                   <div className="font-semibold">{feedback.message}</div>
                   {feedback.type === 'success' && phase === 'explain_pending' && (
                     <button onClick={handleContinueToExplain} className="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm py-1.5 px-4 rounded-lg transition">
@@ -486,12 +491,71 @@ export default function CodingInterface({
                   <button onClick={handleSubmitAnswer} disabled={loading} className="mt-3 w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white py-2 rounded-lg text-sm font-semibold transition">{loading ? 'Submitting...' : 'Submit Answer'}</button>
                 </div>
               )}
+
+              {/* FIX: Show "Next Code" button when in review phase */}
+              {phase === 'review' && codeEvaluation && (
+                <div className={`p-4 rounded-xl border ${isDark ? 'bg-amber-900/30 border-amber-700' : 'bg-amber-50 border-amber-300'}`}>
+                  <p className={`text-sm mb-3 ${isDark ? 'text-amber-200' : 'text-amber-900'}`}>
+                    ✅ Code evaluation complete! Ready for the next question?
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      <EvaluationModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onNext={handleNextCode} evaluation={currentCodeEvaluation} explainAnswers={explainAnswersList} problemStatement={submittedProblem} code={submittedCode} exampleInput={submittedExampleInput} exampleOutput={submittedExampleOutput} />
+      <EvaluationModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onNext={handleNextCode} 
+        evaluation={codeEvaluation}  // FIX: Renamed from currentCodeEvaluation
+        explainAnswers={explainAnswersList} 
+        problemStatement={submittedProblem} 
+        code={submittedCode} 
+        exampleInput={submittedExampleInput} 
+        exampleOutput={submittedExampleOutput} 
+      />
+
+      {/* Exit Modal */}
+      {showExitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all duration-300">
+          <div className={`max-w-md w-full mx-auto transform transition-all duration-300 scale-100 opacity-100 rounded-2xl shadow-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} border ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <svg className="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+              </div>
+              <h3 className={`text-xl font-bold text-center ${isDark ? 'text-white' : 'text-gray-900'} mb-2`}>
+                Confirm Exit
+              </h3>
+              <p className={`text-center ${isDark ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
+                Are you sure you want to exit the coding session?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelExit}
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isDark
+                      ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                    }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmExit}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  Yes, Exit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

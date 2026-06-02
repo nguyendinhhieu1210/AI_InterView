@@ -106,29 +106,72 @@ function fallbackResponse(prompt) {
 }
 
 // ===============================
-// GENERATE CODE QUESTION (đa dạng theo ngôn ngữ, domain, topic, độ khó)
+// GENERATE CODE QUESTION (difficulty-aware)
 // ===============================
 async function generateCodeQuestion(language, domain, topic, difficulty) {
-  const prompt = `Generate a coding problem in ${language}.
+  // Difficulty-based constraints
+  let difficultyConstraints = '';
+  
+  if (difficulty.toLowerCase() === 'beginner') {
+    difficultyConstraints = `
+BEGINNER PROBLEM CONSTRAINTS (MUST FOLLOW):
+- Keep problem SHORT and SIMPLE (10-15 lines of code maximum).
+- Single task only - do NOT ask for multiple related classes or features.
+- Do NOT require inheritance hierarchies with multiple classes.
+- Do NOT require multiple methods - keep to 1-2 simple methods.
+- Do NOT require complex data structures - use simple arrays or single variables.
+- Focus on basic syntax, loops, conditionals, simple functions.
+- Example for OOP/Inheritance topic: "Create a simple Dog class with a name attribute and a bark() method."
+- Example for Arrays/Loops topic: "Write a function to find the maximum number in an array."
+- Problem should be solvable in 5-10 minutes.
+- Keep example input/output simple and clear.`;
+  } else if (difficulty.toLowerCase() === 'intermediate') {
+    difficultyConstraints = `
+INTERMEDIATE PROBLEM CONSTRAINTS (MUST FOLLOW):
+- Moderate complexity - 15-30 lines of code.
+- Can involve 2-3 related classes or multiple methods.
+- Can ask for basic inheritance or simple design patterns.
+- Can involve basic error handling or edge cases.
+- Problem should require 15-25 minutes to solve.
+- Example for OOP/Inheritance: "Create a Vehicle parent class with 2 child classes (Car, Motorcycle) with specific attributes and a shared method."
+- Example for DSA: "Implement a Stack using an array, with push/pop/peek methods."
+- More structured problem with clear requirements.`;
+  } else if (difficulty.toLowerCase() === 'advanced') {
+    difficultyConstraints = `
+ADVANCED PROBLEM CONSTRAINTS (MUST FOLLOW):
+- High complexity - 30+ lines of code.
+- Can involve multiple classes, inheritance chains, or interfaces.
+- Can ask for advanced design patterns (Factory, Singleton, Strategy, etc.).
+- Can require comprehensive error handling and edge case management.
+- Can involve optimization, scalability, or performance considerations.
+- Problem should require 30+ minutes to solve.
+- Example for OOP/Inheritance: "Implement an Employee management system with abstract classes, multiple inheritance levels, method overriding, and polymorphism."
+- Example for DSA: "Implement a self-balancing BST (AVL tree) with insert, delete, and rebalancing logic."
+- Complex, real-world like scenarios.`;
+  }
+
+  const prompt = `Generate a ${difficulty} level coding problem in ${language}.
 Domain: ${domain}
 Topic: ${topic}
-Difficulty: ${difficulty}
+
+${difficultyConstraints}
 
 Requirements:
 - The problem must be relevant to the domain and topic.
 - Provide a detailed problem statement.
-- Include example input and output.
-- Specify test criteria/constraints.
+- Include example input and output that match the difficulty level.
+- Specify test criteria/constraints appropriate for the difficulty.
 
 Return ONLY valid JSON, no markdown:
 {
-  "problemStatement": "Detailed problem description (multiple sentences)",
+  "problemStatement": "Detailed problem description (${difficulty === 'beginner' ? 'short, simple' : difficulty === 'intermediate' ? 'moderate' : 'detailed and complex'})",
   "content": "Brief description",
-  "testCriteria": "Constraints or edge cases",
-  "exampleInput": "Example input",
-  "exampleOutput": "Example output",
+  "testCriteria": "Constraints or edge cases appropriate for ${difficulty} level",
+  "exampleInput": "Simple and clear example input",
+  "exampleOutput": "Clear example output",
   "description": "Short summary"
 }`;
+
   const result = await callAI(prompt);
   const parsed = extractJson(result);
   if (parsed && typeof parsed === 'object') {
@@ -153,6 +196,7 @@ BEGINNER RULES:
 - Ask about: What does this variable store? What does this method do? How does this loop work?
 - Example: "On line 5, what does the 'name' variable store?"
 - Example: "What is the purpose of this constructor?"
+- Keep it basic and direct.
 `;
   } else if (difficulty.toLowerCase() === 'intermediate') {
     difficultyRules = `
@@ -161,6 +205,7 @@ INTERMEDIATE RULES:
 - Can ask about why certain approaches were chosen.
 - Can ask about basic performance considerations.
 - Can ask about how the code handles common edge cases.
+- Can ask about inheritance or polymorphism concepts used.
 - Do not ask about advanced design patterns or complex optimization.
 `;
   } else {
@@ -171,6 +216,7 @@ ADVANCED RULES:
 - Can ask about time/space complexity.
 - Can ask about scalability and performance improvements.
 - Can ask about design trade-offs and limitations.
+- Can ask about why this design is superior to alternatives.
 `;
   }
 
@@ -209,26 +255,43 @@ RETURN JSON:
   
   console.warn('⚠️  Question validation failed, using fallback...');
   const lines = userCode.split('\n');
-  let fallbackQuestion = `Explain the main logic and purpose of the code above.`;
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (/^\s*(constructor|function|async\s+function)/.test(lines[i])) {
-      fallbackQuestion = `On line ${i + 1}: ${line.substring(0, 50)}..., what is the purpose of this function?`;
-      break;
+  let fallbackQuestion = '';
+
+  if (difficulty.toLowerCase() === 'beginner') {
+    // Simple fallback for beginners
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (/^\s*(public|private|protected)?.*\s+(\w+)\s*\(/.test(lines[i])) {
+        const match = lines[i].match(/(\w+)\s*\(/);
+        if (match && match[1] !== 'class' && match[1] !== 'if' && match[1] !== 'for' && match[1] !== 'while') {
+          fallbackQuestion = `What is the purpose of the ${match[1]} method on line ${i + 1}?`;
+          break;
+        }
+      }
     }
-    if (/for|while/.test(line) && line.includes('(')) {
-      fallbackQuestion = `On line ${i + 1}: ${line.substring(0, 60)}..., what is the role of this loop in your algorithm?`;
-      break;
+    if (!fallbackQuestion) {
+      const match = userCode.match(/class\s+(\w+)/);
+      fallbackQuestion = match 
+        ? `What is the main responsibility of the ${match[1]} class?`
+        : `Explain what this code does in simple terms.`;
     }
-    if (/=\s*new\s|\[\]|\{\}|\(\)/.test(line)) {
-      const match = line.match(/const|let|var\s+(\w+)/);
-      if (match) {
-        fallbackQuestion = `On line ${i + 1}, what is the purpose of the variable '${match[1]}'?`;
+  } else if (difficulty.toLowerCase() === 'intermediate') {
+    // Moderate fallback
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (/for|while/.test(line) && line.includes('(')) {
+        fallbackQuestion = `On line ${i + 1}: ${line.substring(0, 60)}..., explain how this loop works and what it accomplishes.`;
         break;
       }
     }
+    if (!fallbackQuestion) {
+      fallbackQuestion = `Explain the overall logic flow of this code and how the different parts work together.`;
+    }
+  } else {
+    // Advanced fallback
+    fallbackQuestion = `Analyze the design and architecture of this code. What design patterns or principles are being applied? How could it be optimized?`;
   }
+
   return { type: 'explain', question: fallbackQuestion };
 }
 
@@ -242,8 +305,8 @@ async function generateNextExplanationQuestion(language, userCode, userAnswer, c
 BEGINNER RULES:
 - Ask ONLY simple questions about what the code does.
 - Do not ask about optimization, design patterns, or advanced concepts.
-- Do not ask about thread safety, concurrency, or async operations.
-- Do not ask about edge cases beyond obvious ones.
+- Focus on basic understanding: variables, methods, loops, conditionals.
+- Keep questions simple and direct.
 `;
   } else if (difficulty.toLowerCase() === 'intermediate') {
     difficultyRules = `
@@ -251,13 +314,14 @@ INTERMEDIATE RULES:
 - Ask about implementation details and logic flow.
 - Can ask about why certain approaches were chosen.
 - Can ask about basic performance considerations.
+- Can ask about edge cases.
 `;
   } else {
     difficultyRules = `
 ADVANCED RULES:
 - Ask about design patterns, architecture, optimization.
 - Can ask about time/space complexity.
-- Can ask about edge cases and scalability.
+- Can ask about scalability and design trade-offs.
 `;
   }
 
@@ -302,24 +366,48 @@ RETURN JSON:
   }
 
   console.warn('⚠️  Question validation failed, using fallback...');
+  
+  // Difficulty-aware fallbacks for questions 2 and 3
   if (explainCount === 1) {
     if (difficulty.toLowerCase() === 'beginner') {
-      return { type: 'explain', question: `What does this code do when the input is empty or has only one element?` };
+      return { 
+        type: 'explain', 
+        question: `What are the inputs and outputs of this code? Give a specific example of what values are used.` 
+      };
     } else if (difficulty.toLowerCase() === 'intermediate') {
-      return { type: 'explain', question: `How does your code handle edge cases like empty input, single elements, or duplicate values?` };
+      return { 
+        type: 'explain', 
+        question: `How does your code handle different input values? What would happen with edge cases like empty input or maximum/minimum values?` 
+      };
     } else {
-      return { type: 'explain', question: `Describe the time and space complexity (Big O) of your algorithm. Why did you choose this approach?` };
+      return { 
+        type: 'explain', 
+        question: `Analyze the time and space complexity (Big O) of your algorithm. Is there a more efficient approach?` 
+      };
     }
   } else if (explainCount === 2) {
     if (difficulty.toLowerCase() === 'beginner') {
-      return { type: 'explain', question: `What does this line of code do? (choose a specific line and ask about it)` };
+      return { 
+        type: 'explain', 
+        question: `Describe one specific line or block of code and explain what it does step by step.` 
+      };
     } else if (difficulty.toLowerCase() === 'intermediate') {
-      return { type: 'explain', question: `Could you optimize your code? What would you change and why?` };
+      return { 
+        type: 'explain', 
+        question: `Could you improve or optimize your code? What would you change and why?` 
+      };
     } else {
-      return { type: 'explain', question: `What are the limitations of your design? How could it be improved for different scenarios?` };
+      return { 
+        type: 'explain', 
+        question: `What are the limitations of your current design? How could it be improved to handle more complex scenarios or larger data sets?` 
+      };
     }
   }
-  return { type: 'explain', question: `Explain a different part of your code that you haven't discussed yet.` };
+
+  return { 
+    type: 'explain', 
+    question: `Explain a different aspect of your code that we haven't discussed yet.` 
+  };
 }
 
 // ===============================
