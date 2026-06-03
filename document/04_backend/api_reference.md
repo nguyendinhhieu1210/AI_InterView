@@ -260,85 +260,167 @@ Lấy danh sách lịch sử phỏng vấn của user hiện tại.
 ---
 
 ### GET `/api/interview/history/:id`
-Lấy chi tiết một bài phỏng vấn.
-
----
-
-## 4. CV – `/api/cv` 🔒
-
-### POST `/api/cv/upload`
-Upload file CV (PDF).
-
-**Request:** `multipart/form-data`
-```
-file: [CV.pdf]
-```
+Lấy chi tiết một bài phỏng vấn cụ thể.
 
 **Response 200:**
 ```json
 {
   "success": true,
-  "filePath": "uploads/1234567890-CV.pdf",
-  "rawText": "Nguyễn Văn A\nSkills: React, Node.js..."
-}
-```
-
----
-
-### POST `/api/cv/analyze`
-Phân tích kỹ năng từ text CV đã extract.
-
-**Request Body:**
-```json
-{
-  "rawText": "Nguyễn Văn A\nSkills: React, Node.js, MongoDB..."
-}
-```
-
-**Response 200:**
-```json
-{
-  "success": true,
-  "cvData": {
-    "name": "NGUYEN VAN A",
-    "skills": {
-      "frontend": ["React", "HTML", "CSS", "JavaScript"],
-      "backend": ["Node.js", "Express"],
-      "theory": ["REST API", "Git", "Agile"]
-    }
+  "history": {
+    "_id": "...",
+    "topic": "JavaScript",
+    "difficulty": "medium",
+    "questions": [...],
+    "answers": [...],
+    "results": [...]
   }
 }
 ```
 
 ---
 
-### POST `/api/cv/interview/generate`
-Sinh câu hỏi phỏng vấn dựa trên kỹ năng trong CV.
+## 4. CV Interview – `/api/cv`
 
-**Request Body:**
+### POST `/api/cv/upload` 🔒
+Upload file CV (PDF) để trích xuất thông tin.
+
+- Yêu cầu authentication.
+- Sử dụng `multipart/form-data` với field `cv`.
+- Server chỉ lưu tệp tạm thời để trích xuất rồi xoá ngay.
+
+**Request:**
+- Header: `Authorization: Bearer <JWT_TOKEN>`
+- Body: `FormData` với `cv` file PDF
+
+**Response 200:**
 ```json
 {
+  "success": true,
+  "fullName": "Nguyễn Đình Hiếu",
   "skills": {
-    "frontend": ["React", "JavaScript"],
-    "backend": ["Node.js"]
+    "frontend": [...],
+    "backend": [...],
+    "theory": [...],
+    "devops": [...]
+  },
+  "rawText": "...",
+  "fileName": "CV_NguyenDinhHieu.pdf"
+}
+```
+
+---
+
+### POST `/api/cv/analyze-text`
+Phân tích nội dung CV đã trích xuất sẵn.
+
+- Không yêu cầu upload file.
+- Nhận payload JSON chứa `cvText`.
+- Trả về `fullName` và `skills`.
+
+**Request Body:**
+```json
+{
+  "cvText": "..."
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "fullName": "Nguyễn Đình Hiếu",
+  "skills": { "frontend": [...], "backend": [...], "theory": [...], "devops": [...] }
+}
+```
+
+---
+
+### POST `/api/cv/generate-questions`
+Sinh bộ câu hỏi phỏng vấn dựa trên nội dung CV và kỹ năng đã chọn.
+
+- Không yêu cầu JWT.
+- Nhận payload JSON chứa `cvText` và `selectedSkills`.
+
+**Request Body:**
+```json
+{
+  "cvText": "...",
+  "selectedSkills": {
+    "frontend": ["React", "HTML"],
+    "backend": ["Node.js"],
+    "theory": ["OOP"],
+    "devops": ["Docker"]
+  }
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "questions": {
+    "mcq": [...],
+    "text": [...]
   }
 }
 ```
 
 ---
 
-### POST `/api/cv/interview/submit`
-Nộp bài phỏng vấn CV và nhận kết quả.
+### POST `/api/cv/submit-answers` 🔒
+Nộp câu trả lời cho bài phỏng vấn CV và lưu lịch sử.
+
+- Yêu cầu authentication.
+- Nhận `questions`, `answers`, `selectedSkills`, và `cvName`.
+
+**Request Body:**
+```json
+{
+  "questions": { ... },
+  "answers": { ... },
+  "selectedSkills": { ... },
+  "cvName": "CV_NguyenDinhHieu.pdf"
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "results": {
+    "mcq": [...],
+    "text": [...],
+    "totalScore": 88,
+    "summary": "..."
+  }
+}
+```
 
 ---
 
-### GET `/api/cv/history`
-Lấy lịch sử phỏng vấn theo CV.
+### GET `/api/cv/history` 🔒
+Lấy danh sách lịch sử phỏng vấn CV của user.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "history": [ ... ]
+}
+```
 
 ---
 
-### GET `/api/cv/history/:id`
-Chi tiết một session CV interview.
+### GET `/api/cv/history/:id` 🔒
+Lấy chi tiết session CV cụ thể.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "history": { ... }
+}
+```
 
 ---
 
@@ -445,29 +527,206 @@ Phân tích điểm yếu của user dựa trên lịch sử phỏng vấn.
 
 ## 7. Live Coding – `/api/live-coding` 🔒
 
-### POST `/api/live-coding/generate`
-Sinh bài toán coding.
+> Tất cả các route Live Coding yêu cầu JWT token hợp lệ.
 
-**Request Body:**
+### GET `/api/live-coding/domains`
+Lấy danh sách domain theo ngôn ngữ.
+
+**Query:**
+- `language` (string) – ví dụ `javascript`, `python`, `java`
+
+**Response 200:**
 ```json
 {
-  "language": "javascript",
-  "difficulty": "medium",
-  "topic": "Arrays"
+  "domains": ["OOP", "Functional Programming", "Async", "DOM Manipulation", "Closures"]
 }
 ```
 
 ---
 
-### POST `/api/live-coding/evaluate`
-Chấm điểm code của user.
+### GET `/api/live-coding/topics`
+Lấy danh sách topics theo ngôn ngữ và domain.
+
+**Query:**
+- `language` (string)
+- `domain` (string)
+
+**Response 200:**
+```json
+{
+  "topics": ["Prototypes", "Classes", "Inheritance", "Polymorphism", "Encapsulation"]
+}
+```
+
+---
+
+### POST `/api/live-coding/start`
+Bắt đầu session Live Coding mới.
 
 **Request Body:**
 ```json
 {
-  "problemId": "...",
-  "code": "function solution(arr) { return arr.sort(); }",
-  "language": "javascript"
+  "language": "javascript",
+  "domain": "Async",
+  "topicName": "Event Loop",
+  "difficulty": "intermediate"
+}
+```
+
+**Response 201:**
+```json
+{
+  "sessionId": "uuid-v4-session-id",
+  "question": {
+    "problemStatement": "Write a function that...",
+    "testCriteria": "...",
+    "exampleInput": "...",
+    "exampleOutput": "...",
+    "type": "code"
+  }
+}
+```
+
+---
+
+### GET `/api/live-coding/session/:sessionId/current-question`
+Lấy câu hỏi hiện tại của session.
+
+**Response 200:**
+```json
+{
+  "currentQuestion": {
+    "type": "code",
+    "problemStatement": "...",
+    "testCriteria": "..."
+  }
+}
+```
+
+---
+
+### POST `/api/live-coding/session/:sessionId/submit`
+Gửi code để AI đánh giá.
+
+**Request Body:**
+```json
+{
+  "code": "function solve() { ... }"
+}
+```
+
+**Response 200:**
+```json
+{
+  "correct": true,
+  "feedback": "Correct! Now explain your code.",
+  "nextQuestion": {
+    "type": "explain",
+    "question": "Explain the time complexity of your solution."
+  }
+}
+```
+
+---
+
+### POST `/api/live-coding/session/:sessionId/explain`
+Gửi câu trả lời giải thích sau khi code đúng.
+
+**Request Body:**
+```json
+{
+  "answer": "I used a hash map to reduce complexity to O(n)..."
+}
+```
+
+**Response 200:**
+```json
+{
+  "correct": true,
+  "feedback": "Good answer.",
+  "nextQuestion": {
+    "type": "explain",
+    "question": "Describe how you handled edge cases."
+  }
+}
+```
+
+---
+
+### POST `/api/live-coding/session/:sessionId/next-code`
+Yêu cầu câu hỏi code mới sau khi hoàn thành chu kỳ giải thích.
+
+**Response 200:**
+```json
+{
+  "nextQuestion": {
+    "type": "code",
+    "problemStatement": "...",
+    "testCriteria": "..."
+  }
+}
+```
+
+---
+
+### GET `/api/live-coding/session/:sessionId/last-evaluation`
+Lấy đánh giá cuối cùng của session từ DB.
+
+**Response 200:**
+```json
+{
+  "evaluation": {
+    "summary": "...",
+    "feedback": "...",
+    "strengths": ["..."],
+    "weaknesses": ["..."]
+  }
+}
+```
+
+---
+
+### GET `/api/live-coding/history`
+Lấy danh sách session Live Coding đã lưu trong DB.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "history": [
+    {
+      "id": "uuid-v4-session-id",
+      "language": "javascript",
+      "domain": "Async",
+      "topic": "Event Loop",
+      "difficulty": "intermediate",
+      "createdAt": "...",
+      "updatedAt": "...",
+      "totalQuestions": 1
+    }
+  ]
+}
+```
+
+---
+
+### GET `/api/live-coding/sessions/:sessionId`
+Lấy chi tiết session Live Coding, bao gồm `codeHistory`.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "session": {
+    "id": "uuid-v4-session-id",
+    "language": "javascript",
+    "domain": "Async",
+    "topic": "Event Loop",
+    "difficulty": "intermediate",
+    "createdAt": "...",
+    "updatedAt": "...",
+    "codeHistory": [ ... ]
+  }
 }
 ```
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, User, Brain, Zap, ChevronDown, Settings, HelpCircle,
   MessageCircle, TrendingUp, FileText, Sparkles, Clock, Flame,
-  CalendarDays, Lightbulb, Quote,Code2 
+  CalendarDays, Lightbulb, Quote, Code2
 } from 'lucide-react';
 
 import { StartInterviewModal } from '../components/StartInterviewModal';
@@ -11,6 +11,7 @@ import { UploadCV } from '../components/UploadCV';
 import { AIFeedback } from '../components/AIFeedback';
 import PerformanceTrendChart from '../components/PerformanceTrendChart';
 import ActivityCalendar from '../components/ActivityCalendar';
+import { CVInfoModal } from '../components/CVInfoModal'; // ✅ Thêm modal CV
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,6 +33,10 @@ export default function WelcomePage() {
   const [stats, setStats] = useState({ totalInterviews: 0, streak: 0 });
   const [activities, setActivities] = useState([]);
   const [dailyTip, setDailyTip] = useState({ tip: '', quote: '' });
+
+  // State cho CV Modal
+  const [isCVModalOpen, setIsCVModalOpen] = useState(false);
+  const [cvData, setCvData] = useState(null);
 
   // ---------- Translations ----------
   const t = (key) => {
@@ -174,17 +179,29 @@ export default function WelcomePage() {
     if (!user) return;
     setStatsLoading(true);
     try {
-      const [normalRes, cvRes, adaptiveRes] = await Promise.all([
+      const [normalRes, cvRes, adaptiveRes, codingRes] = await Promise.all([
         api.get('/interview/history').catch(() => ({ data: { success: false, history: [] } })),
         api.get('/cv/history').catch(() => ({ data: { success: false, history: [] } })),
         api.get('/adaptive/history').catch(() => ({ data: { success: false, history: [] } })),
+        api.get('/live-coding/history').catch(() => ({ data: { success: false, history: [] } }))
       ]);
+
       const normalList = normalRes.data?.success ? normalRes.data.history : [];
       const cvList = cvRes.data?.success ? cvRes.data.history : [];
       const adaptiveList = adaptiveRes.data?.success ? adaptiveRes.data.history : [];
-      const allSessions = [...normalList, ...cvList, ...adaptiveList.map(s => ({ ...s, createdAt: s.createdAt }))];
+      const codingList = codingRes.data?.history || [];
+
+      // Combine all sessions (for streak, we only need createdAt)
+      const allSessions = [
+        ...normalList.map(s => ({ createdAt: s.createdAt })),
+        ...cvList.map(s => ({ createdAt: s.createdAt })),
+        ...adaptiveList.map(s => ({ createdAt: s.createdAt })),
+        ...codingList.map(s => ({ createdAt: s.createdAt }))
+      ];
+
       const total = allSessions.length;
       const streak = calculateStreak(allSessions);
+
       setStats({ totalInterviews: total, streak });
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -253,7 +270,31 @@ export default function WelcomePage() {
     fetchDashboardData();
   };
 
-  const handleCVUploadSuccess = () => fetchDashboardData();
+  // ✅ Sửa: nhận dữ liệu CV từ UploadCV và mở modal
+  const handleCVUploadSuccess = (uploadedCvData) => {
+    fetchDashboardData(); // cập nhật thống kê
+    if (uploadedCvData && uploadedCvData.fileUrl) {
+      setCvData(uploadedCvData);
+      setIsCVModalOpen(true);
+    } else {
+      console.error('Invalid CV data received from UploadCV:', uploadedCvData);
+      // Có thể thông báo lỗi nhẹ cho người dùng nếu muốn
+    }
+  };
+
+  // Đóng modal CV
+  const handleCloseCVModal = () => {
+    setIsCVModalOpen(false);
+    setCvData(null);
+  };
+
+  // Xử lý khi bắt đầu phỏng vấn từ CV
+  const handleStartCVInterview = (interviewData) => {
+    console.log('Start CV interview:', interviewData);
+    setIsCVModalOpen(false);
+    // Điều hướng đến trang phỏng vấn CV nếu cần
+    // navigate('/cvinterview', { state: { interviewData } });
+  };
 
   const displayName = user.fullName || user.userName;
   const avatarLetter = displayName.charAt(0).toUpperCase();
@@ -446,7 +487,6 @@ export default function WelcomePage() {
                 <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg"><TrendingUp className="w-5 h-5 text-indigo-500" /></div>
                 {t('performanceTrend')}
               </h3>
-              {/* Fixed chart container - ensures proper sizing and no overflow */}
               <div className="w-full">
                 <PerformanceTrendChart />
               </div>
@@ -462,17 +502,15 @@ export default function WelcomePage() {
                 <button onClick={() => setIsModalOpen(true)} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
                   <MessageCircle className="w-4 h-4" /> {t('startNewInterview')}
                 </button>
+                {/* ✅ Truyền callback nhận dữ liệu CV */}
                 <UploadCV onUploadSuccess={handleCVUploadSuccess} />
+
                 <button onClick={() => navigate('/history')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
                   <Brain className="w-4 h-4" /> {t('interviewHistory')}
                 </button>
 
-                
                 <button onClick={() => navigate('/live-coding')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
-                  <Code2 className="w-4 h-4" /> Live Coding Interview
-                </button>
-                <button onClick={() => navigate('/coding-history')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
-                  <Code2 className="w-4 h-4" /> Coding History
+                  <Code2 className="w-4 h-4" />Coding Interview
                 </button>
               </div>
             </div>
@@ -488,6 +526,19 @@ export default function WelcomePage() {
       </main>
 
       <StartInterviewModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onStart={handleStartInterview} />
+
+      {/* ✅ Modal CV Info - được render khi có dữ liệu và mở */}
+      {isCVModalOpen && cvData && (
+        <CVInfoModal
+          cvData={cvData}
+          onClose={handleCloseCVModal}
+          onStartInterview={handleStartCVInterview}
+          onQuestionsGenerated={(data) => {
+            console.log('Questions generated from CV:', data);
+            // Có thể cập nhật thêm nếu cần
+          }}
+        />
+      )}
 
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
