@@ -1,10 +1,10 @@
-// ProfilePage.jsx – Fixed score display and dark mode contrast
+// ProfilePage.jsx – Simplified: total interviews only + recent activity
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Mail, Calendar, Camera, ArrowLeft, Loader2,
-    Edit3, Award, Zap, Clock, TrendingUp, Briefcase,
-    CheckCircle, AlertCircle
+    Edit3, Zap, Clock, Briefcase,
+    CheckCircle, AlertCircle, RefreshCw
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,7 +13,7 @@ export default function ProfilePage() {
     const navigate = useNavigate();
     const { isAuthenticated, loading: authLoading, user: authUser, logout } = useAuth();
 
-    // Dark mode – sync with 'dark' class on html element
+    // Dark mode
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
 
     useEffect(() => {
@@ -24,7 +24,7 @@ export default function ProfilePage() {
         return () => observer.disconnect();
     }, []);
 
-    // User data state
+    // User data
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -37,17 +37,11 @@ export default function ProfilePage() {
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [editMode, setEditMode] = useState(false);
 
-    // Combined history (interview + CV)
-    const [interviewHistory, setInterviewHistory] = useState([]);
+    // Combined history
+    const [allHistory, setAllHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyError, setHistoryError] = useState('');
-
-    // Stats
-    const [stats, setStats] = useState({
-        totalInterviews: 0,
-        averageScore: 0,
-        improvement: '+0%'
-    });
+    const [totalInterviews, setTotalInterviews] = useState(0);
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -56,7 +50,7 @@ export default function ProfilePage() {
         }
     }, [authLoading, isAuthenticated, navigate]);
 
-    // Fetch profile from API
+    // Fetch profile
     const fetchProfile = async () => {
         try {
             const response = await api.get('/users/profile');
@@ -76,21 +70,25 @@ export default function ProfilePage() {
         }
     };
 
-    // Fetch interview & CV history
+    // Fetch all history types
     const fetchAllHistory = async () => {
         setHistoryLoading(true);
         setHistoryError('');
         try {
-            const [normalRes, cvRes] = await Promise.all([
+            const [normalRes, cvRes, adaptiveRes, codingRes] = await Promise.all([
                 api.get('/interview/history').catch(() => ({ data: { success: false, history: [] } })),
-                api.get('/cv/history').catch(() => ({ data: { success: false, history: [] } }))
+                api.get('/cv/history').catch(() => ({ data: { success: false, history: [] } })),
+                api.get('/adaptive/history').catch(() => ({ data: { success: false, history: [] } })),
+                api.get('/live-coding/history').catch(() => ({ data: { success: false, history: [] } }))
             ]);
 
+            // Standard
             const normalList = normalRes.data?.success && Array.isArray(normalRes.data.history)
                 ? normalRes.data.history
                 : [];
             const normalizedNormal = normalList.map(item => ({
                 id: `interview_${item.id}`,
+                type: 'standard',
                 topic: item.topic || 'General Interview',
                 difficulty: item.difficulty || 'Medium',
                 totalQuestions: item.totalQuestions || 0,
@@ -98,6 +96,7 @@ export default function ProfilePage() {
                 totalScore: item.totalScore || 0,
             }));
 
+            // CV
             const cvList = cvRes.data?.success && Array.isArray(cvRes.data.history)
                 ? cvRes.data.history
                 : [];
@@ -110,6 +109,7 @@ export default function ProfilePage() {
                 }
                 return {
                     id: `cv_${item._id}`,
+                    type: 'cv',
                     topic: item.cvName || 'CV Review',
                     difficulty: 'CV',
                     totalQuestions: questionCount,
@@ -118,37 +118,41 @@ export default function ProfilePage() {
                 };
             });
 
-            const merged = [...normalizedNormal, ...normalizedCV];
+            // Adaptive (max score 10)
+            const adaptiveList = adaptiveRes.data?.success && Array.isArray(adaptiveRes.data.history)
+                ? adaptiveRes.data.history
+                : [];
+            const normalizedAdaptive = adaptiveList.map(item => ({
+                id: `adaptive_${item.id}`,
+                type: 'adaptive',
+                topic: item.topic || 'Adaptive Interview',
+                difficulty: 'Adaptive',
+                totalQuestions: item.totalQuestions || 0,
+                createdAt: item.createdAt,
+                totalScore: item.totalScore || 0,
+            }));
+
+            // Coding (no score)
+            const codingList = codingRes.data?.history || [];
+            const normalizedCoding = codingList.map(item => ({
+                id: `coding_${item._id}`,
+                type: 'coding',
+                topic: item.title || 'Coding Challenge',
+                difficulty: 'Coding',
+                totalQuestions: item.questions?.length || 0,
+                createdAt: item.createdAt,
+                totalScore: null,
+            }));
+
+            const merged = [...normalizedNormal, ...normalizedCV, ...normalizedAdaptive, ...normalizedCoding];
             merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            setInterviewHistory(merged);
-
-            const total = merged.length;
-            let avgScore = 0;
-            let improvement = '+0%';
-
-            if (total > 0) {
-                const sumScores = merged.reduce((sum, item) => sum + (item.totalScore || 0), 0);
-                avgScore = Math.round(sumScores / total);
-
-                const now = new Date();
-                const monthAgo = new Date();
-                monthAgo.setMonth(monthAgo.getMonth() - 1);
-
-                const recent = merged.filter(item => new Date(item.createdAt) >= monthAgo);
-                const prev = merged.filter(item => new Date(item.createdAt) < monthAgo);
-
-                const recentAvg = recent.length ? recent.reduce((s, i) => s + i.totalScore, 0) / recent.length : 0;
-                const prevAvg = prev.length ? prev.reduce((s, i) => s + i.totalScore, 0) / prev.length : 0;
-                const change = prevAvg === 0 ? 0 : Math.round(recentAvg - prevAvg);
-                improvement = `${change > 0 ? '+' : ''}${change}%`;
-            }
-
-            setStats({ totalInterviews: total, averageScore: avgScore, improvement });
+            setAllHistory(merged);
+            setTotalInterviews(merged.length);
         } catch (err) {
             console.error(err);
             setHistoryError('Could not load activity history');
-            setInterviewHistory([]);
-            setStats({ totalInterviews: 0, averageScore: 0, improvement: '+0%' });
+            setAllHistory([]);
+            setTotalInterviews(0);
         } finally {
             setHistoryLoading(false);
         }
@@ -163,7 +167,7 @@ export default function ProfilePage() {
         }
     }, [isAuthenticated, authUser, authLoading]);
 
-    // Update profile (name or avatar)
+    // Update profile
     const updateProfileData = async (newFullName, newAvatar, customMsg = '') => {
         setUpdating(true);
         setError('');
@@ -189,7 +193,7 @@ export default function ProfilePage() {
         }
     };
 
-    const compressImage = (file, maxWidth = 800, quality = 0.7) => {
+    const compressImage = (file, maxWidth = 800, quality = 0.8) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -208,7 +212,8 @@ export default function ProfilePage() {
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
+                    const mimeType = file.type || 'image/jpeg';
+                    resolve(canvas.toDataURL(mimeType, quality));
                 };
                 img.onerror = reject;
             };
@@ -225,16 +230,17 @@ export default function ProfilePage() {
             return;
         }
         setUploadingAvatar(true);
+        const previousAvatar = avatarPreview;
         try {
-            const base64 = await compressImage(file, 800, 0.7);
+            const base64 = await compressImage(file, 800, 0.8);
             setAvatarPreview(base64);
             const ok = await updateProfileData(undefined, base64, '✨ Avatar updated!');
-            if (!ok) setAvatarPreview(user?.avatar || '');
+            if (!ok) setAvatarPreview(previousAvatar);
         } catch (err) {
             console.error(err);
             setError('Failed to process image. Please try again.');
             setTimeout(() => setError(''), 4000);
-            setAvatarPreview(user?.avatar || '');
+            setAvatarPreview(previousAvatar);
         } finally {
             setUploadingAvatar(false);
         }
@@ -268,22 +274,27 @@ export default function ProfilePage() {
         return date.toLocaleDateString();
     };
 
-    // Format score with "score" instead of "%" or "pts"
-    const formatScore = (score) => {
-        if (typeof score !== 'number') return '0 score';
-        const rounded = Math.round(score * 10) / 10;
-        // Remove trailing .0 if whole number
-        const display = rounded % 1 === 0 ? Math.round(rounded).toString() : rounded.toString();
-        return `${display} score`;
+    const formatScoreDisplay = (item) => {
+        if (item.type === 'coding') return null;
+
+        let score = item.totalScore;
+
+        if (item.type === 'adaptive') {
+            // Nếu score > 10 thì convert từ thang 100 về thang 10
+            if (score > 10) {
+                score = score / 10;
+            }
+
+            return `${score}/10`;
+        }
+
+        return `${score} score`;
     };
 
-    const recentActivities = interviewHistory.slice(0, 4).map(item => ({
-        id: item.id,
-        action: item.topic,
-        score: item.totalScore,
-        date: getRelativeTime(item.createdAt),
-        difficulty: item.difficulty,
-        totalQuestions: item.totalQuestions,
+    const recentActivities = allHistory.slice(0, 4).map(item => ({
+        ...item,
+        scoreDisplay: formatScoreDisplay(item),
+        relativeDate: getRelativeTime(item.createdAt)
     }));
 
     if (authLoading || loading) {
@@ -305,11 +316,28 @@ export default function ProfilePage() {
     const avatarLetter = displayName.charAt(0).toUpperCase();
     const joinDate = formatDate(user.createdAt);
 
-    const statsBoxes = [
-        { icon: Zap, label: 'Interviews', value: stats.totalInterviews, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
-        { icon: Award, label: 'Avg Score', value: `${stats.averageScore} score`, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-        { icon: TrendingUp, label: 'Improvement', value: stats.improvement, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' },
-    ];
+    const getScoreColorClass = (item) => {
+        if (item.type === 'coding') return '';
+        const score = item.totalScore;
+        if (typeof score !== 'number') return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200';
+        let percent = item.type === 'adaptive' ? score * 10 : score;
+        if (percent >= 90) return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/70 dark:text-emerald-100';
+        if (percent >= 75) return 'bg-amber-100 text-amber-800 dark:bg-amber-900/70 dark:text-amber-100';
+        if (percent >= 50) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/70 dark:text-yellow-100';
+        return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200';
+    };
+
+    const getDifficultyBadgeClass = (difficulty) => {
+        if (!difficulty) return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200';
+        const lower = difficulty.toLowerCase();
+        if (lower === 'cv') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/70 dark:text-purple-100';
+        if (lower === 'easy') return 'bg-green-100 text-green-800 dark:bg-green-900/70 dark:text-green-100';
+        if (lower === 'medium') return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/70 dark:text-yellow-100';
+        if (lower === 'hard') return 'bg-red-100 text-red-800 dark:bg-red-900/70 dark:text-red-100';
+        if (lower === 'coding') return 'bg-sky-100 text-sky-800 dark:bg-sky-900/70 dark:text-sky-100';
+        if (lower === 'adaptive') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/70 dark:text-emerald-100';
+        return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200';
+    };
 
     return (
         <div className={`min-h-screen transition-all duration-500 ${darkMode ? 'bg-gray-950' : 'bg-gradient-to-br from-indigo-50 via-slate-50 to-purple-50'} py-6 px-4 sm:px-6 lg:px-8`}>
@@ -324,9 +352,8 @@ export default function ProfilePage() {
                 </button>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8">
-                    {/* LEFT COLUMN - Profile Card & Stats */}
-                    <div className="lg:col-span-5 xl:col-span-4 space-y-6">
-                        {/* Profile Card */}
+                    {/* LEFT COLUMN - Profile Card */}
+                    <div className="lg:col-span-5 xl:col-span-4">
                         <div className={`relative overflow-hidden rounded-2xl shadow-xl transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 ${darkMode ? 'bg-gray-900/80 backdrop-blur-sm border border-gray-800' : 'bg-white/90 backdrop-blur-sm border border-white/60'}`}>
                             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 opacity-90"></div>
                             <div className="absolute top-0 left-0 w-full h-32 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 40%, white 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
@@ -344,7 +371,7 @@ export default function ProfilePage() {
                                         )}
                                         <label className="absolute bottom-1 right-1 p-2.5 bg-indigo-600 rounded-full cursor-pointer hover:bg-indigo-700 transition-all duration-200 shadow-lg ring-2 ring-white dark:ring-gray-800 hover:scale-110">
                                             {uploadingAvatar ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Camera className="w-4 h-4 text-white" />}
-                                            <input type="file" className="hidden" accept="image/jpeg,image/png,image/gif" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+                                            <input type="file" className="hidden" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
                                         </label>
                                     </div>
                                 </div>
@@ -374,7 +401,12 @@ export default function ProfilePage() {
                                                 <button type="submit" disabled={updating} className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50">
                                                     {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
                                                 </button>
-                                                <button type="button" onClick={() => setEditMode(false)} className="px-4 py-1.5 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-all">Cancel</button>
+                                                <button type="button" onClick={() => {
+                                                    setEditMode(false);
+                                                    setFullName(user.fullName || user.userName);
+                                                }} className="px-4 py-1.5 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-all">
+                                                    Cancel
+                                                </button>
                                             </div>
                                         </form>
                                     )}
@@ -405,44 +437,66 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Stats boxes */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            {statsBoxes.map((stat, idx) => {
-                                const Icon = stat.icon;
-                                return (
-                                    <div key={idx} className={`group rounded-xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${darkMode ? 'bg-gray-900/80 border border-gray-800' : 'bg-white/80 border border-white/60'} backdrop-blur-sm`}>
-                                        <div className={`p-2 rounded-xl ${stat.bg} group-hover:scale-110 transition-transform w-fit`}>
-                                            <Icon className={`w-4 h-4 ${stat.color}`} />
-                                        </div>
-                                        <div className="mt-3">
-                                            <div className="text-xl font-bold text-gray-800 dark:text-white">{stat.value}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{stat.label}</div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
                     </div>
 
-                    {/* RIGHT COLUMN - Recent Activity */}
+                    {/* RIGHT COLUMN - Total Sessions + Recent Activity */}
                     <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+                        {/* Total Sessions Card */}
                         <div className={`rounded-2xl shadow-xl border transition-all ${darkMode ? 'bg-gray-900/80 border-gray-800 backdrop-blur-sm' : 'bg-white/90 border-white/60 backdrop-blur-sm'}`}>
-                            <div className="flex items-center gap-3 border-b border-gray-200 dark:border-gray-800 px-6 py-4">
-                                <div className="p-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-xl">
-                                    <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                            <div className="p-6 text-center">
+                                <div className="inline-flex p-3 rounded-full bg-indigo-100 dark:bg-indigo-900/50 mb-4">
+                                    <Zap className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-800 dark:text-white">Recent Activity</h3>
-                                {historyLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400 ml-2" />}
+                                <div className="text-5xl font-black text-gray-800 dark:text-white">{totalInterviews}</div>
+                                <div className="text-gray-500 dark:text-gray-400 mt-1">Total Interview Sessions</div>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                                    Includes Standard, CV, Adaptive, and Coding interviews
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Recent Activity */}
+                        <div className={`rounded-2xl shadow-xl border transition-all ${darkMode ? 'bg-gray-900/80 border-gray-800 backdrop-blur-sm' : 'bg-white/90 border-white/60 backdrop-blur-sm'}`}>
+                            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-xl">
+                                        <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">Recent Activity</h3>
+                                    {historyLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                                </div>
+                                <button
+                                    onClick={fetchAllHistory}
+                                    className="p-2 text-gray-400 hover:text-indigo-500 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    aria-label="Refresh"
+                                    disabled={historyLoading}
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${historyLoading ? 'animate-spin' : ''}`} />
+                                </button>
                             </div>
 
                             <div className="p-5 divide-y divide-gray-100 dark:divide-gray-800">
                                 {historyLoading ? (
-                                    <div className="flex justify-center py-8">
-                                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                                    <div className="space-y-4">
+                                        {[...Array(3)].map((_, i) => (
+                                            <div key={i} className="flex items-center gap-4 py-3 animate-pulse">
+                                                <div className="w-8 h-8 rounded-xl bg-gray-200 dark:bg-gray-700"></div>
+                                                <div className="flex-1">
+                                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                                                </div>
+                                                <div className="w-16 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : historyError ? (
-                                    <div className="text-center py-6 text-red-500 dark:text-red-400 text-sm">{historyError}</div>
+                                    <div className="text-center py-8">
+                                        <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                                        <p className="text-red-500 dark:text-red-400 text-sm mb-3">{historyError}</p>
+                                        <button onClick={fetchAllHistory} className="text-indigo-600 dark:text-indigo-400 text-sm hover:underline flex items-center gap-1 mx-auto">
+                                            <RefreshCw className="w-3 h-3" /> Try again
+                                        </button>
+                                    </div>
                                 ) : recentActivities.length === 0 ? (
                                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                                         <p>No interview attempts yet.</p>
@@ -451,57 +505,39 @@ export default function ProfilePage() {
                                         </button>
                                     </div>
                                 ) : (
-                                    recentActivities.map(activity => {
-                                        // Improved score color for dark mode
-                                        const getScoreColor = (score) => {
-                                            if (score >= 90) return 'text-emerald-700 bg-emerald-100 dark:bg-emerald-700/80 dark:text-white';
-                                            if (score >= 75) return 'text-amber-700 bg-amber-100 dark:bg-amber-700/80 dark:text-white';
-                                            return 'text-gray-700 bg-gray-100 dark:bg-gray-600/80 dark:text-gray-100';
-                                        };
-                                        const getDifficultyBadge = (difficulty) => {
-                                            if (!difficulty) return null;
-                                            if (difficulty.toLowerCase() === 'cv') {
-                                                return 'bg-purple-100 text-purple-800 dark:bg-purple-600/80 dark:text-white';
-                                            }
-                                            const map = {
-                                                easy: 'bg-green-100 text-green-700 dark:bg-green-600/80 dark:text-white',
-                                                medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-600/80 dark:text-white',
-                                                hard: 'bg-red-100 text-red-700 dark:bg-red-600/80 dark:text-white'
-                                            };
-                                            return map[difficulty.toLowerCase()] || 'bg-gray-100 text-gray-700 dark:bg-gray-600/80 dark:text-gray-100';
-                                        };
-                                        return (
-                                            <div key={activity.id} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0 group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 rounded-lg px-2 transition-all">
-                                                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 group-hover:scale-110 transition-transform duration-300">
-                                                    <Briefcase className="w-4 h-4 text-indigo-500" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <p className="text-sm font-medium text-gray-800 dark:text-white">{activity.action}</p>
-                                                        {activity.difficulty && (
-                                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getDifficultyBadge(activity.difficulty)}`}>
-                                                                {activity.difficulty === 'CV' ? '📄 CV' : activity.difficulty}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                                                        <Clock className="w-3 h-3" /> {activity.date}
-                                                        {activity.totalQuestions > 0 && ` • ${activity.totalQuestions} questions`}
-                                                    </p>
-                                                </div>
-                                                {typeof activity.score === 'number' && (
-                                                    <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${getScoreColor(activity.score)}`}>
-                                                        {formatScore(activity.score)}
-                                                    </div>
-                                                )}
+                                    recentActivities.map(activity => (
+                                        <div key={activity.id} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0 group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 rounded-lg px-2 transition-all">
+                                            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 group-hover:scale-110 transition-transform duration-300">
+                                                <Briefcase className="w-4 h-4 text-indigo-500" />
                                             </div>
-                                        );
-                                    })
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{activity.topic}</p>
+                                                    {activity.difficulty && (
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getDifficultyBadgeClass(activity.difficulty)}`}>
+                                                            {activity.difficulty === 'CV' ? '📄 CV' :
+                                                                activity.difficulty === 'Coding' ? '💻 Coding' :
+                                                                    activity.difficulty === 'Adaptive' ? '🧠 Adaptive' : activity.difficulty}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                                                    <Clock className="w-3 h-3" /> {activity.relativeDate}
+                                                    {activity.totalQuestions > 0 && ` • ${activity.totalQuestions} questions`}
+                                                </p>
+                                            </div>
+                                            {activity.scoreDisplay && (
+                                                <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${getScoreColorClass(activity)}`}>
+                                                    {activity.scoreDisplay}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
                                 )}
-                                {!historyLoading && interviewHistory.length > 4 && (
+                                {!historyLoading && allHistory.length > 4 && (
                                     <button
                                         onClick={() => navigate('/history')}
-                                        className="w-full mt-3 text-center text-sm text-indigo-600 dark:text-indigo-400 hover:underline py-2 transition-all hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 rounded-lg"
+                                        className="w-full mt-4 text-center text-sm text-indigo-600 dark:text-indigo-400 hover:underline py-2 transition-all hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 rounded-lg"
                                     >
                                         View all activity →
                                     </button>
@@ -511,7 +547,7 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                {/* Floating notifications */}
+                {/* Notifications */}
                 {error && (
                     <div className="fixed bottom-4 right-4 flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded-xl shadow-lg z-50">
                         <AlertCircle className="w-5 h-5 flex-shrink-0" />

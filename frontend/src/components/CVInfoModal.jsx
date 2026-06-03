@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Sparkles, Loader2, ChevronLeft, ChevronRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useInterview } from '../contexts/InterviewContext';
-import { useAuth } from '../contexts/AuthContext'; // ✅ import AuthContext
+import { useAuth } from '../contexts/AuthContext';
 
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 
@@ -17,7 +17,7 @@ function mergeBrokenVietnamese(text) {
 export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGenerated }) => {
   const navigate = useNavigate();
   const { startInterview, setIsGenerating: setGlobalGenerating } = useInterview();
-  const { token, updateActivity, logout } = useAuth(); // ✅ lấy token và các hàm từ Auth
+  const { token, updateActivity, logout } = useAuth();
 
   const [generating, setGenerating] = useState(false);
   const [numPages, setNumPages] = useState(null);
@@ -33,7 +33,6 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
 
   const MAX_SKILLS = 4;
 
-  // Cập nhật responsive
   useEffect(() => {
     const check = () => setIsMobileView(window.innerWidth < 768);
     check();
@@ -45,7 +44,6 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
     setShowCvPreview(!isMobileView);
   }, [isMobileView]);
 
-  // Tự động xóa thông báo lỗi sau 5 giây
   useEffect(() => {
     if (errorMessage) {
       const timer = setTimeout(() => setErrorMessage(''), 5000);
@@ -53,7 +51,6 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
     }
   }, [errorMessage]);
 
-  // Hàm gọi API có gửi token
   const fetchWithAuth = async (url, options = {}) => {
     if (!token) {
       logout();
@@ -72,7 +69,6 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
     return response;
   };
 
-  // Trích xuất text từ PDF (giữ nguyên)
   const extractFullText = async (pdfDocument) => {
     let fullText = '';
     for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
@@ -112,13 +108,12 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
     return mergeBrokenVietnamese(fullText);
   };
 
-  // Load PDF thành công -> phân tích CV
   const onLoadSuccess = async (pdf) => {
     setNumPages(pdf.numPages);
     setPageNumber(1);
     setAnalyzing(true);
     setErrorMessage('');
-    updateActivity(); // cập nhật hoạt động
+    updateActivity();
 
     try {
       const rawText = await extractFullText(pdf);
@@ -158,7 +153,7 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
 
   const toggleSkill = (category, skill) => {
     if (generating) return;
-    updateActivity(); // ✅ cập nhật activity khi tương tác
+    updateActivity();
 
     const isCurrentlySelected = selectedSkills[category].includes(skill);
     if (!isCurrentlySelected && totalSelected >= MAX_SKILLS) {
@@ -188,7 +183,7 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
       setErrorMessage('Please select at least one skill.');
       return;
     }
-    updateActivity(); // cập nhật activity
+    updateActivity();
 
     setGenerating(true);
     setGlobalGenerating(true);
@@ -206,14 +201,22 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
           questions: result.questions,
           cvInfo: { fullName, selectedSkills }
         };
+        
+        // ✅ Quan trọng: set context trước
         startInterview(interviewData);
-        setTimeout(() => {
-          onClose();
-          if (onQuestionsGenerated) onQuestionsGenerated(interviewData);
-          else if (onStartInterview) onStartInterview(interviewData);
-          else navigate('/cvinterview');
-          setGlobalGenerating(false);
-        }, 500);
+        
+        // ✅ Luôn luôn navigate – không chờ callback, không điều kiện
+        // Đóng modal và chuyển trang ngay lập tức
+        onClose();
+        navigate('/cvinterview');
+        
+        // Nếu có callback (tùy chọn) thì gọi sau – không ảnh hưởng navigate
+        if (onQuestionsGenerated) onQuestionsGenerated(interviewData);
+        if (onStartInterview) onStartInterview(interviewData);
+        
+        // Tắt trạng thái generating sau khi đã navigate
+        setGlobalGenerating(false);
+        setGenerating(false);
       } else {
         throw new Error(result.message || 'Invalid response');
       }
@@ -225,7 +228,6 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
     }
   };
 
-  // Chuyển trang PDF – cập nhật activity
   const goPrevPage = () => {
     if (pageNumber > 1) {
       setPageNumber(p => p - 1);
@@ -284,7 +286,6 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
             </div>
           </>
         )}
-
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-indigo-50 to-purple-50 sticky top-0 z-10">
           <div>

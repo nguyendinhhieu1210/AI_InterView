@@ -11,7 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 export default function InterviewCVPage() {
   const navigate = useNavigate();
   const { interviewData, clearInterview, isGenerating } = useInterview();
-  const { isAuthenticated, user } = useAuth(); // ✅ không lấy updateActivity
+  const { isAuthenticated, user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState({ mcq: [], text: [] });
@@ -22,30 +22,38 @@ export default function InterviewCVPage() {
   const [results, setResults] = useState(null);
   const [activeSection, setActiveSection] = useState('mcq');
 
-  // Kiểm tra đăng nhập
+  // ✅ 1. Kiểm tra đăng nhập
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
 
-  // ✅ KHÔNG có useEffect nào đăng ký sự kiện updateActivity riêng
-  // AuthContext đã có global events (mousemove, click, keydown, scroll, touchstart)
+  // ✅ 2. XỬ LÝ REDIRECT AN TOÀN – chỉ redirect khi KHÔNG generating VÀ không có data
+  useEffect(() => {
+    // Nếu đang generating thì chờ, không redirect
+    if (isGenerating) return;
+    // Nếu không có interviewData thì về welcome
+    if (!interviewData) {
+      navigate('/welcome');
+    }
+  }, [interviewData, isGenerating, navigate]);
 
-  // Tải dữ liệu phỏng vấn từ context
+  // ✅ 3. Tải dữ liệu từ context vào state local
   useEffect(() => {
     if (isGenerating) {
       setLoading(true);
       return;
     }
-    if (!interviewData) {
-      navigate('/welcome');
-      return;
+    if (interviewData) {
+      setQuestions(interviewData.questions || { mcq: [], text: [] });
+      setCvInfo(interviewData.cvInfo);
+      setLoading(false);
+    } else {
+      // Trường hợp không có data nhưng không generating (sẽ bị useEffect số 2 bắt)
+      setLoading(true);
     }
-    setQuestions(interviewData.questions || { mcq: [], text: [] });
-    setCvInfo(interviewData.cvInfo);
-    setLoading(false);
-  }, [interviewData, navigate, isGenerating]);
+  }, [interviewData, isGenerating]);
 
   const handleAnswerChange = (key, value) => {
     if (submitted) return;
@@ -90,7 +98,6 @@ export default function InterviewCVPage() {
     navigate('/welcome');
   };
 
-  // Tiện ích tính toán tiến độ
   const mcqList = questions.mcq || [];
   const textList = questions.text || [];
   const totalQuestions = mcqList.length + textList.length;
@@ -104,7 +111,6 @@ export default function InterviewCVPage() {
   const totalScore = results?.totalScore || 0;
   const userName = user?.fullName || user?.userName || 'Candidate';
 
-  // Phân tích điểm mạnh/yếu
   const computeStrengthsWeaknesses = () => {
     if (!results) return { strengths: [], weaknesses: [], suggestions: [] };
     const strengths = [];
@@ -148,7 +154,7 @@ export default function InterviewCVPage() {
 
   const { strengths, weaknesses, suggestions } = computeStrengthsWeaknesses();
 
-  // Trạng thái tải / đang sinh câu hỏi
+  // Loading state
   if (loading || isGenerating) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -165,6 +171,7 @@ export default function InterviewCVPage() {
     );
   }
 
+  // Sau khi loading xong vẫn không có câu hỏi (fallback an toàn)
   if (mcqList.length === 0 && textList.length === 0 && !loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

@@ -27,24 +27,37 @@ Bảo vệ các route yêu cầu đăng nhập. Nếu user chưa xác thực →
 ### 📄 CVInfoModal
 **File:** `components/CVInfoModal.jsx` (~19KB)
 
-Hiển thị thông tin kỹ năng đã được AI trích xuất từ CV:
-- Tên ứng viên
-- Kỹ năng Frontend (danh sách)
-- Kỹ năng Backend (danh sách)
-- Kiến thức lý thuyết (Theory)
+Modal hiển thị thông tin CV và phân tích skills:
+- Preview PDF file bằng `react-pdf`
+- Hiển thị tên file CV, tên ứng viên, kỹ năng đã trích xuất
+- Cho phép chọn tối đa 4 kỹ năng từ các nhóm Frontend / Backend / Theory / DevOps
+- Gọi API `/api/cv/analyze-text` để phân tích nội dung CV khi preview
+- Sinh câu hỏi phỏng vấn dựa trên kỹ năng đã chọn
 
-**Props:** Nhận `cvData` từ API `/api/cv/analyze`
+**Props:**
+- `cvData`: object chứa `{ fileUrl, fileName, fullName, skills, rawText }`
+- `onClose()`: đóng modal
+- `onStartInterview(data)`: callback khi bắt đầu phỏng vấn
+- `onQuestionsGenerated(data)`: callback khi AI trả về câu hỏi
+
+**Ghi chú:**
+- `CVInfoModal` là modal overlay, được render từ `WellcomePage.jsx` sau khi upload CV thành công.
 
 ---
 
 ### 💻 CodingInterface
 **File:** `components/CodingInterface.jsx` (~24KB)
 
-Trình soạn thảo code tích hợp cho tính năng Live Coding:
-- Monaco Editor (VS Code engine)
-- Hỗ trợ nhiều ngôn ngữ lập trình
-- Chạy/test code
-- Hiển thị output và test cases
+CodingInterface là giao diện chính của Live Coding:
+- Monaco Editor tích hợp để viết code trong trình duyệt
+- Nhận dữ liệu `sessionId`, `problemStatement`, `language`, `topic`, `domain`, `difficulty`, `testCriteria`, `exampleInput`, `exampleOutput`
+- Quản lý các phase: `coding`, `explain_pending`, `explaining`, `review`
+- Gọi API Live Coding:
+  - `POST /api/live-coding/session/:sessionId/submit` để nộp code
+  - `POST /api/live-coding/session/:sessionId/explain` để trả lời câu hỏi giải thích
+  - `POST /api/live-coding/session/:sessionId/next-code` để lấy bài code mới
+- Hiển thị feedback AI, đánh giá code, và mở `EvaluationModal` khi hoàn thành chu kỳ giải thích
+- Tự động reset editor và chuyển trang khi đổi topic hoặc thoát
 
 ---
 
@@ -91,10 +104,19 @@ Component chọn chủ đề phỏng vấn:
 **File:** `components/UploadCV.jsx` (~6.2KB)
 
 Component upload CV:
-- Drag & drop hoặc click to upload
-- Hỗ trợ PDF
-- Preview tên file
-- Progress indicator
+- Drag & drop hoặc click để chọn file
+- Hỗ trợ PDF (frontend) và gửi `multipart/form-data` đến backend
+- Hiển thị tên file, trạng thái upload và nút huỷ bỏ
+- Tạo object URL tạm để preview PDF khi chọn file
+- Gọi `/api/cv/upload` với JWT token trong header
+- Trả về dữ liệu CV cho parent component (`WellcomePage`) dưới dạng:
+  - `{ fileUrl, fileName, fullName, skills, rawText }`
+
+**Flow:**
+1. User chọn file PDF
+2. UploadCV gửi file lên `POST /api/cv/upload`
+3. Server trả về `fullName`, `skills`, `rawText`, `fileName`
+4. Parent mở `CVInfoModal` để hiển thị preview và cho phép chọn thêm kỹ năng
 
 ---
 
@@ -183,9 +205,10 @@ Standard Interview:
 ### 📋 InterviewCVPage – ~29KB
 CV-based Interview:
 - Upload CV (UploadCV component)
-- CVInfoModal xem kỹ năng
-- Sinh câu hỏi dựa trên CV
-- Phòng phỏng vấn
+- CVInfoModal xem kỹ năng và preview PDF
+- Sinh câu hỏi dựa trên CV qua `/api/cv/generate-questions`
+- Lưu lịch sử phỏng vấn CV khi nộp bài
+- Phòng phỏng vấn hiển thị câu hỏi MCQ và text
 
 ### 🤖 AdaptiveInterviewPage – ~26KB
 Adaptive Interview:
@@ -194,7 +217,11 @@ Adaptive Interview:
 - Màn hình kết thúc session
 
 ### 💻 LiveCodingPage – ~0.8KB
-Wrapper cho CodingInterface.
+LiveCodingPage là trang khởi tạo session Live Coding:
+- Sử dụng `TopicSelection` để chọn ngôn ngữ, domain, topic và độ khó
+- Sau khi lựa chọn xong, gọi `POST /api/live-coding/start`
+- Nhận `sessionId` và câu hỏi đầu tiên, sau đó render `CodingInterface`
+- Giữ giao diện đơn giản, chỉ chuyển từ bước chọn sang editor
 
 ### 👤 ProfilePage – ~32KB
 Hồ sơ người dùng:
