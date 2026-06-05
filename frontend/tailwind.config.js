@@ -1,29 +1,32 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class',
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  darkMode: 'class', // vẫn dùng class 'dark' trên html
+  content: ['./src/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // Màu nền sáng / tối dùng chung
-        bgLight: '#f8fafc',
-        bgDark: '#0a0c10',
-        cardLight: '#ffffff',
-        cardDark: '#111827',
-        borderLight: '#e2e8f0',
-        borderDark: '#1f2937',
-        textLight: '#0f172a',
-        textDark: '#f1f5f9',
-        textMutedLight: '#475569',
-        textMutedDark: '#94a3b8',
+        // Semantic tokens – lấy giá trị từ CSS variables
+        bg: 'var(--bg-color)',
+        text: 'var(--text-color)',
+        card: 'var(--card-bg)',
+        border: 'var(--border-color)',
+        muted: 'var(--muted-text)',
+        primary: 'var(--primary)',
+        secondary: 'var(--secondary)',
+        success: 'var(--success)',
+        warning: 'var(--warning)',
+        error: 'var(--error)',
+      },
+      boxShadow: {
+        soft: 'var(--shadow)',
       },
       transitionProperty: {
-        'colors': 'background-color, border-color, color, fill, stroke',
+        colors: 'background-color, border-color, color, fill, stroke',
       },
       transitionDuration: {
-        '300': '300ms',
-      }
+        300: '300ms',
+      },
     },
   },
   plugins: [],
-}
+};

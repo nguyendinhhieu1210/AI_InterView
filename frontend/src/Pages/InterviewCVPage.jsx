@@ -22,24 +22,15 @@ export default function InterviewCVPage() {
   const [results, setResults] = useState(null);
   const [activeSection, setActiveSection] = useState('mcq');
 
-  // ✅ 1. Kiểm tra đăng nhập
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
+    if (!isAuthenticated) navigate('/login');
   }, [isAuthenticated, navigate]);
 
-  // ✅ 2. XỬ LÝ REDIRECT AN TOÀN – chỉ redirect khi KHÔNG generating VÀ không có data
   useEffect(() => {
-    // Nếu đang generating thì chờ, không redirect
     if (isGenerating) return;
-    // Nếu không có interviewData thì về welcome
-    if (!interviewData) {
-      navigate('/welcome');
-    }
+    if (!interviewData) navigate('/welcome');
   }, [interviewData, isGenerating, navigate]);
 
-  // ✅ 3. Tải dữ liệu từ context vào state local
   useEffect(() => {
     if (isGenerating) {
       setLoading(true);
@@ -50,7 +41,6 @@ export default function InterviewCVPage() {
       setCvInfo(interviewData.cvInfo);
       setLoading(false);
     } else {
-      // Trường hợp không có data nhưng không generating (sẽ bị useEffect số 2 bắt)
       setLoading(true);
     }
   }, [interviewData, isGenerating]);
@@ -70,14 +60,12 @@ export default function InterviewCVPage() {
         ...(cvInfo?.selectedSkills?.theory || []),
         ...(cvInfo?.selectedSkills?.devops || [])
       ];
-
       const payload = {
         questions,
         answers,
         selectedSkills: allSkills,
         cvName: cvInfo?.fullName || ''
       };
-
       const res = await api.post('/cv/submit-answers', payload);
       if (res.data.success) {
         setResults(res.data.results);
@@ -154,16 +142,15 @@ export default function InterviewCVPage() {
 
   const { strengths, weaknesses, suggestions } = computeStrengthsWeaknesses();
 
-  // Loading state
   if (loading || isGenerating) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-bg">
         <div className="text-center">
           <div className="relative">
-            <div className="w-20 h-20 border-4 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin mx-auto"></div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-indigo-100/80 dark:bg-indigo-900/80 animate-pulse"></div>
+            <div className="w-20 h-20 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary/10 animate-pulse"></div>
           </div>
-          <p className="mt-6 text-gray-600 dark:text-gray-300 font-medium">
+          <p className="mt-6 text-muted font-medium">
             {isGenerating ? 'Preparing your personalized interview...' : 'Loading interview...'}
           </p>
         </div>
@@ -171,13 +158,12 @@ export default function InterviewCVPage() {
     );
   }
 
-  // Sau khi loading xong vẫn không có câu hỏi (fallback an toàn)
   if (mcqList.length === 0 && textList.length === 0 && !loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-xl">
-          <p className="text-red-600 dark:text-red-400 font-semibold">No questions were generated.</p>
-          <button onClick={handleBack} className="mt-4 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <div className="text-center p-8 bg-card rounded-2xl shadow-soft border border-border">
+          <p className="text-error font-semibold">No questions were generated.</p>
+          <button onClick={handleBack} className="mt-4 px-5 py-2 bg-primary text-white rounded-lg hover:brightness-105 transition shadow-md">
             Back to Dashboard
           </button>
         </div>
@@ -186,30 +172,30 @@ export default function InterviewCVPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-bg py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <button
             onClick={handleBack}
-            className="group flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 font-medium px-3 py-1.5 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 w-fit"
+            className="group flex items-center gap-2 text-muted hover:text-primary transition-all duration-300 font-medium bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border w-fit"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span>Back to Dashboard</span>
           </button>
           <div className="flex items-center gap-3 self-end sm:self-auto">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm rounded-full shadow-sm">
-              <User className="w-4 h-4 text-indigo-500" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{userName}</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-card/70 backdrop-blur-sm rounded-full shadow-soft border border-border">
+              <User className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-text">{userName}</span>
             </div>
             {!submitted && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm rounded-full shadow-sm">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">In Progress</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-card/70 backdrop-blur-sm rounded-full shadow-soft border border-border">
+                <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+                <span className="text-xs font-medium text-muted">In Progress</span>
               </div>
             )}
             {submitted && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full shadow-sm">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-full shadow-md">
                 <Award className="w-4 h-4" />
                 <span className="text-xs font-medium">Score: {totalScore}/100</span>
               </div>
@@ -219,18 +205,18 @@ export default function InterviewCVPage() {
 
         {/* CV Info Card */}
         {cvInfo && (
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-5 mb-6 border border-indigo-100 dark:border-gray-700">
+          <div className="bg-card rounded-2xl shadow-soft p-5 mb-6 border border-border">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-full">
-                <User size={22} className="text-indigo-600 dark:text-indigo-400" />
+              <div className="p-2 bg-primary/10 rounded-full">
+                <User size={22} className="text-primary" />
               </div>
-              <h2 className="text-xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent">
+              <h2 className="text-xl font-bold text-text">
                 {cvInfo.fullName || 'Candidate'}
               </h2>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
               {Object.values(cvInfo.selectedSkills || {}).flat().map((skill, i) => (
-                <span key={i} className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300 px-3 py-1.5 rounded-full text-sm font-medium shadow-sm">
+                <span key={i} className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-medium shadow-sm">
                   {skill}
                 </span>
               ))}
@@ -239,19 +225,19 @@ export default function InterviewCVPage() {
         )}
 
         {/* Main Interview Card */}
-        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/50 dark:border-gray-700/50 overflow-hidden">
-          <div className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 px-6 py-8 text-white">
-            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 40%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+        <div className="bg-card rounded-2xl shadow-soft border border-border overflow-hidden">
+          {/* Header card với gradient nhẹ */}
+          <div className="relative bg-gradient-to-r from-primary/10 to-secondary/10 px-6 py-6 border-b border-border">
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <ClipboardList className="w-7 h-7" />
-                <h1 className="text-2xl md:text-3xl font-bold">Interview Questions</h1>
+                <ClipboardList className="w-7 h-7 text-primary" />
+                <h1 className="text-2xl md:text-3xl font-bold text-text">Interview Questions</h1>
               </div>
               <div className="flex flex-wrap gap-2 mt-3">
-                <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">
+                <span className="px-3 py-1 bg-primary/20 text-primary text-sm font-medium rounded-full">
                   {mcqList.length} MCQ
                 </span>
-                <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">
+                <span className="px-3 py-1 bg-primary/20 text-primary text-sm font-medium rounded-full">
                   {textList.length} Essay
                 </span>
               </div>
@@ -260,14 +246,14 @@ export default function InterviewCVPage() {
 
           {/* Progress Bar */}
           {!submitted && totalQuestions > 0 && (
-            <div className="px-6 pt-6 pb-2 border-b border-gray-100 dark:border-gray-700">
-              <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <div className="px-6 pt-6 pb-2 border-b border-border">
+              <div className="flex justify-between text-sm text-muted mb-2">
                 <span>Progress</span>
                 <span>{answeredTotal} / {totalQuestions} answered</span>
               </div>
-              <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-muted/30 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                  className="h-full bg-primary rounded-full transition-all duration-500"
                   style={{ width: `${progressPercent}%` }}
                 ></div>
               </div>
@@ -275,27 +261,21 @@ export default function InterviewCVPage() {
           )}
 
           {/* Tabs */}
-          <div className="flex border-b border-gray-100 dark:border-gray-700 px-6">
+          <div className="flex border-b border-border px-6">
             <button
               onClick={() => setActiveSection('mcq')}
-              className={`flex items-center gap-2 py-3 px-4 text-sm font-medium transition-all relative ${activeSection === 'mcq'
-                ? 'text-indigo-600 dark:text-indigo-400'
-                : 'text-gray-500 dark:text-gray-400'
-                }`}
+              className={`flex items-center gap-2 py-3 px-4 text-sm font-medium transition-all relative ${activeSection === 'mcq' ? 'text-primary' : 'text-muted hover:text-text'}`}
             >
               <HelpCircle className="w-4 h-4" /> MCQ
               {submitted && mcqResults.length > 0 && ` (${mcqResults.filter(r => r.isCorrect).length}/${mcqList.length})`}
-              {activeSection === 'mcq' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500"></div>}
+              {activeSection === 'mcq' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>}
             </button>
             <button
               onClick={() => setActiveSection('text')}
-              className={`flex items-center gap-2 py-3 px-4 text-sm font-medium transition-all relative ${activeSection === 'text'
-                ? 'text-indigo-600 dark:text-indigo-400'
-                : 'text-gray-500 dark:text-gray-400'
-                }`}
+              className={`flex items-center gap-2 py-3 px-4 text-sm font-medium transition-all relative ${activeSection === 'text' ? 'text-primary' : 'text-muted hover:text-text'}`}
             >
               <FileText className="w-4 h-4" /> Essay Questions
-              {activeSection === 'text' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500"></div>}
+              {activeSection === 'text' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>}
             </button>
           </div>
 
@@ -304,8 +284,8 @@ export default function InterviewCVPage() {
             {/* MCQ Section */}
             <div style={{ display: activeSection === 'mcq' ? 'block' : 'none' }}>
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-indigo-500" /> Multiple Choice Questions
+                <h2 className="text-xl font-bold text-text flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-primary" /> Multiple Choice Questions
                 </h2>
                 {mcqList.map((q, idx) => {
                   const isGraded = submitted && mcqResults[idx];
@@ -315,21 +295,22 @@ export default function InterviewCVPage() {
                   return (
                     <div
                       key={`mcq-${idx}`}
-                      className={`group rounded-xl p-5 border transition-all duration-300 ${submitted
-                        ? isCorrect
-                          ? 'border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-900/20'
-                          : 'border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-900/20'
-                        : 'bg-gray-50 dark:bg-gray-700/40 border-gray-100 dark:border-gray-700 hover:border-indigo-200'
-                        }`}
+                      className={`group rounded-xl p-5 border transition-all duration-300 ${
+                        submitted
+                          ? isCorrect
+                            ? 'border-success/50 bg-success/5'
+                            : 'border-error/50 bg-error/5'
+                          : 'bg-muted/5 border-border hover:border-primary/30'
+                      }`}
                     >
                       <div className="flex items-start gap-3 mb-3">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm font-bold">
+                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">
                           {idx + 1}
                         </div>
-                        <p className="font-medium text-gray-800 dark:text-white flex-1">{q.question}</p>
+                        <p className="font-medium text-text flex-1">{q.question}</p>
                         {submitted && (
                           <div className="flex-shrink-0">
-                            {isCorrect ? <CheckCircle className="w-6 h-6 text-green-500" /> : <XCircle className="w-6 h-6 text-red-500" />}
+                            {isCorrect ? <CheckCircle className="w-6 h-6 text-success" /> : <XCircle className="w-6 h-6 text-error" />}
                           </div>
                         )}
                       </div>
@@ -337,16 +318,19 @@ export default function InterviewCVPage() {
                         {q.options.map((opt, optIdx) => (
                           <label
                             key={`${idx}-opt-${optIdx}`}
-                            className={`flex items-start gap-3 cursor-pointer p-2 rounded-lg transition-colors ${submitted
-                              ? 'cursor-default'
-                              : 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
-                              } ${submitted && opt === q.correctAnswer
-                                ? 'bg-green-100 dark:bg-green-900/40'
+                            className={`flex items-start gap-3 cursor-pointer p-2 rounded-lg transition-colors ${
+                              submitted
+                                ? 'cursor-default'
+                                : 'hover:bg-primary/10'
+                            } ${
+                              submitted && opt === q.correctAnswer
+                                ? 'bg-success/20 border-success/50'
                                 : ''
-                              } ${submitted && userChoice === opt && !isCorrect
-                                ? 'bg-red-100 dark:bg-red-900/40'
+                            } ${
+                              submitted && userChoice === opt && !isCorrect
+                                ? 'bg-error/20 border-error/50'
                                 : ''
-                              }`}
+                            }`}
                           >
                             <input
                               type="radio"
@@ -355,15 +339,16 @@ export default function InterviewCVPage() {
                               checked={userChoice === opt}
                               onChange={() => handleAnswerChange(`mcq_${idx}`, opt)}
                               disabled={submitted}
-                              className="mt-0.5 w-4 h-4 text-indigo-600 focus:ring-indigo-500 disabled:opacity-70"
+                              className="mt-0.5 w-4 h-4 text-primary focus:ring-primary disabled:opacity-70"
                             />
                             <span
-                              className={`text-sm ${submitted && opt === q.correctAnswer
-                                ? 'text-green-700 dark:text-green-400 font-medium'
-                                : submitted && userChoice === opt && !isCorrect
-                                  ? 'text-red-700 dark:text-red-400 font-medium'
-                                  : 'text-gray-700 dark:text-gray-300'
-                                }`}
+                              className={`text-sm ${
+                                submitted && opt === q.correctAnswer
+                                  ? 'text-success font-medium'
+                                  : submitted && userChoice === opt && !isCorrect
+                                    ? 'text-error font-medium'
+                                    : 'text-text'
+                              }`}
                             >
                               {opt}
                             </span>
@@ -371,17 +356,17 @@ export default function InterviewCVPage() {
                         ))}
                       </div>
                       {submitted && isGraded && (
-                        <div className="ml-10 mt-3 p-3 bg-white/80 dark:bg-gray-800/80 rounded-lg text-sm shadow-inner">
-                          <p className="text-gray-600 dark:text-gray-300">
+                        <div className="ml-10 mt-3 p-3 bg-card rounded-lg text-sm shadow-inner border border-border">
+                          <p className="text-muted">
                             <span className="font-semibold">Explanation:</span> {mcqResults[idx].explanation || 'No explanation available.'}
                           </p>
-                          <p className="text-gray-600 dark:text-gray-300 mt-1">
+                          <p className="text-muted mt-1">
                             <span className="font-semibold">Your answer:</span> {userChoice || 'Not answered'}
                           </p>
-                          <p className="text-gray-600 dark:text-gray-300 mt-1">
+                          <p className="text-muted mt-1">
                             <span className="font-semibold">Correct answer:</span> {q.correctAnswer}
                           </p>
-                          <p className="text-indigo-600 dark:text-indigo-400 font-semibold mt-1">
+                          <p className="text-primary font-semibold mt-1">
                             Score: {resultScore}/10
                           </p>
                         </div>
@@ -390,7 +375,7 @@ export default function InterviewCVPage() {
                   );
                 })}
                 {mcqList.length === 0 && (
-                  <p className="text-gray-500 text-center py-8">No multiple choice questions available.</p>
+                  <p className="text-muted text-center py-8">No multiple choice questions available.</p>
                 )}
               </div>
             </div>
@@ -398,8 +383,8 @@ export default function InterviewCVPage() {
             {/* Essay Section */}
             <div style={{ display: activeSection === 'text' ? 'block' : 'none' }}>
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-500" /> Essay Questions
+                <h2 className="text-xl font-bold text-text flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" /> Essay Questions
                 </h2>
                 {textList.map((q, idx) => {
                   const essayResult = submitted && textResults[idx];
@@ -408,23 +393,24 @@ export default function InterviewCVPage() {
                   return (
                     <div
                       key={`text-${idx}`}
-                      className={`rounded-xl p-5 border transition-all duration-300 ${submitted
-                        ? isLowScore
-                          ? 'border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-900/20'
-                          : 'border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-900/20'
-                        : 'bg-gray-50 dark:bg-gray-700/40 border-gray-100 dark:border-gray-700'
-                        }`}
+                      className={`rounded-xl p-5 border transition-all duration-300 ${
+                        submitted
+                          ? isLowScore
+                            ? 'border-error/50 bg-error/5'
+                            : 'border-success/50 bg-success/5'
+                          : 'bg-muted/5 border-border hover:border-primary/30'
+                      }`}
                     >
                       <div className="flex items-start gap-3 mb-3">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 flex items-center justify-center text-sm font-bold">
+                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">
                           {idx + 1}
                         </div>
-                        <p className="font-medium text-gray-800 dark:text-white flex-1">{q.question}</p>
+                        <p className="font-medium text-text flex-1">{q.question}</p>
                       </div>
                       <div className="ml-10">
                         <textarea
                           rows={4}
-                          className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-80"
+                          className="w-full p-3 rounded-xl border border-border bg-card text-text focus:ring-2 focus:ring-primary transition-all disabled:opacity-80"
                           placeholder="Type your answer here..."
                           value={answers[`text_${idx}`] || ''}
                           onChange={(e) => handleAnswerChange(`text_${idx}`, e.target.value)}
@@ -432,39 +418,39 @@ export default function InterviewCVPage() {
                         />
                       </div>
                       {submitted && essayResult && (
-                        <div className="ml-10 mt-3 p-3 bg-white/80 dark:bg-gray-800/80 rounded-lg text-sm shadow-inner space-y-2">
-                          <p className="text-gray-600 dark:text-gray-300">
+                        <div className="ml-10 mt-3 p-3 bg-card rounded-lg text-sm shadow-inner border border-border space-y-2">
+                          <p className="text-muted">
                             <span className="font-semibold">Your answer:</span> {essayResult.yourAnswer || 'Not answered'}
                           </p>
                           {essayResult.importantKeywords && essayResult.importantKeywords.length > 0 && (
-                            <p className="text-gray-600 dark:text-gray-300">
+                            <p className="text-muted">
                               <span className="font-semibold">Matched keywords:</span> {essayResult.importantKeywords.join(', ')}
                             </p>
                           )}
-                          <p className="text-gray-600 dark:text-gray-300">
+                          <p className="text-muted">
                             <span className="font-semibold">AI Review:</span> {essayResult.aiReview || 'No review provided.'}
                           </p>
                           {essayResult.aiSuggestedAnswer && (
-                            <p className="text-gray-600 dark:text-gray-300">
+                            <p className="text-muted">
                               <span className="font-semibold">Suggested answer:</span> {essayResult.aiSuggestedAnswer}
                             </p>
                           )}
                           {essayResult.strengths && essayResult.strengths.length > 0 && (
-                            <div className="text-green-700 dark:text-green-400">
+                            <div className="text-success">
                               <span className="font-semibold">✅ Strengths:</span> {essayResult.strengths.join('; ')}
                             </div>
                           )}
                           {essayResult.mistakes && essayResult.mistakes.length > 0 && (
-                            <div className="text-red-600 dark:text-red-400">
+                            <div className="text-error">
                               <span className="font-semibold">❌ Weaknesses:</span> {essayResult.mistakes.join('; ')}
                             </div>
                           )}
                           {essayResult.improvements && essayResult.improvements.length > 0 && (
-                            <div className="text-blue-600 dark:text-blue-400">
+                            <div className="text-primary">
                               <span className="font-semibold">📚 Improvements:</span> {essayResult.improvements.join('; ')}
                             </div>
                           )}
-                          <p className={`font-semibold ${isLowScore ? 'text-red-600' : 'text-purple-600'}`}>
+                          <p className={`font-semibold ${isLowScore ? 'text-error' : 'text-success'}`}>
                             Score: {resultScore}/10
                           </p>
                         </div>
@@ -473,18 +459,18 @@ export default function InterviewCVPage() {
                   );
                 })}
                 {textList.length === 0 && (
-                  <p className="text-gray-500 text-center py-8">No essay questions available.</p>
+                  <p className="text-muted text-center py-8">No essay questions available.</p>
                 )}
               </div>
             </div>
 
             {/* Submit Button */}
             {!submitted && totalQuestions > 0 && (
-              <div className="mt-8 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <div className="mt-8 pt-4 border-t border-border">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 active:scale-95"
+                  className="w-full py-3.5 bg-primary hover:brightness-105 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 active:scale-95"
                 >
                   {submitting ? (
                     <>
@@ -497,7 +483,7 @@ export default function InterviewCVPage() {
                     </>
                   )}
                 </button>
-                <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-3">
+                <p className="text-center text-xs text-muted mt-3">
                   * Review your answers carefully before submitting
                 </p>
               </div>
@@ -505,33 +491,33 @@ export default function InterviewCVPage() {
 
             {/* Results after submission */}
             {submitted && (
-              <div className="mt-8 pt-4 border-t border-gray-100 dark:border-gray-700 text-center">
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-xl p-4">
-                  <Award className="w-8 h-8 text-indigo-500 mx-auto mb-2" />
-                  <p className="text-lg font-bold text-gray-800 dark:text-white">Your total score: {totalScore}/100</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{results?.level}</p>
+              <div className="mt-8 pt-4 border-t border-border text-center">
+                <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
+                  <Award className="w-8 h-8 text-primary mx-auto mb-2" />
+                  <p className="text-lg font-bold text-text">Your total score: {totalScore}/100</p>
+                  <p className="text-sm text-muted mt-1">{results?.level}</p>
 
                   <div className="mt-4 text-left space-y-3">
                     {strengths.length > 0 && (
-                      <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                        <p className="font-semibold text-green-700 dark:text-green-400">✅ Strengths</p>
-                        <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
+                      <div className="p-3 bg-success/10 rounded-lg border border-success/30">
+                        <p className="font-semibold text-success">✅ Strengths</p>
+                        <ul className="list-disc list-inside text-sm text-muted">
                           {strengths.map((s, i) => <li key={i}>{s}</li>)}
                         </ul>
                       </div>
                     )}
                     {weaknesses.length > 0 && (
-                      <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                        <p className="font-semibold text-amber-700 dark:text-amber-400">⚠️ Areas for Improvement</p>
-                        <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
+                      <div className="p-3 bg-warning/10 rounded-lg border border-warning/30">
+                        <p className="font-semibold text-warning">⚠️ Areas for Improvement</p>
+                        <ul className="list-disc list-inside text-sm text-muted">
                           {weaknesses.map((w, i) => <li key={i}>{w}</li>)}
                         </ul>
                       </div>
                     )}
                     {suggestions.length > 0 && (
-                      <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                        <p className="font-semibold text-blue-700 dark:text-blue-400">📚 Suggestions</p>
-                        <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
+                      <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
+                        <p className="font-semibold text-primary">📚 Suggestions</p>
+                        <ul className="list-disc list-inside text-sm text-muted">
                           {suggestions.map((sug, i) => <li key={i}>{sug}</li>)}
                         </ul>
                       </div>
@@ -539,10 +525,10 @@ export default function InterviewCVPage() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
-                    <button onClick={handleBack} className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                    <button onClick={handleBack} className="px-5 py-2 bg-primary text-white rounded-lg hover:brightness-105 transition shadow-md">
                       Back to Dashboard
                     </button>
-                    <button onClick={() => navigate('/history')} className="px-5 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                    <button onClick={() => navigate('/history')} className="px-5 py-2 bg-secondary text-white rounded-lg hover:brightness-105 transition shadow-md">
                       View History
                     </button>
                   </div>
@@ -552,7 +538,7 @@ export default function InterviewCVPage() {
           </form>
         </div>
 
-        <div className="mt-6 text-center text-xs text-gray-400 dark:text-gray-600">
+        <div className="mt-6 text-center text-xs text-muted">
           <TrendingUp className="inline w-3 h-3 mr-1" /> Powered by AI
         </div>
       </div>

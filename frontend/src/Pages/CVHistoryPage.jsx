@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, FileText, Loader2, RefreshCw, AlertCircle, Eye, BarChart3, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import api from '../services/api';
-import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function CVHistoryPage() {
   const navigate = useNavigate();
-  const { darkMode } = useTheme();
   const { loading: authLoading } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,9 +66,10 @@ export default function CVHistoryPage() {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 80) return 'text-emerald-600 dark:text-emerald-300';
-    if (score >= 60) return 'text-amber-600 dark:text-amber-300';
-    return 'text-rose-600 dark:text-rose-300';
+    if (score >= 80) return 'text-success';
+    if (score >= 60) return 'text-warning';
+    if (score >= 40) return 'text-warning/80';
+    return 'text-error';
   };
 
   const totalPages = Math.ceil(history.length / itemsPerPage);
@@ -80,22 +79,30 @@ export default function CVHistoryPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Màu chính cho CV: Teal (không trùng với Standard Indigo)
+  const cvColor = {
+    primary: 'teal',
+    bgLight: 'bg-teal-50 dark:bg-teal-950/40',
+    textLight: 'text-teal-600 dark:text-teal-400',
+    border: 'border-teal-200 dark:border-teal-800'
+  };
+
   if (loading || authLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 via-fuchsia-50 to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <Loader2 className="w-12 h-12 text-purple-500 dark:text-purple-400 animate-spin mb-4" />
-        <p className="text-gray-600 dark:text-gray-300">Loading CV‑based interviews...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg">
+        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+        <p className="text-muted animate-pulse">Loading CV‑based interviews...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-fuchsia-50 to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center max-w-md shadow-xl">
-          <AlertCircle className="w-14 h-14 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-700 dark:text-gray-300 mb-6">{error}</p>
-          <button onClick={fetchCVHistory} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl flex items-center gap-2 mx-auto hover:bg-purple-700">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-bg">
+        <div className="bg-card rounded-2xl p-8 text-center max-w-md shadow-soft border border-border">
+          <AlertCircle className="w-14 h-14 text-error mx-auto mb-4" />
+          <p className="text-text mb-6">{error}</p>
+          <button onClick={fetchCVHistory} className="px-5 py-2.5 bg-primary text-white rounded-xl flex items-center gap-2 mx-auto hover:brightness-105 transition shadow-md">
             <RefreshCw className="w-4 h-4" /> Retry
           </button>
         </div>
@@ -104,66 +111,66 @@ export default function CVHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-fuchsia-50 to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         {/* Header with Back button and Stats */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
           <button
             onClick={() => navigate('/history')}
-            className="group flex items-center gap-2 text-purple-600 dark:text-purple-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-all duration-300 hover:gap-3 font-medium bg-white/90 dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm"
+            className="group flex items-center gap-2 text-muted hover:text-primary transition-all duration-300 hover:gap-3 font-medium bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
           >
             <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
             Back
           </button>
-          <div className="bg-white dark:bg-gray-800 rounded-full px-5 py-2 shadow-sm border border-gray-200 dark:border-gray-700">
-            <BarChart3 className="w-4 h-4 inline mr-2 text-purple-500 dark:text-purple-400" />
-            <span className="font-semibold text-gray-800 dark:text-gray-200">{history.length} CV sessions</span>
+          <div className="bg-card/80 backdrop-blur-sm rounded-full px-5 py-2 shadow-soft border border-border">
+            <BarChart3 className="w-4 h-4 inline mr-2 text-primary" />
+            <span className="font-semibold text-text">{history.length} CV sessions</span>
           </div>
         </div>
 
         {/* Title Section */}
         <div className="mb-10 text-center sm:text-left">
-          <h1 className="text-3xl sm:text-4xl font-extrabold pb-2 text-gray-900 dark:text-white">
-            <span className="bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 dark:from-purple-400 dark:via-fuchsia-400 dark:to-pink-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl font-extrabold pb-2">
+            <span className="bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">
               CV-Based Interview History
             </span>
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Interviews generated from your uploaded CV</p>
+          <p className="text-muted mt-2">Interviews generated from your uploaded CV</p>
         </div>
 
         {history.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center shadow-md border border-gray-200 dark:border-gray-700">
-            <FileText className="w-20 h-20 text-purple-300 dark:text-purple-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-white">No CV‑based interviews yet</h3>
-            <button onClick={() => navigate('/welcome')} className="mt-4 px-6 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition">
+          <div className="bg-card rounded-2xl p-12 text-center shadow-soft border border-border">
+            <FileText className="w-20 h-20 text-primary/40 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-text">No CV‑based interviews yet</h3>
+            <button onClick={() => navigate('/welcome')} className="mt-4 px-6 py-2.5 bg-primary text-white rounded-xl hover:brightness-105 transition shadow-md">
               Upload a CV to start
             </button>
           </div>
         ) : (
           <>
-            {/* Grid of CV interview cards - solid backgrounds, no blur */}
+            {/* Grid of CV interview cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedHistory.map((item) => (
                 <div 
                   key={item.id} 
-                  className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.02] border border-purple-200 dark:border-purple-800"
+                  className={`group relative bg-card rounded-2xl shadow-soft hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.02] border ${cvColor.border}`}
                 >
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-purple-200/30 dark:from-purple-900/20 to-transparent rounded-bl-3xl -z-0" />
+                  <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-${cvColor.primary}-200/30 to-transparent rounded-bl-3xl -z-0`} />
                   <div className="p-5 relative z-10">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-bold text-gray-800 dark:text-white truncate">{item.cvName}</h3>
-                      <Layers className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+                      <h3 className="text-lg font-bold text-text truncate">{item.cvName}</h3>
+                      <Layers className={`w-5 h-5 ${cvColor.textLight}`} />
                     </div>
                     {item.skillTags.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         {item.skillTags.map((tag, idx) => (
-                          <span key={idx} className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 text-xs rounded-full">
+                          <span key={idx} className={`px-2 py-0.5 ${cvColor.bgLight} ${cvColor.textLight} text-xs rounded-full`}>
                             {tag}
                           </span>
                         ))}
                       </div>
                     )}
-                    <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    <div className="flex items-center gap-3 text-xs text-muted mb-4">
                       <Calendar className="w-3.5 h-3.5" /> 
                       <span>{formatDate(item.createdAt)}</span>
                       <FileText className="w-3.5 h-3.5 ml-1" /> 
@@ -171,14 +178,14 @@ export default function CVHistoryPage() {
                     </div>
                     <div className="flex justify-between items-end">
                       <div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Overall Score</span>
+                        <span className="text-xs text-muted">Overall Score</span>
                         <div className={`text-3xl font-black ${getScoreColor(item.totalScore)}`}>
-                          {item.totalScore}<span className="text-sm text-gray-500 dark:text-gray-400">/100</span>
+                          {item.totalScore}<span className="text-sm text-muted">/100</span>
                         </div>
                       </div>
                       <button 
                         onClick={() => navigate(item.detailPath)} 
-                        className="flex items-center gap-1 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/40 px-3 py-1.5 rounded-full text-sm font-medium transition"
+                        className={`flex items-center gap-1 ${cvColor.textLight} hover:bg-primary/10 px-3 py-1.5 rounded-full text-sm font-medium transition`}
                       >
                         Review <Eye className="w-4 h-4" />
                       </button>
@@ -194,7 +201,7 @@ export default function CVHistoryPage() {
                 <button 
                   disabled={currentPage === 1} 
                   onClick={() => handlePageChange(currentPage - 1)} 
-                  className="p-2 rounded-xl disabled:opacity-40 text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50 transition"
+                  className="p-2 rounded-xl disabled:opacity-40 text-text hover:bg-card/50 transition"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -204,8 +211,8 @@ export default function CVHistoryPage() {
                     onClick={() => handlePageChange(p)} 
                     className={`w-9 h-9 rounded-full font-medium transition ${
                       currentPage === p 
-                        ? 'bg-purple-600 text-white shadow-md' 
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-gray-700'
+                        ? 'bg-primary text-white shadow-md' 
+                        : 'bg-card text-text hover:bg-primary/10'
                     }`}
                   >
                     {p}
@@ -214,7 +221,7 @@ export default function CVHistoryPage() {
                 <button 
                   disabled={currentPage === totalPages} 
                   onClick={() => handlePageChange(currentPage + 1)} 
-                  className="p-2 rounded-xl disabled:opacity-40 text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50 transition"
+                  className="p-2 rounded-xl disabled:opacity-40 text-text hover:bg-card/50 transition"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>

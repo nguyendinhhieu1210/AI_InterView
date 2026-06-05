@@ -4,20 +4,17 @@ import {
     LogOut, User, Brain, Zap, Award, ChevronDown, Settings, HelpCircle,
     BarChart3, MessageCircle, FileText, Mail, Phone, Globe, ExternalLink,
     CheckCircle, Clock, LayoutGrid, ArrowLeft, PlayCircle, Loader2, Code,
-    Terminal, BookOpen, Cpu
+    Terminal, BookOpen, Cpu, ListChecks, Target
 } from 'lucide-react';
-import { TrendingUp } from 'lucide-react';
 import { FaLinkedin } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 
 export default function HelpSupportPage() {
     const navigate = useNavigate();
-    const { darkMode } = useTheme();
     const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
 
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const cvInterviewRef = useRef(null);
+    const guideRef = useRef(null);
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) navigate('/login');
@@ -32,17 +29,17 @@ export default function HelpSupportPage() {
         }, 2000);
     };
 
-    const scrollToCVInterview = () => {
-        cvInterviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const scrollToGuide = () => {
+        guideRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
     if (authLoading) {
         return (
-            <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'}`}>
+            <div className="min-h-screen flex items-center justify-center bg-bg">
                 <div className="relative">
-                    <div className="w-16 h-16 border-4 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
+                    <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <Loader2 className="w-8 h-8 text-indigo-500 animate-pulse" />
+                        <Loader2 className="w-8 h-8 text-primary animate-pulse" />
                     </div>
                 </div>
             </div>
@@ -51,105 +48,70 @@ export default function HelpSupportPage() {
 
     if (!isAuthenticated || !user) return null;
 
-    // Hardcoded English text
-    const text = {
-        helpSupport: 'Help & Support',
-        helpSubtitle: 'Get assistance and discover how our AI-powered platform personalizes interviews based on your CV, adaptive logic, or coding challenges.',
-        interviewModesTitle: '🎯 Three Interview Modes',
-        interviewModesDesc: 'Choose the approach that fits your preparation style. All modes use AI to generate personalized questions and feedback.',
-        cvBasedTitle: '📄 CV‑Based Interview',
-        cvBasedDesc: 'Upload your CV – the AI extracts your skills, projects, and experience to ask perfectly tailored questions.',
-        adaptiveTitle: '🤖 Adaptive Interview',
-        adaptiveDesc: 'Questions change in real‑time based on your answers. Strong answers unlock deeper topics, weak answers trigger guidance.',
-        codingTitle: '💻 Coding Interview',
-        codingDesc: 'Practice coding with AI-generated problems, run tests, then answer conceptual questions about your code.',
-        howItWorks: 'How CV‑Based Interview Works',
-        step1Title: 'Upload Your CV',
-        step1Desc: 'Upload your CV (PDF). Choose target role, tech stack, and seniority level.',
-        step2Title: 'AI Analysis & Parsing',
-        step2Desc: 'AI extracts your skills, projects, work experience and education.',
-        step3Title: 'Personalized Question Generation',
-        step3Desc: 'AI generates relevant multiple-choice and open-ended questions based on your CV.',
-        step4Title: 'Practice & Submit Answers',
-        step4Desc: 'Answer questions in an interactive interface. Submit for evaluation.',
-        step5Title: 'AI Scoring & Feedback',
-        step5Desc: 'MCQ auto-graded instantly. Text answers receive AI scoring and detailed feedback.',
-        step6Title: 'Performance Insights & Tips',
-        step6Desc: 'Get overall score, personalized recommendations, and actionable tips.',
-        adaptiveSystemTitle: 'Adaptive Interview System',
-        adaptiveRealTime: 'Real-time Difficulty',
-        adaptiveRealTimeDesc: 'Questions become harder or easier depending on your performance.',
-        adaptiveFollowup: 'AI Follow-up Questions',
-        adaptiveFollowupDesc: 'The AI asks deeper follow-up questions based on your answers.',
-        adaptiveSkill: 'Skill Evaluation',
-        adaptiveSkillDesc: 'Track strengths, weaknesses, and topic mastery instantly.',
-        adaptiveFeedback: 'Personalized Feedback',
-        adaptiveFeedbackDesc: 'Receive tailored recommendations to improve your interview skills.',
-        adaptiveHighlight: 'Adaptive AI simulates real technical interviews',
-        adaptiveHighlightDesc: 'Just like real interviewers, the AI adjusts questions according to your confidence level, technical depth, and response quality.',
-        codingStep1Title: '1. Choose Language',
-        codingStep1Desc: 'Select your programming language (Java, Python, JavaScript, C++, etc.).',
-        codingStep2Title: '2. Choose Domain & Topic',
-        codingStep2Desc: 'Pick a domain (OOP, DSA, Concurrency, etc.) and a specific topic (Array, LinkedList, Tree, etc.).',
-        codingStep3Title: '3. AI Generates Problem',
-        codingStep3Desc: 'AI creates a coding problem tailored to your language, domain, and topic.',
-        codingStep4Title: '4. Write & Run Code',
-        codingStep4Desc: 'Implement your solution in the built-in editor with test cases.',
-        codingStep5Title: '5. Answer Conceptual Questions',
-        codingStep5Desc: 'After solving correctly, answer 3 short questions about your code (time complexity, edge cases, etc.).',
-        codingStep6Title: '6. AI Evaluation',
-        codingStep6Desc: 'Receive detailed feedback on your code and conceptual answers.',
-        topicSectionTitle: '📌 Manual Topic Entry (Standard Interview)',
-        topicSectionDesc: 'No CV? No problem! Manually enter programming languages, frameworks, or topics (Java, Python, React, ...). The AI will generate standard interview questions (multiple-choice and open-ended) based on your chosen topics.',
-        contactTitle: 'Contact & Support',
-        emailSupport: 'Email Support',
-        phoneSupport: 'Phone Support',
-        facebook: 'Facebook',
-        linkedin: 'LinkedIn',
-        responseTime: 'Response time: Within 24 hours',
-        businessHours: 'Mon-Fri 9am - 6pm (GMT+7)',
-        quickActions: 'Quick Actions',
-        backToDashboard: 'Back to Dashboard',
-        knowledgeBase: 'Knowledge Base',
-        reportIssue: 'Report an Issue',
-        personalNote: 'Your questions are generated based on your CV content OR the topics you enter — fully personalized!',
-        connectWithUs: 'Connect with us on social media for updates and tips.',
-        howToUse: 'How to use?',
-        back: 'Back to Dashboard',
-        logout: 'Logging out',
-        tryAdaptive: 'Try Adaptive Interview',
-        tryCoding: 'Try Coding Interview'
-    };
-
-    const cvSteps = [
-        { icon: FileText, title: text.step1Title, desc: text.step1Desc, color: 'blue' },
-        { icon: Brain, title: text.step2Title, desc: text.step2Desc, color: 'purple' },
-        { icon: Zap, title: text.step3Title, desc: text.step3Desc, color: 'amber' },
-        { icon: MessageCircle, title: text.step4Title, desc: text.step4Desc, color: 'green' },
-        { icon: HelpCircle, title: text.step5Title, desc: text.step5Desc, color: 'indigo' },
-        { icon: TrendingUp, title: text.step6Title, desc: text.step6Desc, color: 'rose' },
+    const features = [
+        {
+            id: 'standard',
+            title: '📋 Standard Interview',
+            icon: MessageCircle,
+            gradient: 'from-primary to-secondary',
+            badgeColor: 'bg-primary/10 text-primary',
+            description: 'Manually enter any topic / technology you want to practice. AI generates MCQ + essay questions tailored to your input.',
+            steps: [
+                'Step 1: Enter a topic (e.g., Java, React, OOP, Node.js, SQL)',
+                'Step 2: Choose difficulty (Easy / Medium / Hard)',
+                'Step 3: AI generates 6–8 questions (MCQ + Essay) based on the topic',
+                'Step 4: Answer questions directly in the interface',
+                'Step 5: Submit → AI grades, explains answers, and gives detailed feedback'
+            ]
+        },
+        {
+            id: 'cv',
+            title: '📄 CV‑Based Interview',
+            icon: FileText,
+            gradient: 'from-emerald-500 to-teal-500',
+            badgeColor: 'bg-emerald-500/10 text-emerald-600',
+            description: 'Upload your CV – AI extracts skills, projects, and experience to generate personalized questions.',
+            steps: [
+                'Step 1: Upload your CV (PDF)',
+                'Step 2: AI analyzes and extracts information (skills, projects, experience)',
+                'Step 3: Select focus areas / skills',
+                'Step 4: AI generates MCQ + essay questions based on your CV',
+                'Step 5: Answer and receive score + detailed feedback'
+            ]
+        },
+        {
+            id: 'adaptive',
+            title: '🤖 Adaptive Interview',
+            icon: Brain,
+            gradient: 'from-violet-500 to-purple-500',
+            badgeColor: 'bg-violet-500/10 text-violet-600',
+            description: 'One-on-one interview with AI. Questions adapt in real-time based on your answers.',
+            steps: [
+                'Step 1: Enter a topic (e.g., React, Java, DSA)',
+                'Step 2: Choose difficulty (Easy / Medium / Hard)',
+                'Step 3: AI asks a question – you answer via voice or text',
+                'Step 4: Based on your answer, AI decides next question (harder / easier / deeper)',
+                'Step 5: After 8 questions, AI provides final score, evaluation, and learning roadmap'
+            ]
+        },
+        {
+            id: 'coding',
+            title: '💻 Coding Interview',
+            icon: Code,
+            gradient: 'from-cyan-500 to-blue-500',
+            badgeColor: 'bg-cyan-500/10 text-cyan-600',
+            description: 'Solve AI-generated coding problems, run tests, then answer conceptual questions about your code.',
+            steps: [
+                'Step 1: Choose programming language (Java, Python, JavaScript, C++, ...)',
+                'Step 2: Choose Domain (DSA, OOP, Concurrency, ...)',
+                'Step 3: Choose specific Topic (Array, LinkedList, Tree, ...)',
+                'Step 4: Choose difficulty (Beginner / Intermediate / Advanced)',
+                'Step 5: AI generates a coding problem with test cases',
+                'Step 6: Write code, run tests → if correct, proceed to 3 explanation questions',
+                'Step 7: Answer questions (complexity, edge cases, etc.) → AI evaluates overall'
+            ]
+        }
     ];
-
-    const codingSteps = [
-        { icon: Terminal, title: text.codingStep1Title, desc: text.codingStep1Desc, color: 'cyan' },
-        { icon: BookOpen, title: text.codingStep2Title, desc: text.codingStep2Desc, color: 'blue' },
-        { icon: Cpu, title: text.codingStep3Title, desc: text.codingStep3Desc, color: 'violet' },
-        { icon: Code, title: text.codingStep4Title, desc: text.codingStep4Desc, color: 'emerald' },
-        { icon: MessageCircle, title: text.codingStep5Title, desc: text.codingStep5Desc, color: 'amber' },
-        { icon: Award, title: text.codingStep6Title, desc: text.codingStep6Desc, color: 'indigo' },
-    ];
-
-    const colorMap = {
-        blue: 'from-blue-500 to-cyan-500',
-        purple: 'from-purple-500 to-indigo-500',
-        amber: 'from-amber-500 to-orange-500',
-        green: 'from-green-500 to-emerald-500',
-        indigo: 'from-indigo-500 to-blue-500',
-        rose: 'from-rose-500 to-pink-500',
-        cyan: 'from-cyan-500 to-teal-500',
-        violet: 'from-violet-500 to-purple-500',
-        emerald: 'from-emerald-500 to-green-500',
-    };
 
     const contactLinks = {
         email: 'nguyendhieu1210@gmail.com',
@@ -159,12 +121,12 @@ export default function HelpSupportPage() {
     };
 
     return (
-        <div className={`min-h-screen transition-all duration-500 ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'} py-8 px-4 sm:px-6 lg:px-8`}>
+        <div className="min-h-screen bg-bg py-8 px-4 sm:px-6 lg:px-8">
             {isLoggingOut && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl text-center animate-fadeIn">
-                        <Loader2 className="w-12 h-12 animate-spin text-indigo-500 mx-auto mb-4" />
-                        <p className="text-gray-700 dark:text-gray-300">{text.logout}...</p>
+                    <div className="bg-card rounded-2xl p-8 shadow-soft text-center animate-fadeIn border border-border">
+                        <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+                        <p className="text-text">Logging out...</p>
                     </div>
                 </div>
             )}
@@ -172,273 +134,172 @@ export default function HelpSupportPage() {
             <div className="max-w-7xl mx-auto">
                 <button
                     onClick={() => navigate('/welcome')}
-                    className="group mb-8 flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 font-medium"
+                    className="group mb-8 flex items-center gap-2 text-muted hover:text-primary transition-all duration-300 font-medium bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
                 >
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                    <span>{text.back}</span>
+                    <span>Back to Dashboard</span>
                 </button>
 
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 to-blue-600 p-6 md:p-8 mb-12 text-white shadow-xl">
+                {/* Hero Section */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-secondary p-6 md:p-8 mb-12 text-white shadow-soft">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
                     <div className="relative">
                         <div className="flex items-center gap-3 mb-2">
                             <HelpCircle className="w-8 h-8 md:w-9 md:h-9" />
-                            <h1 className="text-2xl md:text-3xl font-bold">{text.helpSupport}</h1>
+                            <h1 className="text-2xl md:text-3xl font-bold">Help & Support</h1>
                         </div>
-                        <p className="text-indigo-100 text-sm md:text-base max-w-2xl mb-5">{text.helpSubtitle}</p>
-                        <button onClick={scrollToCVInterview} className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md">
-                            <PlayCircle className="w-4 h-4" /> {text.howToUse}
+                        <p className="text-primary-100 text-sm md:text-base max-w-2xl mb-5">
+                            Learn how to use the 4 interview modes of AI Interview. Each mode is designed to help you practice effectively.
+                        </p>
+                        <button onClick={scrollToGuide} className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md">
+                            <PlayCircle className="w-4 h-4" /> View detailed guide
                         </button>
                     </div>
                 </div>
 
-                <div className={`mb-12 rounded-2xl shadow-lg border transition-all duration-300 ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
-                    <div className="p-6">
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">{text.interviewModesTitle}</h2>
-                        <p className="text-gray-600 dark:text-gray-300 mb-6">{text.interviewModesDesc}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                            <div className={`p-4 rounded-xl ${darkMode ? 'bg-indigo-900/30' : 'bg-indigo-50'}`}>
-                                <FileText className="w-8 h-8 text-indigo-500 mb-2" />
-                                <h3 className="font-semibold text-gray-800 dark:text-white">{text.cvBasedTitle}</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{text.cvBasedDesc}</p>
+                {/* 4 Feature Cards - Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+                    {features.map((feature) => {
+                        const Icon = feature.icon;
+                        return (
+                            <div key={feature.id} className="bg-card rounded-2xl shadow-soft border border-border p-5 transition-all hover:-translate-y-1 hover:shadow-md">
+                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 shadow-md`}>
+                                    <Icon className="w-6 h-6 text-white" />
+                                </div>
+                                <h3 className="text-lg font-bold text-text mb-2">{feature.title}</h3>
+                                <p className="text-sm text-muted line-clamp-2">{feature.description}</p>
                             </div>
-                            <div className={`p-4 rounded-xl ${darkMode ? 'bg-purple-900/30' : 'bg-purple-50'}`}>
-                                <Brain className="w-8 h-8 text-purple-500 mb-2" />
-                                <h3 className="font-semibold text-gray-800 dark:text-white">{text.adaptiveTitle}</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{text.adaptiveDesc}</p>
-                            </div>
-                            <div className={`p-4 rounded-xl ${darkMode ? 'bg-cyan-900/30' : 'bg-cyan-50'}`}>
-                                <Code className="w-8 h-8 text-cyan-500 mb-2" />
-                                <h3 className="font-semibold text-gray-800 dark:text-white">{text.codingTitle}</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{text.codingDesc}</p>
-                            </div>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
 
-                <div ref={cvInterviewRef} className="mb-12 scroll-mt-24">
-                    <div className={`rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
-                        <div className="p-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl">
-                                    <LayoutGrid className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                {/* Detailed Guide Section */}
+                <div ref={guideRef} className="space-y-8 scroll-mt-24">
+                    {features.map((feature) => {
+                        const Icon = feature.icon;
+                        return (
+                            <div key={feature.id} className="bg-card rounded-2xl shadow-soft border border-border overflow-hidden transition-all hover:shadow-md">
+                                <div className={`bg-gradient-to-r ${feature.gradient} px-6 py-4`}>
+                                    <div className="flex items-center gap-3">
+                                        <Icon className="w-7 h-7 text-white" />
+                                        <h2 className="text-xl md:text-2xl font-bold text-white">{feature.title}</h2>
+                                    </div>
                                 </div>
-                                <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">{text.howItWorks}</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {cvSteps.map((step, idx) => {
-                                    const Icon = step.icon;
-                                    const gradient = colorMap[step.color] || 'from-gray-500 to-gray-600';
-                                    return (
-                                        <div key={idx} className={`group rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-2 hover:shadow-indigo-500/20 ${darkMode ? 'bg-gray-800 border-gray-700/50' : 'bg-white/80 border-white/50'}`}>
-                                            <div className={`h-2 rounded-t-2xl bg-gradient-to-r ${gradient}`}></div>
-                                            <div className="p-5">
-                                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-md group-hover:scale-110 transition-transform duration-300`}>
-                                                    <Icon className="w-6 h-6 text-white" />
+                                <div className="p-6">
+                                    <p className="text-text mb-6">{feature.description}</p>
+                                    <div className="space-y-3">
+                                        {feature.steps.map((step, stepIdx) => (
+                                            <div key={stepIdx} className="flex items-start gap-3">
+                                                <div className={`w-6 h-6 rounded-full ${feature.badgeColor} flex items-center justify-center text-xs font-bold shrink-0 mt-0.5`}>
+                                                    {stepIdx + 1}
                                                 </div>
-                                                <div className="flex items-start gap-2 mb-2">
-                                                    <span className="text-xs font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded-full">{idx + 1}</span>
-                                                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{step.title}</h3>
-                                                </div>
-                                                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{step.desc}</p>
+                                                <p className="text-sm text-muted">{step}</p>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        ))}
+                                    </div>
+                                    <div className="mt-6 pt-4 border-t border-border flex justify-end">
+                                        <button
+                                            onClick={() => {
+                                                if (feature.id === 'standard') navigate('/interview', { state: { topic: '', difficulty: 'medium' } });
+                                                else if (feature.id === 'cv') navigate('/cv-upload');
+                                                else if (feature.id === 'adaptive') navigate('/adaptive-interview');
+                                                else if (feature.id === 'coding') navigate('/live-coding');
+                                            }}
+                                            className="px-5 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 font-medium text-sm transition"
+                                        >
+                                            Try now →
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <div className={`mt-6 rounded-xl p-4 flex items-center gap-3 border ${darkMode ? 'bg-indigo-900/20 border-indigo-800/50' : 'bg-indigo-50 border-indigo-100'}`}>
-                                <Brain className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{text.personalNote}</p>
-                            </div>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
 
-                <div className="mb-12">
-                    <div className={`rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
-                        <div className="p-6">
-                            <div className="flex items-center gap-3 mb-5">
-                                <div className="p-2 bg-violet-100 dark:bg-violet-900/40 rounded-xl">
-                                    <Brain className="w-6 h-6 text-violet-600 dark:text-violet-400" />
-                                </div>
-                                <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">{text.adaptiveSystemTitle}</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mt-2">
-                                {[
-                                    { icon: Zap, title: text.adaptiveRealTime, desc: text.adaptiveRealTimeDesc, gradient: 'from-yellow-500 to-orange-500' },
-                                    { icon: Brain, title: text.adaptiveFollowup, desc: text.adaptiveFollowupDesc, gradient: 'from-violet-500 to-indigo-500' },
-                                    { icon: TrendingUp, title: text.adaptiveSkill, desc: text.adaptiveSkillDesc, gradient: 'from-emerald-500 to-green-500' },
-                                    { icon: Award, title: text.adaptiveFeedback, desc: text.adaptiveFeedbackDesc, gradient: 'from-cyan-500 to-blue-500' }
-                                ].map((item, index) => {
-                                    const Icon = item.icon;
-                                    return (
-                                        <div key={index} className={`group/card rounded-2xl p-5 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border ${darkMode ? 'bg-gray-800 border-gray-700/50 hover:border-violet-600/40' : 'bg-white/80 border-white hover:border-violet-200'}`}>
-                                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg mb-4 group-hover/card:scale-110 transition-transform duration-300`}>
-                                                <Icon className="w-6 h-6 text-white" />
-                                            </div>
-                                            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">{item.title}</h3>
-                                            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{item.desc}</p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            <div className={`mt-8 rounded-2xl p-5 border flex flex-col md:flex-row md:items-center gap-4 ${darkMode ? 'bg-violet-900/20 border-violet-700/30' : 'bg-violet-50 border-violet-100'}`}>
-                                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg">
-                                    <CheckCircle className="w-6 h-6 text-white" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-gray-800 dark:text-white mb-1">{text.adaptiveHighlight}</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">{text.adaptiveHighlightDesc}</p>
-                                </div>
-                                <button className="px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold shadow-lg transition-all duration-300 hover:scale-105">
-                                    {text.tryAdaptive}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mb-12">
-                    <div className={`rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
-                        <div className="p-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-cyan-100 dark:bg-cyan-900/40 rounded-xl">
-                                    <Code className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
-                                </div>
-                                <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">{text.codingTitle}</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {codingSteps.map((step, idx) => {
-                                    const Icon = step.icon;
-                                    const gradient = colorMap[step.color] || 'from-gray-500 to-gray-600';
-                                    return (
-                                        <div key={idx} className={`group rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-2 hover:shadow-cyan-500/20 ${darkMode ? 'bg-gray-800 border-gray-700/50' : 'bg-white/80 border-white/50'}`}>
-                                            <div className={`h-2 rounded-t-2xl bg-gradient-to-r ${gradient}`}></div>
-                                            <div className="p-5">
-                                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-md group-hover:scale-110 transition-transform duration-300`}>
-                                                    <Icon className="w-6 h-6 text-white" />
-                                                </div>
-                                                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">{step.title}</h3>
-                                                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{step.desc}</p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            <div className="mt-6 flex justify-end">
-                                <button className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white font-semibold shadow-lg transition-all duration-300 hover:scale-105">
-                                    {text.tryCoding}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mb-12">
-                    <div className={`rounded-2xl border-2 border-dashed p-6 transition-all ${darkMode ? 'bg-cyan-900/20 border-cyan-500/50' : 'bg-cyan-50 border-cyan-400'}`}>
-                        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                            <div className={`p-3 rounded-xl ${darkMode ? 'bg-cyan-800/50' : 'bg-cyan-100'}`}>
-                                <Code className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{text.topicSectionTitle}</h3>
-                                <p className="text-gray-600 dark:text-gray-300">{text.topicSectionDesc}</p>
-                                <div className="flex flex-wrap gap-2 mt-3">
-                                    {['Java', 'Python', 'JavaScript', 'React', 'Node.js', 'SQL'].map((tag) => (
-                                        <span key={tag} className={`px-2 py-1 rounded-lg text-xs font-mono ${darkMode ? 'bg-gray-800 text-cyan-300' : 'bg-white text-cyan-700 shadow-sm'}`}>
-                                            {tag}
-                                        </span>
-                                    ))}
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 italic">+ any topic you want</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Contact Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
                     <div className="lg:col-span-2">
-                        <div className={`rounded-3xl shadow-2xl border p-6 transition-all ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
+                        <div className="bg-card rounded-3xl shadow-soft border border-border p-6 transition-all">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
-                                    <MessageCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                <div className="p-2 bg-primary/10 rounded-xl">
+                                    <MessageCircle className="w-5 h-5 text-primary" />
                                 </div>
-                                <h2 className="text-xl font-bold text-gray-800 dark:text-white">{text.contactTitle}</h2>
+                                <h2 className="text-xl font-bold text-text">Contact & Support</h2>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <a href={`mailto:${contactLinks.email}`} className={`group flex items-start gap-4 p-4 rounded-xl transition-all duration-200 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 ${darkMode ? 'bg-gray-800/40 hover:bg-indigo-900/30' : 'bg-gray-50 hover:bg-indigo-50'}`}>
-                                    <div className={`p-2 rounded-lg shadow-sm group-hover:shadow group-hover:scale-105 transition ${darkMode ? 'bg-gray-700' : 'bg-white'}`}>
-                                        <Mail className="w-5 h-5 text-indigo-500" />
+                                <a href={`mailto:${contactLinks.email}`} className="group flex items-start gap-4 p-4 rounded-xl transition-all duration-200 border border-border hover:border-primary/30 hover:bg-primary/5">
+                                    <div className="p-2 rounded-lg bg-muted/20 group-hover:scale-105 transition">
+                                        <Mail className="w-5 h-5 text-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-800 dark:text-white">{text.emailSupport}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{contactLinks.email}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{text.responseTime}</p>
+                                        <p className="font-semibold text-text">Email Support</p>
+                                        <p className="text-sm text-muted mt-0.5">{contactLinks.email}</p>
+                                        <p className="text-xs text-muted mt-1">Response time: Within 24 hours</p>
                                     </div>
                                 </a>
-                                <a href={`tel:${contactLinks.phone}`} className={`group flex items-start gap-4 p-4 rounded-xl transition-all duration-200 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 ${darkMode ? 'bg-gray-800/40 hover:bg-indigo-900/30' : 'bg-gray-50 hover:bg-indigo-50'}`}>
-                                    <div className={`p-2 rounded-lg shadow-sm group-hover:shadow group-hover:scale-105 transition ${darkMode ? 'bg-gray-700' : 'bg-white'}`}>
-                                        <Phone className="w-5 h-5 text-indigo-500" />
+                                <a href={`tel:${contactLinks.phone}`} className="group flex items-start gap-4 p-4 rounded-xl transition-all duration-200 border border-border hover:border-primary/30 hover:bg-primary/5">
+                                    <div className="p-2 rounded-lg bg-muted/20 group-hover:scale-105 transition">
+                                        <Phone className="w-5 h-5 text-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-800 dark:text-white">{text.phoneSupport}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{contactLinks.phone}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{text.businessHours}</p>
+                                        <p className="font-semibold text-text">Phone Support</p>
+                                        <p className="text-sm text-muted mt-0.5">{contactLinks.phone}</p>
+                                        <p className="text-xs text-muted mt-1">Mon-Fri 9am - 6pm (GMT+7)</p>
                                     </div>
                                 </a>
-                                <a href={contactLinks.facebookUrl} target="_blank" rel="noopener noreferrer" className={`group flex items-start gap-4 p-4 rounded-xl transition-all duration-200 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 ${darkMode ? 'bg-gray-800/40 hover:bg-indigo-900/30' : 'bg-gray-50 hover:bg-indigo-50'}`}>
-                                    <div className={`p-2 rounded-lg shadow-sm group-hover:shadow group-hover:scale-105 transition ${darkMode ? 'bg-gray-700' : 'bg-white'}`}>
-                                        <Globe className="w-5 h-5 text-indigo-500" />
+                                <a href={contactLinks.facebookUrl} target="_blank" rel="noopener noreferrer" className="group flex items-start gap-4 p-4 rounded-xl transition-all duration-200 border border-border hover:border-primary/30 hover:bg-primary/5">
+                                    <div className="p-2 rounded-lg bg-muted/20 group-hover:scale-105 transition">
+                                        <Globe className="w-5 h-5 text-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-800 dark:text-white">{text.facebook}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">fb.me/aiinterview</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><ExternalLink className="w-3 h-3" /> {text.connectWithUs}</p>
+                                        <p className="font-semibold text-text">Facebook</p>
+                                        <p className="text-sm text-muted mt-0.5">fb.me/aiinterview</p>
+                                        <p className="text-xs text-muted flex items-center gap-1"><ExternalLink className="w-3 h-3" /> Connect with us</p>
                                     </div>
                                 </a>
-                                <a href={contactLinks.linkedinUrl} target="_blank" rel="noopener noreferrer" className={`group flex items-start gap-4 p-4 rounded-xl transition-all duration-200 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 ${darkMode ? 'bg-gray-800/40 hover:bg-indigo-900/30' : 'bg-gray-50 hover:bg-indigo-50'}`}>
-                                    <div className={`p-2 rounded-lg shadow-sm group-hover:shadow group-hover:scale-105 transition ${darkMode ? 'bg-gray-700' : 'bg-white'}`}>
-                                        <FaLinkedin className="w-5 h-5 text-indigo-500" />
+                                <a href={contactLinks.linkedinUrl} target="_blank" rel="noopener noreferrer" className="group flex items-start gap-4 p-4 rounded-xl transition-all duration-200 border border-border hover:border-primary/30 hover:bg-primary/5">
+                                    <div className="p-2 rounded-lg bg-muted/20 group-hover:scale-105 transition">
+                                        <FaLinkedin className="w-5 h-5 text-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-800 dark:text-white">{text.linkedin}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">linkedin.com/company/aiinterview</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><ExternalLink className="w-3 h-3" /> Follow for updates</p>
+                                        <p className="font-semibold text-text">LinkedIn</p>
+                                        <p className="text-sm text-muted mt-0.5">linkedin.com/company/aiinterview</p>
+                                        <p className="text-xs text-muted flex items-center gap-1"><ExternalLink className="w-3 h-3" /> Follow for updates</p>
                                     </div>
                                 </a>
                             </div>
-                            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-xs text-gray-500 dark:text-gray-400">
+                            <div className="mt-6 pt-4 border-t border-border text-center text-xs text-muted">
                                 <Clock className="inline w-3 h-3 mr-1" /> Support team ready to assist you from Monday to Friday.
                             </div>
                         </div>
                     </div>
 
                     <div className="space-y-6">
-                        <div className={`rounded-3xl shadow-2xl border p-6 transition-all ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
-                            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                                <Zap className="w-5 h-5 text-indigo-500" /> {text.quickActions}
+                        <div className="bg-card rounded-3xl shadow-soft border border-border p-6 transition-all">
+                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                                <Zap className="w-5 h-5 text-primary" /> Quick Actions
                             </h3>
                             <div className="space-y-3">
-                                <button onClick={() => navigate('/welcome')} className={`w-full flex items-center justify-between p-3 rounded-xl transition group ${darkMode ? 'bg-indigo-900/30 hover:bg-indigo-900/50' : 'bg-indigo-50 hover:bg-indigo-100'}`}>
-                                    <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">{text.backToDashboard}</span>
-                                    <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition" />
+                                <button onClick={() => navigate('/welcome')} className="w-full flex items-center justify-between p-3 rounded-xl transition group bg-primary/5 hover:bg-primary/10">
+                                    <span className="text-sm font-medium text-primary">Back to Dashboard</span>
+                                    <BarChart3 className="w-4 h-4 text-primary group-hover:translate-x-1 transition" />
                                 </button>
-                                <button className={`w-full flex items-center justify-between p-3 rounded-xl transition group ${darkMode ? 'bg-gray-800/40 hover:bg-gray-700/50' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{text.knowledgeBase}</span>
-                                    <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:translate-x-1 transition" />
+                                <button className="w-full flex items-center justify-between p-3 rounded-xl transition group bg-muted/5 hover:bg-muted/10">
+                                    <span className="text-sm font-medium text-text">Knowledge Base</span>
+                                    <FileText className="w-4 h-4 text-muted group-hover:translate-x-1 transition" />
                                 </button>
-                                <button className={`w-full flex items-center justify-between p-3 rounded-xl transition group ${darkMode ? 'bg-gray-800/40 hover:bg-gray-700/50' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{text.reportIssue}</span>
-                                    <HelpCircle className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:translate-x-1 transition" />
+                                <button className="w-full flex items-center justify-between p-3 rounded-xl transition group bg-muted/5 hover:bg-muted/10">
+                                    <span className="text-sm font-medium text-text">Report an Issue</span>
+                                    <HelpCircle className="w-4 h-4 text-muted group-hover:translate-x-1 transition" />
                                 </button>
                             </div>
                         </div>
-                        <div className={`rounded-3xl shadow-2xl border p-5 transition-all bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 ${darkMode ? 'border-indigo-800/50' : 'border-indigo-100'}`}>
+                        <div className="bg-primary/5 rounded-3xl border border-primary/20 p-5 transition-all">
                             <div className="flex items-start gap-3">
-                                <CheckCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5" />
+                                <CheckCircle className="w-5 h-5 text-primary mt-0.5" />
                                 <div>
-                                    <h4 className="font-semibold text-gray-800 dark:text-white">100% CV‑based & Topic‑based Questions</h4>
-                                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Every interview question is tailored specifically from your uploaded CV or the tech topics you enter — skills, projects, and experience.</p>
+                                    <h4 className="font-semibold text-text">100% Personalized Questions</h4>
+                                    <p className="text-xs text-muted mt-1">Every question is tailored by AI based on your CV or manually entered topics.</p>
                                 </div>
                             </div>
                         </div>
@@ -453,6 +314,12 @@ export default function HelpSupportPage() {
                 }
                 .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
                 .scroll-mt-24 { scroll-margin-top: 6rem; }
+                .line-clamp-2 {
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                }
             `}</style>
         </div>
     );

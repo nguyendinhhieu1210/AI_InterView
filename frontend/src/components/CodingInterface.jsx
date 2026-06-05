@@ -55,22 +55,23 @@ const getExt = (lang = '') => {
   return map[lang.toLowerCase()] || 'txt';
 };
 
+// Semantic badge classes (still use specific colors for language/difficulty, but with opacity)
 const LANG_BADGE = {
-  java: 'border-orange-600 text-orange-800 bg-orange-100',
-  python: 'border-blue-600 text-blue-800 bg-blue-100',
-  javascript: 'border-yellow-600 text-yellow-800 bg-yellow-100',
-  typescript: 'border-blue-600 text-blue-800 bg-blue-100',
-  go: 'border-cyan-600 text-cyan-800 bg-cyan-100',
-  cpp: 'border-indigo-600 text-indigo-800 bg-indigo-100',
-  rust: 'border-red-600 text-red-800 bg-red-100',
-  kotlin: 'border-purple-600 text-purple-800 bg-purple-100',
-  swift: 'border-orange-600 text-orange-800 bg-orange-100',
+  java: 'border-primary/50 text-primary bg-primary/10',
+  python: 'border-blue-500/50 text-blue-500 bg-blue-50 dark:bg-blue-950/30',
+  javascript: 'border-yellow-500/50 text-yellow-500 bg-yellow-50 dark:bg-yellow-950/30',
+  typescript: 'border-blue-500/50 text-blue-500 bg-blue-50 dark:bg-blue-950/30',
+  go: 'border-cyan-500/50 text-cyan-500 bg-cyan-50 dark:bg-cyan-950/30',
+  cpp: 'border-indigo-500/50 text-indigo-500 bg-indigo-50 dark:bg-indigo-950/30',
+  rust: 'border-red-500/50 text-red-500 bg-red-50 dark:bg-red-950/30',
+  kotlin: 'border-purple-500/50 text-purple-500 bg-purple-50 dark:bg-purple-950/30',
+  swift: 'border-orange-500/50 text-orange-500 bg-orange-50 dark:bg-orange-950/30',
 };
 
 const DIFF_BADGE = {
-  beginner: 'border-blue-600 text-blue-800 bg-blue-100',
-  intermediate: 'border-yellow-600 text-yellow-800 bg-yellow-100',
-  advanced: 'border-red-600 text-red-800 bg-red-100',
+  beginner: 'border-success/50 text-success bg-success/10',
+  intermediate: 'border-warning/50 text-warning bg-warning/10',
+  advanced: 'border-error/50 text-error bg-error/10',
 };
 
 const safeDisplayValue = (value) => {
@@ -98,7 +99,7 @@ export default function CodingInterface({
   const navigate = useNavigate();
   const { token } = useAuth();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark'; // only for monaco editor theme
   const language = initialLanguage.toLowerCase();
 
   const [phase, setPhase] = useState('coding');
@@ -120,10 +121,7 @@ export default function CodingInterface({
   const [feedback, setFeedback] = useState(null);
   const [explainCount, setExplainCount] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
-  
-  // FIX: Rename finalSessionEvaluation -> codeEvaluation (rõ ràng hơn)
   const [codeEvaluation, setCodeEvaluation] = useState(null);
-  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [explainAnswersList, setExplainAnswersList] = useState([]);
   const [submittedCode, setSubmittedCode] = useState('');
@@ -220,7 +218,6 @@ export default function CodingInterface({
     } catch (err) {
       const status = err.response?.status;
       const errMsg = err.response?.data?.error;
-      // FIX: Handle session expiry
       if (status === 404) {
         toast.error('Session expired. Redirecting...');
         setTimeout(() => navigate('/welcome'), 1500);
@@ -261,10 +258,9 @@ export default function CodingInterface({
 
       correct ? toast.success('✅ Correct') : toast.error('❌ Incorrect');
 
-      // FIX: Set codeEvaluation (not finalSessionEvaluation)
       if (evaluation && completedForCurrentCode) {
         console.log('✅ Completed round, opening evaluation modal...');
-        setCodeEvaluation(evaluation);  // FIX: Renamed from setCurrentCodeEvaluation
+        setCodeEvaluation(evaluation);
         setExplainAnswersList(updatedList);
         setCurrentQuestion(null);
         setPhase('review');
@@ -305,7 +301,6 @@ export default function CodingInterface({
     } catch (err) {
       const status = err.response?.status;
       const errMsg = err.response?.data?.error;
-      // FIX: Handle session expiry
       if (status === 404) {
         toast.error('Session expired. Redirecting...');
         setTimeout(() => navigate('/welcome'), 1500);
@@ -343,7 +338,7 @@ export default function CodingInterface({
         setSubmittedProblem('');
         setSubmittedExampleInput('');
         setSubmittedExampleOutput('');
-        setIsModalOpen(false);  // FIX: Auto-close modal after moving to next code
+        setIsModalOpen(false);
         toast.success('New coding question ready!');
       } else {
         toast.error('Could not load next question');
@@ -351,7 +346,6 @@ export default function CodingInterface({
     } catch (err) {
       const status = err.response?.status;
       const errMsg = err.response?.data?.error;
-      // FIX: Handle session expiry
       if (status === 404) {
         toast.error('Session expired. Redirecting...');
         setTimeout(() => navigate('/welcome'), 1500);
@@ -380,32 +374,29 @@ export default function CodingInterface({
     setShowExitModal(false);
   };
 
-  // FIX: Remove the "completed" screen (không cần, vì user click Next → tiếp tục)
-  // Nếu muốn show completion message, show trong phase 'review' instead
-
-  const langBadgeClass = LANG_BADGE[language] || (isDark ? 'border-gray-600 text-gray-300 bg-gray-700' : 'border-gray-400 text-gray-700 bg-gray-100');
-  const diffBadgeClass = DIFF_BADGE[difficulty] || (isDark ? 'border-gray-600 text-gray-300 bg-gray-700' : 'border-gray-400 text-gray-700 bg-gray-100');
+  const langBadgeClass = LANG_BADGE[language] || 'border-border text-muted bg-muted/10';
+  const diffBadgeClass = DIFF_BADGE[difficulty] || 'border-border text-muted bg-muted/10';
   const fileName = `Main.${getExt(language)}`;
   const isSubmitCodeDisabled = loading || phase === 'explain_pending' || phase === 'explaining' || phase === 'review';
   const explainQuestionText = (phase === 'explaining' || phase === 'explain_pending') && currentQuestion?.type === 'explain' ? getExplainQuestionText(currentQuestion) : '';
 
   return (
     <>
-      <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-100'}`}>
+      <div className="min-h-screen bg-bg">
         {/* Header */}
-        <div className={`sticky top-0 z-10 flex flex-wrap items-center gap-3 px-4 sm:px-6 py-3 ${isDark ? 'bg-gray-950 border-gray-800' : 'bg-white border-gray-200'} border-b shadow-sm`}>
-          <button onClick={handleExit} className={`${isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'} transition px-3 py-1.5 rounded-lg text-sm`}>
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 px-4 sm:px-6 py-3 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
+          <button onClick={handleExit} className="text-muted hover:text-text hover:bg-muted/10 transition px-3 py-1.5 rounded-lg text-sm">
             ← Exit
           </button>
-          <button onClick={handleReset} className={`${isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'} transition px-3 py-1.5 rounded-lg text-sm`}>
+          <button onClick={handleReset} className="text-muted hover:text-text hover:bg-muted/10 transition px-3 py-1.5 rounded-lg text-sm">
             ↺ Topic
           </button>
-          <span className={`font-semibold text-sm sm:text-base ${isDark ? 'text-white' : 'text-gray-800'}`}>{topic || 'Live Coding'}</span>
+          <span className="font-semibold text-sm sm:text-base text-text">{topic || 'Live Coding'}</span>
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${langBadgeClass}`}>{initialLanguage}</span>
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${diffBadgeClass}`}>{difficulty}</span>
-          {domain && <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'} ml-auto hidden sm:inline`}>{domain}</span>}
+          {domain && <span className="text-xs text-muted ml-auto hidden sm:inline">{domain}</span>}
           {codeEvaluation && (
-            <button onClick={() => setIsModalOpen(true)} className={`ml-auto sm:ml-0 text-xs ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'} px-3 py-1.5 rounded-lg transition`}>
+            <button onClick={() => setIsModalOpen(true)} className="ml-auto sm:ml-0 text-xs bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg transition">
               View Result
             </button>
           )}
@@ -416,10 +407,10 @@ export default function CodingInterface({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             {/* Left: Editor */}
             <div className="lg:col-span-2 space-y-4">
-              <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl overflow-hidden border ${isDark ? 'border-gray-700' : 'border-gray-200'} shadow-md`}>
-                <div className={`${isDark ? 'bg-gray-900' : 'bg-gray-100'} px-4 sm:px-5 py-2.5 text-sm font-mono flex justify-between items-center border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <span className={`flex items-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>📁 {fileName}</span>
-                  <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'} ${isDark ? 'bg-gray-800' : 'bg-gray-200'} px-2 py-0.5 rounded`}>{initialLanguage.toUpperCase()}</span>
+              <div className="bg-card rounded-xl overflow-hidden border border-border shadow-soft">
+                <div className="bg-muted/10 px-4 sm:px-5 py-2.5 text-sm font-mono flex justify-between items-center border-b border-border">
+                  <span className="flex items-center gap-2 text-text">📁 {fileName}</span>
+                  <span className="text-xs text-muted bg-muted/20 px-2 py-0.5 rounded">{initialLanguage.toUpperCase()}</span>
                 </div>
                 <Editor
                   height="520px"
@@ -431,7 +422,7 @@ export default function CodingInterface({
                   options={{ fontSize: 14, minimap: { enabled: false }, scrollBeyondLastLine: false, automaticLayout: true, lineNumbers: 'on', tabSize: 4 }}
                 />
               </div>
-              <button onClick={handleSubmitCode} disabled={isSubmitCodeDisabled} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-base transition shadow-md">
+              <button onClick={handleSubmitCode} disabled={isSubmitCodeDisabled} className="w-full bg-primary hover:brightness-105 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-base transition shadow-md">
                 {loading ? 'Checking...' : '▶ Submit Code'}
               </button>
             </div>
@@ -439,26 +430,26 @@ export default function CodingInterface({
             {/* Right: Problem, Feedback, Explanation */}
             <div className="space-y-5 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-100px)] pr-1 custom-scroll">
               {/* Problem card */}
-              <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl border ${isDark ? 'border-gray-700' : 'border-gray-200'} shadow-md flex flex-col max-h-[500px] overflow-hidden`}>
-                <div className="sticky top-0 z-10 flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-semibold text-base px-5 pt-5 pb-2 bg-inherit">📝 Problem</div>
+              <div className="bg-card rounded-xl border border-border shadow-soft flex flex-col max-h-[500px] overflow-hidden">
+                <div className="sticky top-0 z-10 flex items-center gap-2 text-primary font-semibold text-base px-5 pt-5 pb-2 bg-inherit">📝 Problem</div>
                 <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4 custom-scroll">
-                  <pre className={`whitespace-pre-wrap break-words text-sm leading-relaxed font-sans ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{codeProblem.problemStatement}</pre>
+                  <pre className="whitespace-pre-wrap break-words text-sm leading-relaxed font-sans text-text">{codeProblem.problemStatement}</pre>
                   {codeProblem.exampleInput && (
                     <div className="mt-4">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">📥 Example Input</p>
-                      <pre className={`${isDark ? 'bg-gray-900' : 'bg-gray-100'} p-3 rounded-lg ${isDark ? 'text-green-300' : 'text-green-800'} text-xs whitespace-pre-wrap break-words`}>{safeDisplayValue(codeProblem.exampleInput)}</pre>
+                      <p className="text-xs uppercase tracking-wide text-muted">📥 Example Input</p>
+                      <pre className="bg-muted/10 p-3 rounded-lg text-success text-xs whitespace-pre-wrap break-words">{safeDisplayValue(codeProblem.exampleInput)}</pre>
                     </div>
                   )}
                   {codeProblem.exampleOutput && (
                     <div className="mt-3">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">📤 Example Output</p>
-                      <pre className={`${isDark ? 'bg-gray-900' : 'bg-gray-100'} p-3 rounded-lg ${isDark ? 'text-blue-300' : 'text-blue-800'} text-xs whitespace-pre-wrap break-words`}>{safeDisplayValue(codeProblem.exampleOutput)}</pre>
+                      <p className="text-xs uppercase tracking-wide text-muted">📤 Example Output</p>
+                      <pre className="bg-muted/10 p-3 rounded-lg text-primary text-xs whitespace-pre-wrap break-words">{safeDisplayValue(codeProblem.exampleOutput)}</pre>
                     </div>
                   )}
                   {codeProblem.testCriteria && (
                     <div className="mt-3">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">🔍 Constraints</p>
-                      <pre className={`whitespace-pre-wrap break-words text-xs mt-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{codeProblem.testCriteria}</pre>
+                      <p className="text-xs uppercase tracking-wide text-muted">🔍 Constraints</p>
+                      <pre className="whitespace-pre-wrap break-words text-xs mt-1 text-muted">{codeProblem.testCriteria}</pre>
                     </div>
                   )}
                 </div>
@@ -467,12 +458,12 @@ export default function CodingInterface({
               {/* Feedback card */}
               {feedback && (
                 <div className={`p-4 rounded-xl border text-sm ${feedback.type === 'error'
-                    ? (isDark ? 'bg-red-900/30 border-red-700 text-red-200' : 'bg-red-50 border-red-300 text-red-800')
-                    : (isDark ? 'bg-green-900/30 border-green-700 text-green-200' : 'bg-green-50 border-green-300 text-green-800')
+                    ? 'bg-error/10 border-error/30 text-error'
+                    : 'bg-success/10 border-success/30 text-success'
                   }`}>
                   <div className="font-semibold">{feedback.message}</div>
                   {feedback.type === 'success' && phase === 'explain_pending' && (
-                    <button onClick={handleContinueToExplain} className="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm py-1.5 px-4 rounded-lg transition">
+                    <button onClick={handleContinueToExplain} className="mt-3 bg-primary hover:brightness-105 text-white text-sm py-1.5 px-4 rounded-lg transition">
                       Continue → Answer Question
                     </button>
                   )}
@@ -481,21 +472,21 @@ export default function CodingInterface({
 
               {/* Explanation card */}
               {phase === 'explaining' && currentQuestion?.type === 'explain' && explainQuestionText && (
-                <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} border-indigo-500/60 rounded-xl p-5 shadow-md border`}>
+                <div className="bg-card border border-primary/30 rounded-xl p-5 shadow-soft">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="text-indigo-600 dark:text-indigo-400 font-semibold text-sm">🤖 Explain ({explainCount}/3)</div>
-                    <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">Explain</span>
+                    <div className="text-primary font-semibold text-sm">🤖 Explain ({explainCount}/3)</div>
+                    <span className="text-xs text-muted bg-muted/20 px-2 py-0.5 rounded-full">Explain</span>
                   </div>
-                  <p className={`${isDark ? 'text-white' : 'text-gray-800'} text-sm mb-4 leading-relaxed break-words`}>{explainQuestionText}</p>
-                  <textarea rows={4} value={userAnswer} onChange={(e) => setUserAnswer(e.target.value)} placeholder="Your answer..." className={`w-full ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 resize-none`} />
-                  <button onClick={handleSubmitAnswer} disabled={loading} className="mt-3 w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white py-2 rounded-lg text-sm font-semibold transition">{loading ? 'Submitting...' : 'Submit Answer'}</button>
+                  <p className="text-text text-sm mb-4 leading-relaxed break-words">{explainQuestionText}</p>
+                  <textarea rows={4} value={userAnswer} onChange={(e) => setUserAnswer(e.target.value)} placeholder="Your answer..." className="w-full bg-muted/5 border border-border text-text rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary resize-none" />
+                  <button onClick={handleSubmitAnswer} disabled={loading} className="mt-3 w-full bg-primary hover:brightness-105 disabled:opacity-50 text-white py-2 rounded-lg text-sm font-semibold transition">{loading ? 'Submitting...' : 'Submit Answer'}</button>
                 </div>
               )}
 
-              {/* FIX: Show "Next Code" button when in review phase */}
+              {/* Next Code button in review phase */}
               {phase === 'review' && codeEvaluation && (
-                <div className={`p-4 rounded-xl border ${isDark ? 'bg-amber-900/30 border-amber-700' : 'bg-amber-50 border-amber-300'}`}>
-                  <p className={`text-sm mb-3 ${isDark ? 'text-amber-200' : 'text-amber-900'}`}>
+                <div className="p-4 rounded-xl border bg-warning/10 border-warning/30 text-warning">
+                  <p className="text-sm mb-3">
                     ✅ Code evaluation complete! Ready for the next question?
                   </p>
                 </div>
@@ -509,7 +500,7 @@ export default function CodingInterface({
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onNext={handleNextCode} 
-        evaluation={codeEvaluation}  // FIX: Renamed from currentCodeEvaluation
+        evaluation={codeEvaluation} 
         explainAnswers={explainAnswersList} 
         problemStatement={submittedProblem} 
         code={submittedCode} 
@@ -520,34 +511,31 @@ export default function CodingInterface({
       {/* Exit Modal */}
       {showExitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all duration-300">
-          <div className={`max-w-md w-full mx-auto transform transition-all duration-300 scale-100 opacity-100 rounded-2xl shadow-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} border ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+          <div className="max-w-md w-full mx-auto transform transition-all duration-300 scale-100 opacity-100 rounded-2xl shadow-soft bg-card border border-border">
             <div className="p-6">
               <div className="flex items-center justify-center mb-4">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                  <svg className="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-muted/20">
+                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
               </div>
-              <h3 className={`text-xl font-bold text-center ${isDark ? 'text-white' : 'text-gray-900'} mb-2`}>
+              <h3 className="text-xl font-bold text-center text-text mb-2">
                 Confirm Exit
               </h3>
-              <p className={`text-center ${isDark ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
+              <p className="text-center text-muted mb-6">
                 Are you sure you want to exit the coding session?
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={cancelExit}
-                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isDark
-                      ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-                    }`}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 bg-muted/20 hover:bg-muted/30 text-text"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmExit}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-primary hover:brightness-105 text-white transition-all duration-200 shadow-md"
                 >
                   Yes, Exit
                 </button>

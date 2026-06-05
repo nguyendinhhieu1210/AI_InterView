@@ -9,9 +9,9 @@ import {
 } from 'lucide-react';
 
 const DIFFICULTY_CONFIG = {
-  beginner: { label: 'Beginner', color: 'from-emerald-500 to-teal-500', border: 'border-emerald-200 dark:border-emerald-800', icon: '🌱' },
-  intermediate: { label: 'Intermediate', color: 'from-amber-500 to-orange-500', border: 'border-amber-200 dark:border-amber-800', icon: '⚡' },
-  advanced: { label: 'Advanced', color: 'from-rose-500 to-pink-500', border: 'border-rose-200 dark:border-rose-800', icon: '🔥' },
+  beginner: { label: 'Beginner', color: 'from-success to-teal-500', border: 'border-success/30', icon: '🌱' },
+  intermediate: { label: 'Intermediate', color: 'from-warning to-orange-500', border: 'border-warning/30', icon: '⚡' },
+  advanced: { label: 'Advanced', color: 'from-error to-pink-500', border: 'border-error/30', icon: '🔥' },
 };
 
 export default function TopicSelection({ onSessionStart }) {
@@ -156,21 +156,21 @@ export default function TopicSelection({ onSessionStart }) {
         <div className="relative flex items-center justify-center">
           <div className={`
             w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 z-10
-            ${isCompleted ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md' :
-              isActive ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md ring-2 ring-indigo-300/50 dark:ring-indigo-800/50' :
-                'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}
+            ${isCompleted ? 'bg-success text-white shadow-md' :
+              isActive ? 'bg-primary text-white shadow-md ring-2 ring-primary/30' :
+                'bg-muted/20 text-muted'}
           `}>
             {isCompleted ? <CheckCircle className="w-4 h-4" /> : number}
           </div>
           {!isLast && (
-            <div className="hidden sm:block absolute left-full w-full h-0.5 bg-gradient-to-r from-gray-300 to-gray-200 dark:from-gray-700 dark:to-gray-800 -translate-y-1/2 top-1/2">
-              <div className={`h-full transition-all duration-500 ${isCompleted ? 'bg-gradient-to-r from-emerald-500 to-teal-500 w-full' : 'w-0'}`} />
+            <div className="hidden sm:block absolute left-full w-full h-0.5 bg-gradient-to-r from-muted/30 to-muted/10 -translate-y-1/2 top-1/2">
+              <div className={`h-full transition-all duration-500 ${isCompleted ? 'bg-success w-full' : 'w-0'}`} />
             </div>
           )}
         </div>
         <div className="text-center sm:text-left mt-0.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Step {number}</p>
-          <p className={`text-sm font-semibold ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>{title}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Step {number}</p>
+          <p className={`text-sm font-semibold ${isActive ? 'text-text' : 'text-muted'}`}>{title}</p>
         </div>
       </div>
     </div>
@@ -183,35 +183,35 @@ export default function TopicSelection({ onSessionStart }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-indigo-50/40 to-purple-50/40 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-bg">
       {/* Sticky Header with Back Button */}
-      <div className="sticky top-0 z-20 backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 border-b border-white/20 dark:border-gray-700/50">
+      <div className="sticky top-0 z-20 backdrop-blur-xl bg-card/80 border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <button
             onClick={() => navigate('/welcome')}
-            className="group flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/30 transition-all duration-200 text-sm font-medium"
+            className="group flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-muted hover:text-primary hover:bg-primary/10 transition-all duration-200 text-sm font-medium"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             <span>Back</span>
           </button>
           <div className="flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-amber-500" />
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">AI Interview</span>
+            <Zap className="w-3.5 h-3.5 text-warning" />
+            <span className="text-xs font-medium text-muted">AI Interview</span>
           </div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* Hero Section - đã đổi tiêu đề và thêm gradient màu sắc cho chữ */}
+        {/* Hero Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-100/60 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-medium mb-3 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-3 backdrop-blur-sm">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Live Coding Challenge</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black leading-normal pb-2 text-purple-600">
+          <h1 className="text-3xl sm:text-4xl font-black leading-normal pb-2 text-primary">
             AI Live Coding Interview
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm max-w-xl mx-auto">
+          <p className="text-muted mt-2 text-sm max-w-xl mx-auto">
             Select your tech stack, domain, and difficulty — AI generates a tailored coding problem.
           </p>
         </div>
@@ -227,14 +227,14 @@ export default function TopicSelection({ onSessionStart }) {
         </div>
 
         {/* Step 1: Language Card */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-md border border-gray-100 dark:border-gray-700/50 p-5 mb-5 transition-all hover:shadow-lg">
+        <div className="bg-card backdrop-blur-md rounded-xl shadow-soft border border-border p-5 mb-5 transition-all hover:shadow-md">
           <div className="flex items-center gap-2 mb-3">
-            <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
               <Code2 className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-800 dark:text-white">1. Choose Language</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Pick your preferred language</p>
+              <h2 className="text-base font-bold text-text">1. Choose Language</h2>
+              <p className="text-xs text-muted">Pick your preferred language</p>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -247,14 +247,14 @@ export default function TopicSelection({ onSessionStart }) {
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && loadDomains()}
                 placeholder="e.g., python, javascript, java, go, rust..."
-                className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-900/70 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                className="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-gray-800 border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
               />
-              <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
             </div>
             <button
               onClick={loadDomains}
               disabled={loadingDomains}
-              className="px-5 py-2.5 text-sm bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50 rounded-lg text-white font-semibold transition shadow-sm hover:shadow flex items-center justify-center gap-1.5"
+              className="px-5 py-2.5 text-sm bg-primary hover:brightness-105 disabled:opacity-50 rounded-lg text-white font-semibold transition shadow-sm hover:shadow flex items-center justify-center gap-1.5"
             >
               {loadingDomains ? (
                 <div className="flex items-center gap-1.5">
@@ -272,26 +272,26 @@ export default function TopicSelection({ onSessionStart }) {
 
         {/* Step 2: Domain */}
         {domains.length > 0 && (
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-md border border-gray-100 dark:border-gray-700/50 p-5 mb-5 transition-all animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-card backdrop-blur-md rounded-xl shadow-soft border border-border p-5 mb-5 transition-all animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400">
+              <div className="p-1.5 rounded-lg bg-secondary/10 text-secondary">
                 <FolderTree className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-gray-800 dark:text-white">2. Select Domain</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Focus area</p>
+                <h2 className="text-base font-bold text-text">2. Select Domain</h2>
+                <p className="text-xs text-muted">Focus area</p>
               </div>
             </div>
 
             {!showDomainList && selectedDomain && (
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50/70 to-purple-50/70 dark:from-indigo-950/40 dark:to-purple-950/40 rounded-lg border border-indigo-100 dark:border-indigo-800/50">
+              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
                 <div className="flex items-center gap-2">
-                  <FolderTree className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{selectedDomain}</span>
+                  <FolderTree className="w-4 h-4 text-primary" />
+                  <span className="font-medium text-sm text-text">{selectedDomain}</span>
                 </div>
                 <button
                   onClick={handleEditDomain}
-                  className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded transition"
+                  className="p-1.5 text-primary hover:bg-primary/10 rounded transition"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
@@ -304,12 +304,12 @@ export default function TopicSelection({ onSessionStart }) {
                   <button
                     key={d}
                     onClick={() => handleSelectDomain(d)}
-                    className="group flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/50 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all text-left text-sm"
+                    className="group flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-sm transition-all text-left text-sm"
                   >
-                    <div className="p-1 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform">
+                    <div className="p-1 rounded bg-primary/10 text-primary group-hover:scale-105 transition-transform">
                       <FolderTree className="w-3.5 h-3.5" />
                     </div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">{d}</span>
+                    <span className="font-medium text-text">{d}</span>
                   </button>
                 ))}
               </div>
@@ -319,26 +319,26 @@ export default function TopicSelection({ onSessionStart }) {
 
         {/* Step 3: Topic */}
         {topics.length > 0 && (
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-md border border-gray-100 dark:border-gray-700/50 p-5 mb-5 transition-all animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-card backdrop-blur-md rounded-xl shadow-soft border border-border p-5 mb-5 transition-all animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400">
+              <div className="p-1.5 rounded-lg bg-success/10 text-success">
                 <BookOpen className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-gray-800 dark:text-white">3. Pick a Topic</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Choose a specific topic</p>
+                <h2 className="text-base font-bold text-text">3. Pick a Topic</h2>
+                <p className="text-xs text-muted">Choose a specific topic</p>
               </div>
             </div>
 
             {!showTopicList && selectedTopic && (
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50/70 to-teal-50/70 dark:from-emerald-950/40 dark:to-teal-950/40 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
+              <div className="flex items-center justify-between p-3 bg-success/5 rounded-lg border border-success/20">
                 <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{selectedTopic}</span>
+                  <BookOpen className="w-4 h-4 text-success" />
+                  <span className="font-medium text-sm text-text">{selectedTopic}</span>
                 </div>
                 <button
                   onClick={handleEditTopic}
-                  className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded transition"
+                  className="p-1.5 text-success hover:bg-success/10 rounded transition"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
@@ -351,12 +351,12 @@ export default function TopicSelection({ onSessionStart }) {
                   <button
                     key={t}
                     onClick={() => handleSelectTopic(t)}
-                    className="group flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/50 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm transition-all text-left text-sm"
+                    className="group flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:border-success/50 hover:shadow-sm transition-all text-left text-sm"
                   >
-                    <div className="p-1 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
+                    <div className="p-1 rounded bg-success/10 text-success group-hover:scale-105 transition-transform">
                       <BookOpen className="w-3.5 h-3.5" />
                     </div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">{t}</span>
+                    <span className="font-medium text-text">{t}</span>
                   </button>
                 ))}
               </div>
@@ -366,14 +366,14 @@ export default function TopicSelection({ onSessionStart }) {
 
         {/* Step 4: Difficulty */}
         {selectedTopic && (
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-md border border-gray-100 dark:border-gray-700/50 p-5 mb-6 transition-all animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-card backdrop-blur-md rounded-xl shadow-soft border border-border p-5 mb-6 transition-all animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-center gap-2 mb-4">
-              <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400">
+              <div className="p-1.5 rounded-lg bg-warning/10 text-warning">
                 <Target className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-gray-800 dark:text-white">4. Set Difficulty</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Challenge intensity</p>
+                <h2 className="text-base font-bold text-text">4. Set Difficulty</h2>
+                <p className="text-xs text-muted">Challenge intensity</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -385,14 +385,14 @@ export default function TopicSelection({ onSessionStart }) {
                     relative overflow-hidden group p-3 rounded-lg border transition-all duration-200
                     ${difficulty === key
                       ? `bg-gradient-to-r ${color} text-white border-transparent shadow-md scale-[1.01]`
-                      : `bg-white dark:bg-gray-900 ${border} text-gray-700 dark:text-gray-300 hover:scale-[1.01] hover:shadow-sm`
+                      : `bg-card ${border} text-text hover:scale-[1.01] hover:shadow-sm`
                     }
                   `}
                 >
                   <div className="flex flex-col items-center text-center gap-1">
                     <span className="text-xl">{icon}</span>
                     <span className="font-bold text-sm">{label}</span>
-                    <p className={`text-[10px] ${difficulty === key ? 'text-white/80' : 'text-gray-400'}`}>
+                    <p className={`text-[10px] ${difficulty === key ? 'text-white/80' : 'text-muted'}`}>
                       {key === 'beginner' && 'Starter friendly'}
                       {key === 'intermediate' && 'Needs practice'}
                       {key === 'advanced' && 'Expert level'}
@@ -410,7 +410,7 @@ export default function TopicSelection({ onSessionStart }) {
             <button
               onClick={handleStartInterview}
               disabled={startingInterview}
-              className="w-full relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 disabled:opacity-60 py-3.5 rounded-xl text-white text-base font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg group"
+              className="w-full relative overflow-hidden bg-primary hover:brightness-105 disabled:opacity-60 py-3.5 rounded-xl text-white text-base font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg group"
             >
               <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
               {startingInterview ? (
@@ -427,8 +427,8 @@ export default function TopicSelection({ onSessionStart }) {
 
         {/* Footer */}
         <div className="mt-8 text-center">
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center justify-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          <p className="text-[10px] text-muted flex items-center justify-center gap-1.5">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
             AI-powered • Real-time execution • Personalized feedback
           </p>
         </div>
@@ -449,6 +449,11 @@ export default function TopicSelection({ onSessionStart }) {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: rgba(99,102,241,0.5);
         }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
       `}</style>
     </div>
   );
