@@ -14,11 +14,9 @@ export const ThemeProvider = ({ children }) => {
 
   // sync toàn app
   useEffect(() => {
-    localStorage.setItem('theme', theme);
-
-    // 🔥 CỐT LÕI: bật/tắt dark mode
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
+  localStorage.setItem('theme', theme);
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+}, [theme]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleDarkMode }}>

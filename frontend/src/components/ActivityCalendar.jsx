@@ -1,7 +1,6 @@
 // src/components/ActivityCalendar.jsx
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays, Sparkles, Activity, Star } from 'lucide-react';
-import api from '../services/api';
 
 // Helper: chuyển bất kỳ đầu vào ngày tháng thành key "YYYY-MM-DD" theo giờ Việt Nam
 const toVNKey = (dateInput) => {
@@ -22,45 +21,26 @@ const toVNKey = (dateInput) => {
   return `${year}-${month}-${day}`;
 };
 
-const ActivityCalendar = () => {
+const ActivityCalendar = ({ sessions = [] }) => {   // 👈 Nhận sessions từ props
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState([]);
   const [activeDates, setActiveDates] = useState(new Map());
   const [monthlyStats, setMonthlyStats] = useState({ activeDays: 0, totalActivities: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Gọi API calendar activity
+  // ✅ Chỉ tính activeDates từ sessions, không gọi API
   useEffect(() => {
-    const fetchCalendarData = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/activity/calendar');
-        const activities = response.data?.activities || [];
-        
-        const countMap = new Map();
-        activities.forEach(activity => {
-          let dateKey = activity.dateVN;
-          if (!dateKey && activity.date) {
-            dateKey = toVNKey(activity.date);
-          }
-          if (dateKey) {
-            countMap.set(dateKey, (countMap.get(dateKey) || 0) + 1);
-          }
-        });
-        
-        setActiveDates(countMap);
-        setError(null);
-      } catch (err) {
-        console.error('Failed to fetch calendar activity:', err);
-        setError('Unable to load calendar data');
-      } finally {
-        setLoading(false);
+    const countMap = new Map();
+    sessions.forEach(activity => {
+      let dateKey = activity.dateVN;
+      if (!dateKey && activity.date) {
+        dateKey = toVNKey(activity.date);
       }
-    };
-
-    fetchCalendarData();
-  }, []);
+      if (dateKey) {
+        countMap.set(dateKey, (countMap.get(dateKey) || 0) + 1);
+      }
+    });
+    setActiveDates(countMap);
+  }, [sessions]);   // Chạy lại khi sessions thay đổi
 
   // Thống kê tháng hiện tại
   useEffect(() => {
@@ -127,57 +107,50 @@ const ActivityCalendar = () => {
     rows.push(calendarDays.slice(i, i + 7));
   }
 
-  if (loading) {
-    return <div className="text-center p-4">Loading calendar...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center p-4 text-red-500">{error}</div>;
-  }
-
+  // Không còn loading/error vì dữ liệu đến từ parent
   return (
-    <div className="w-full max-w-md mx-auto rounded-2xl border border-gray-200/80 dark:border-gray-800/80 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-xl transition-all duration-300 hover:shadow-2xl">
+    <div className="w-full max-w-md mx-auto rounded-2xl border border-border bg-card backdrop-blur-sm shadow-soft transition-all duration-300 hover:shadow-md">
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 border-b border-gray-100 dark:border-gray-800">
+      <div className="px-5 pt-5 pb-3 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md">
+            <div className="p-1.5 rounded-xl bg-gradient-to-br from-success to-teal-500 shadow-md">
               <CalendarDays className="w-4 h-4 text-white" />
             </div>
-            <h2 className="text-lg font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+            <h2 className="text-lg font-bold text-text">
               Activity Calendar
             </h2>
           </div>
-          <div className="flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/50 px-3 py-1.5 rounded-full shadow-inner">
-            <Activity className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" />
-            <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-200">
+          <div className="flex items-center gap-1.5 bg-success/10 px-3 py-1.5 rounded-full shadow-inner">
+            <Activity className="w-3.5 h-3.5 text-success" />
+            <span className="text-xs font-semibold text-success">
               {monthlyStats.activeDays} active days
             </span>
           </div>
         </div>
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+        <p className="text-[11px] text-muted mt-2 flex items-center gap-1">
+          <span className="inline-block w-2 h-2 rounded-full bg-success"></span>
           Active: Interview / CV / Adaptive / Coding
         </p>
       </div>
 
       {/* Month navigation */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <button onClick={() => changeMonth(-1)} className="group p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 active:scale-95">
-          <ChevronLeft className="w-5 h-5 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-white" />
+        <button onClick={() => changeMonth(-1)} className="group p-2 rounded-xl hover:bg-muted/10 transition-all duration-200 active:scale-95">
+          <ChevronLeft className="w-5 h-5 text-muted group-hover:text-text" />
         </button>
-        <h3 className="text-base font-semibold text-gray-800 dark:text-white tracking-tight">
+        <h3 className="text-base font-semibold text-text tracking-tight">
           {currentDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
         </h3>
-        <button onClick={() => changeMonth(1)} className="group p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 active:scale-95">
-          <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-white" />
+        <button onClick={() => changeMonth(1)} className="group p-2 rounded-xl hover:bg-muted/10 transition-all duration-200 active:scale-95">
+          <ChevronRight className="w-5 h-5 text-muted group-hover:text-text" />
         </button>
       </div>
 
       {/* Week day headers */}
       <div className="grid grid-cols-7 gap-1.5 px-4 mb-1">
         {weekDays.map((day) => (
-          <div key={day} className="text-center text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+          <div key={day} className="text-center text-[11px] font-bold text-muted uppercase tracking-wider">
             {day}
           </div>
         ))}
@@ -200,22 +173,22 @@ const ActivityCalendar = () => {
               const dayNumber = day.date.getDate();
 
               let cellClasses = "relative aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all duration-200 cursor-default transform hover:scale-[1.02]";
-              let textColor = "text-gray-700 dark:text-gray-300";
-              let bgClass = "hover:bg-gray-50 dark:hover:bg-gray-800/50";
+              let textColor = "text-text";
+              let bgClass = "hover:bg-muted/10";
 
               if (isActive) {
-                bgClass = "bg-emerald-200 dark:bg-emerald-700 hover:bg-emerald-300 dark:hover:bg-emerald-600";
-                textColor = "text-emerald-900 dark:text-white font-bold";
+                bgClass = "bg-success/20 hover:bg-success/30";
+                textColor = "text-success font-bold";
               } else if (isPast && !isToday) {
-                bgClass = "bg-rose-100 dark:bg-rose-900/40 hover:bg-rose-200 dark:hover:bg-rose-800/60";
-                textColor = "text-rose-700 dark:text-rose-200";
+                bgClass = "bg-error/10 hover:bg-error/20";
+                textColor = "text-error";
               } else {
-                bgClass = "bg-gray-50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-700/50";
-                textColor = "text-gray-700 dark:text-gray-300";
+                bgClass = "bg-muted/5 hover:bg-muted/10";
+                textColor = "text-text";
               }
 
               if (isToday) {
-                cellClasses += " ring-4 ring-indigo-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 shadow-md";
+                cellClasses += " ring-2 ring-primary ring-offset-2 ring-offset-card shadow-md";
               }
 
               let tooltipMsg = '';
@@ -227,13 +200,12 @@ const ActivityCalendar = () => {
               return (
                 <div key={colIndex} title={tooltipMsg} className={`${cellClasses} ${bgClass} ${textColor}`}>
                   <span className="z-10">{dayNumber}</span>
-                  {/* Đã bỏ hoàn toàn vòng tròn số hoạt động */}
                   {!isActive && isPast && !isToday && (
-                    <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-300 opacity-80" />
+                    <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-error opacity-80" />
                   )}
                   {isToday && !isActive && (
                     <div className="absolute -top-1 -right-1 w-4 h-4">
-                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-sm" />
+                      <Star className="w-3 h-3 text-warning fill-warning drop-shadow-sm" />
                     </div>
                   )}
                 </div>
@@ -244,24 +216,24 @@ const ActivityCalendar = () => {
       </div>
 
       {/* Legend & footer */}
-      <div className="px-5 pb-5 pt-2 border-t border-gray-100 dark:border-gray-800 mt-1">
+      <div className="px-5 pb-5 pt-2 border-t border-border mt-1">
         <div className="flex flex-wrap items-center justify-center gap-5 text-[11px]">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm"></div>
-            <span className="text-gray-600 dark:text-gray-300">Active day (any session)</span>
+            <div className="w-3 h-3 rounded-full bg-success shadow-sm"></div>
+            <span className="text-muted">Active day (any session)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-rose-400 shadow-sm"></div>
-            <span className="text-gray-600 dark:text-gray-300">Inactive day (past)</span>
+            <div className="w-3 h-3 rounded-full bg-error shadow-sm"></div>
+            <span className="text-muted">Inactive day (past)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 ring-4 ring-indigo-500 ring-offset-1 flex items-center justify-center">
-              <Star className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
+            <div className="w-5 h-5 rounded-full bg-primary/10 ring-2 ring-primary ring-offset-1 flex items-center justify-center">
+              <Star className="w-2.5 h-2.5 text-warning fill-warning" />
             </div>
-            <span className="text-gray-600 dark:text-gray-300 font-medium">Today</span>
+            <span className="text-muted font-medium">Today</span>
           </div>
         </div>
-        <div className="text-center mt-4 text-[10px] text-gray-400 dark:text-gray-500 flex items-center justify-center gap-1">
+        <div className="text-center mt-4 text-[10px] text-muted flex items-center justify-center gap-1">
           <Sparkles className="w-3 h-3" />
           <span>{monthlyStats.totalActivities} total activities this month • Keep your streak green!</span>
         </div>

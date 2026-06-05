@@ -12,16 +12,14 @@ import { AIFeedback } from '../components/AIFeedback';
 import PerformanceTrendChart from '../components/PerformanceTrendChart';
 import ActivityCalendar from '../components/ActivityCalendar';
 import { CVInfoModal } from '../components/CVInfoModal';
-import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useHistory } from '../contexts/HistoryContext';
 
-// --- Helper: chuẩn hóa ngày theo múi giờ Việt Nam (Asia/Ho_Chi_Minh) ---
+// --- Helper: chuẩn hóa ngày theo múi giờ Việt Nam ---
 const toVietnamDateKey = (dateInput) => {
   if (!dateInput) return null;
   const date = new Date(dateInput);
   if (isNaN(date.getTime())) return null;
-
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Ho_Chi_Minh',
     year: 'numeric',
@@ -37,7 +35,6 @@ const toVietnamDateKey = (dateInput) => {
 
 export default function WelcomePage() {
   const navigate = useNavigate();
-  const { darkMode } = useTheme();
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
   const { normal, cv, adaptive, coding, loading: historyLoading } = useHistory();
 
@@ -61,7 +58,7 @@ export default function WelcomePage() {
   const [isCVModalOpen, setIsCVModalOpen] = useState(false);
   const [cvData, setCvData] = useState(null);
 
-  // --- Texts (giữ nguyên) ---
+  // --- Texts ---
   const texts = {
     totalSessions: 'Total Sessions',
     streak: 'Current Streak',
@@ -129,31 +126,23 @@ export default function WelcomePage() {
       hour: '2-digit', minute: '2-digit', second: '2-digit',
     });
 
-  // --- Tính streak dựa trên danh sách ngày hoạt động (mỗi ngày 1 lần) ---
+  // --- Tính streak từ activities ---
   const calculateStreakFromActivities = (activitiesList) => {
     if (!activitiesList || activitiesList.length === 0) return 0;
-
-    // Lấy tất cả ngày hoạt động từ trường dateVN đã được server chuẩn hóa theo VN
     const activeDates = new Set(activitiesList.map(act => act.dateVN).filter(Boolean));
-
     let streak = 0;
-    let currentDate = new Date(); // thời điểm hiện tại trên client
-
+    let currentDate = new Date();
     while (true) {
       const todayKey = toVietnamDateKey(currentDate);
       if (!todayKey) break;
-
       if (activeDates.has(todayKey)) {
         streak++;
         currentDate.setDate(currentDate.getDate() - 1);
-      } else {
-        break;
-      }
+      } else break;
     }
     return streak;
   };
 
-  // --- Gọi API lấy danh sách ngày hoạt động và cập nhật streak ---
   const fetchActivities = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -171,7 +160,7 @@ export default function WelcomePage() {
     }
   };
 
-  // --- Tính tổng số buổi và thống kê hôm nay từ lịch sử (normal, cv, ...) ---
+  // --- Tính tổng số buổi và thống kê hôm nay ---
   useEffect(() => {
     if (historyLoading) return;
     const allSessions = [...normal, ...cv, ...adaptive, ...coding];
@@ -193,17 +182,13 @@ export default function WelcomePage() {
     setStats(prev => ({ ...prev, totalInterviews: total }));
   }, [normal, cv, adaptive, coding, historyLoading]);
 
-  // --- Redirect nếu chưa đăng nhập ---
   useEffect(() => {
     if (!authLoading && !isAuthenticated) navigate('/login');
   }, [authLoading, isAuthenticated, navigate]);
 
-  // --- Lấy dữ liệu hoạt động khi user đăng nhập (chỉ một lần khi mount) ---
   useEffect(() => {
-    if (user) {
-      fetchActivities();
-    }
-  }, [user]); // sẽ chạy lại nếu user thay đổi (đăng nhập lại)
+    if (user) fetchActivities();
+  }, [user]);
 
   // --- Click outside dropdown ---
   useEffect(() => {
@@ -214,18 +199,14 @@ export default function WelcomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // --- Đồng hồ realtime ---
   useEffect(() => {
     const interval = setInterval(() => setCurrentDateTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // --- Chặn back button ---
   useEffect(() => {
     window.history.pushState(null, '', window.location.href);
-    const handlePopState = () => {
-      window.history.pushState(null, '', window.location.href);
-    };
+    const handlePopState = () => window.history.pushState(null, '', window.location.href);
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -239,21 +220,17 @@ export default function WelcomePage() {
     }, 2000);
   };
 
-  // --- Khi bắt đầu interview thường ---
   const handleStartInterview = (data) => {
     console.log('Starting interview:', data);
-    // Cập nhật optimistic UI
     setTodayStats(prev => ({
       ...prev,
       normalInterview: prev.normalInterview + 1,
       total: prev.total + 1,
     }));
     setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
-    // Gọi lại API để lấy hoạt động mới (cập nhật streak)
     fetchActivities();
   };
 
-  // --- Upload CV thành công ---
   const handleCVUploadSuccess = (uploadedCvData) => {
     setTodayStats(prev => ({
       ...prev,
@@ -261,12 +238,10 @@ export default function WelcomePage() {
       total: prev.total + 1,
     }));
     setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
-    fetchActivities(); // cập nhật streak
+    fetchActivities();
     if (uploadedCvData && uploadedCvData.fileUrl) {
       setCvData(uploadedCvData);
       setIsCVModalOpen(true);
-    } else {
-      console.error('Invalid CV data received from UploadCV:', uploadedCvData);
     }
   };
 
@@ -284,7 +259,7 @@ export default function WelcomePage() {
       total: prev.total + 1,
     }));
     setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
-    fetchActivities(); // cập nhật streak
+    fetchActivities();
   };
 
   const displayName = user?.fullName || user?.userName;
@@ -304,18 +279,17 @@ export default function WelcomePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!isAuthenticated || !user) return null;
 
-  // --- JSX giữ nguyên (chỉ thay đổi các helper bên trên) ---
   return (
-     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 transition-colors duration-500">
-      {/* Các khối trang trí background giữ nguyên */}
+    <div className="min-h-screen bg-bg transition-colors duration-500">
+      {/* Các khối trang trí background giữ nguyên với dark: prefix (vì gradient đặc biệt) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-10 animate-blob"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-10 animate-blob animation-delay-2000"></div>
@@ -324,46 +298,46 @@ export default function WelcomePage() {
 
       {isLoggingOut && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl text-center animate-fadeIn">
-            <div className="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-700 dark:text-gray-300 font-medium">{texts.logout}...</p>
+          <div className="bg-card rounded-2xl p-8 shadow-soft text-center animate-fadeIn">
+            <div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text font-medium">{texts.logout}...</p>
           </div>
         </div>
       )}
 
-      {/* Header giữ nguyên, chỉ sửa text */}
-      <header className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-gray-200/30 dark:border-gray-800/30 sticky top-0 z-40 shadow-sm">
+      {/* Header */}
+      <header className="bg-card/70 backdrop-blur-xl border-b border-border sticky top-0 z-40 shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/welcome')}>
-            <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
+            <div className="w-11 h-11 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
               <span className="text-white font-bold text-xl">AI</span>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800 dark:text-white">AI Interview</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Smart Platform</p>
+              <h1 className="text-2xl font-bold text-text">AI Interview</h1>
+              <p className="text-xs text-muted">Smart Platform</p>
             </div>
           </div>
 
           <div className="relative" ref={dropdownRef}>
             <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 focus:outline-none group">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-800 group-hover:ring-indigo-300 transition-all">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-800 group-hover:ring-primary/30 transition-all">
                 <span className="text-white font-semibold text-base">{avatarLetter}</span>
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-semibold text-gray-800 dark:text-white">{displayName}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                <p className="text-sm font-semibold text-text">{displayName}</p>
+                <p className="text-xs text-muted">{user.email}</p>
               </div>
-              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-muted transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-1.5 z-50 animate-fadeIn overflow-hidden">
-                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-indigo-50/80 to-blue-50/80 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center">
+              <div className="absolute right-0 mt-2 w-56 bg-card/95 backdrop-blur-md rounded-2xl shadow-soft border border-border py-1.5 z-50 animate-fadeIn overflow-hidden">
+                <div className="px-4 py-2 border-b border-border bg-gradient-to-r from-indigo-50/80 to-blue-50/80 dark:from-indigo-900/30 dark:to-blue-900/30 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                     <span className="text-white text-sm font-bold">{avatarLetter}</span>
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-gray-800 dark:text-white">{displayName}</p>
-                    <p className="text-xs text-gray-500 truncate max-w-[150px]">{user.email}</p>
+                    <p className="text-sm font-bold text-text">{displayName}</p>
+                    <p className="text-xs text-muted truncate max-w-[150px]">{user.email}</p>
                   </div>
                 </div>
                 <div className="py-1">
@@ -373,13 +347,13 @@ export default function WelcomePage() {
                     { icon: HelpCircle, label: texts.helpSupport, path: '/help' },
                     { icon: FileText, label: texts.interviewHistory, path: '/history' },
                   ].map((item) => (
-                    <button key={item.path} onClick={() => { setDropdownOpen(false); navigate(item.path); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors">
-                      <item.icon className="w-4 h-4 text-indigo-500" /> {item.label}
+                    <button key={item.path} onClick={() => { setDropdownOpen(false); navigate(item.path); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-primary/10 transition-colors">
+                      <item.icon className="w-4 h-4 text-primary" /> {item.label}
                     </button>
                   ))}
                 </div>
-                <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
-                <button onClick={handleLogout} disabled={isLoggingOut} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                <div className="border-t border-border my-1"></div>
+                <button onClick={handleLogout} disabled={isLoggingOut} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-error hover:bg-error/10 transition-colors">
                   <LogOut className="w-4 h-4" /> {texts.logout}
                 </button>
               </div>
@@ -389,8 +363,8 @@ export default function WelcomePage() {
       </header>
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 py-8 animate-fadeIn">
-        {/* Hero section */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 mb-10 text-white shadow-2xl">
+        {/* Hero section - gradient giữ dark: prefix */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 p-8 mb-10 text-white shadow-2xl">
           <div className="absolute inset-0 bg-black/10 rounded-3xl"></div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/3"></div>
@@ -417,15 +391,15 @@ export default function WelcomePage() {
         {/* Stats cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
           {statsCards.map((stat, idx) => (
-            <div key={idx} className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200/50 dark:border-gray-700/50 hover:scale-[1.02]">
+            <div key={idx} className="group relative bg-card/80 backdrop-blur-sm rounded-2xl p-5 shadow-soft hover:shadow-lg transition-all duration-300 border border-border hover:scale-[1.02]">
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ background: `linear-gradient(135deg, ${stat.gradient})` }}></div>
               <div className="flex items-center gap-4 relative z-10">
                 <div className={`p-3 rounded-xl ${stat.bg} group-hover:scale-110 transition-transform duration-300`}>
                   <stat.icon className={`w-6 h-6 ${stat.color}`} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                  <p className="text-sm text-muted uppercase tracking-wide">{stat.label}</p>
+                  <p className="text-2xl font-bold text-text">
                     {historyLoading ? <span className="inline-block w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></span> : stat.value}
                   </p>
                 </div>
@@ -435,20 +409,20 @@ export default function WelcomePage() {
         </div>
 
         {/* Today's Sessions */}
-        <div className="relative rounded-2xl shadow-xl overflow-hidden mb-10 bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 transition-all duration-300 hover:shadow-2xl group">
+        <div className="relative rounded-2xl shadow-soft overflow-hidden mb-10 bg-card border border-border transition-all duration-300 hover:shadow-lg group">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 group-hover:animate-pulse"></div>
           <div className="p-6 md:p-7">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-sm ring-1 ring-blue-200/50 dark:ring-blue-700/30">
-                  <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <Target className="w-5 h-5 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                <h3 className="text-xl font-bold text-text">
                   {texts.todaySessions}
                 </h3>
               </div>
               <div className="px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-full">
-                <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">{todayStats.total} {texts.total}</p>
+                <p className="text-sm font-bold text-primary dark:text-primary/90">{todayStats.total} {texts.total}</p>
               </div>
             </div>
 
@@ -464,14 +438,14 @@ export default function WelcomePage() {
                       <item.icon className={`w-5 h-5 ${item.color}`} />
                     </div>
                   </div>
-                  <p className="text-lg font-bold text-gray-800 dark:text-white">{historyLoading ? '...' : item.value}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">{item.label}</p>
+                  <p className="text-lg font-bold text-text">{historyLoading ? '...' : item.value}</p>
+                  <p className="text-xs text-muted mt-1 font-medium">{item.label}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-5 pt-4 text-center border-t border-gray-200/60 dark:border-gray-700/60">
-              <p className={`text-sm font-semibold flex items-center justify-center gap-2 ${todayStats.total > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
+            <div className="mt-5 pt-4 text-center border-t border-border">
+              <p className={`text-sm font-semibold flex items-center justify-center gap-2 ${todayStats.total > 0 ? 'text-success' : 'text-muted'}`}>
                 <Award className="w-4 h-4" />
                 {todayStats.total > 0 ? texts.keepGoing : texts.restDay}
               </p>
@@ -480,7 +454,7 @@ export default function WelcomePage() {
         </div>
 
         {/* Motivation Card */}
-        <div className="relative rounded-2xl shadow-xl overflow-hidden mb-10 bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 transition-all duration-300 hover:shadow-2xl group">
+        <div className="relative rounded-2xl shadow-soft overflow-hidden mb-10 bg-card border border-border transition-all duration-300 hover:shadow-lg group">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 group-hover:animate-pulse"></div>
           <div className="p-6 md:p-7">
             <div className="flex items-center justify-between mb-5">
@@ -488,7 +462,7 @@ export default function WelcomePage() {
                 <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl shadow-sm ring-1 ring-amber-200/50 dark:ring-amber-700/30">
                   <Sparkles className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                 </div>
-                <h3 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                <h3 className="text-xl font-bold text-text">
                   {texts.motivationTitle}
                 </h3>
               </div>
@@ -500,9 +474,9 @@ export default function WelcomePage() {
                   <div className="p-1.5 bg-white/60 dark:bg-gray-800/60 rounded-full shadow-sm">
                     <Lightbulb className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
                   </div>
-                  <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm uppercase tracking-wide">{texts.helpfulTip}</h4>
+                  <h4 className="font-semibold text-text text-sm uppercase tracking-wide">{texts.helpfulTip}</h4>
                 </div>
-                <p className="text-gray-700 dark:text-gray-300 text-md leading-relaxed relative z-10">{dailyTip.tip}</p>
+                <p className="text-text text-md leading-relaxed relative z-10">{dailyTip.tip}</p>
               </div>
               <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-50/80 to-pink-50/80 dark:from-purple-900/20 dark:to-pink-900/20 backdrop-blur-sm p-5 border border-purple-200/50 dark:border-purple-800/50 shadow-sm hover:shadow-md transition-all duration-200">
                 <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-purple-200/30 dark:bg-purple-500/10 rounded-full blur-xl"></div>
@@ -510,16 +484,16 @@ export default function WelcomePage() {
                   <div className="p-1.5 bg-white/60 dark:bg-gray-800/60 rounded-full shadow-sm">
                     <Quote className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm uppercase tracking-wide">{texts.inspiringQuote}</h4>
+                  <h4 className="font-semibold text-text text-sm uppercase tracking-wide">{texts.inspiringQuote}</h4>
                 </div>
-                <p className="text-gray-700 dark:text-gray-300 text-md italic leading-relaxed relative z-10">"{dailyTip.quote}"</p>
+                <p className="text-text text-md italic leading-relaxed relative z-10">"{dailyTip.quote}"</p>
               </div>
             </div>
-            <div className="mt-6 pt-4 text-center border-t border-gray-200/60 dark:border-gray-700/60">
-              <p className="text-xs text-gray-500 dark:text-gray-400 italic flex items-center justify-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-indigo-400" />
+            <div className="mt-6 pt-4 text-center border-t border-border">
+              <p className="text-xs text-muted italic flex items-center justify-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-primary" />
                 <span>{texts.slogan}</span>
-                <Sparkles className="w-3 h-3 text-indigo-400" />
+                <Sparkles className="w-3 h-3 text-primary" />
               </p>
             </div>
           </div>
@@ -528,9 +502,9 @@ export default function WelcomePage() {
         {/* Two columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg font-semibold dark:text-white mb-4 flex items-center gap-2">
-                <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg"><TrendingUp className="w-5 h-5 text-indigo-500" /></div>
+            <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-soft p-6 border border-border">
+              <h3 className="text-lg font-semibold text-text flex items-center gap-2">
+                <div className="p-1.5 bg-primary/10 rounded-lg"><TrendingUp className="w-5 h-5 text-primary" /></div>
                 {texts.performanceTrend}
               </h3>
               <div className="w-full">
@@ -539,32 +513,29 @@ export default function WelcomePage() {
             </div>
           </div>
           <div className="space-y-6">
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-5 border border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-md font-semibold dark:text-white mb-3 flex items-center gap-2">
+            <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-soft p-5 border border-border">
+              <h3 className="text-md font-semibold text-text mb-3 flex items-center gap-2">
                 <div className="p-1.5 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg"><Zap className="w-5 h-5 text-yellow-500" /></div>
                 {texts.quickActions}
               </h3>
               <div className="space-y-3">
-                <button onClick={() => setIsModalOpen(true)} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
+                <button onClick={() => setIsModalOpen(true)} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
                   <MessageCircle className="w-4 h-4" /> {texts.startNewInterview}
                 </button>
                 <UploadCV onUploadSuccess={handleCVUploadSuccess} />
-                <button onClick={() => navigate('/history')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
-                  <Brain className="w-4 h-4" /> {texts.interviewHistory}
-                </button>
                 <button onClick={() => navigate('/live-coding')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
                   <Code2 className="w-4 h-4" />Coding Interview
                 </button>
-                <button onClick={() => navigate('/coding-history')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
-                  <Code2 className="w-4 h-4" /> Coding History
+                <button onClick={() => navigate('/history')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-success to-teal-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
+                  <Brain className="w-4 h-4" /> {texts.interviewHistory}
                 </button>
               </div>
             </div>
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 border border-gray-200/50 dark:border-gray-700/50">
-              <div className="flex items-center gap-2 mb-3 px-1"><CalendarDays className="w-4 h-4 text-indigo-500" /><h3 className="text-sm font-semibold dark:text-white">Activity Calendar</h3></div>
+            <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-soft p-4 border border-border">
+              <div className="flex items-center gap-2 px-1"></div>
               <ActivityCalendar sessions={activities} />
             </div>
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+            <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-soft border border-border overflow-hidden">
               <AIFeedback />
             </div>
           </div>

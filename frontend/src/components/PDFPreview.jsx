@@ -9,23 +9,21 @@ export default function PDFPreview({ file }) {
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Khi load PDF thành công
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
   };
 
   return (
     <div className="flex gap-4 h-[500px]">
-      
       {/* 🧭 Sidebar (preview từng trang nhỏ) */}
-      <div className="w-24 overflow-y-auto border rounded-lg bg-gray-50">
+      <div className="w-24 overflow-y-auto border border-border rounded-lg bg-card">
         {numPages &&
           Array.from({ length: numPages }, (_, index) => (
             <div
               key={index}
               onClick={() => setCurrentPage(index + 1)}
-              className={`cursor-pointer p-1 border-b hover:bg-gray-200 ${
-                currentPage === index + 1 ? 'bg-gray-300' : ''
+              className={`cursor-pointer p-1 border-b border-border hover:bg-muted/10 transition ${
+                currentPage === index + 1 ? 'bg-primary/20' : ''
               }`}
             >
               <Page
@@ -39,12 +37,12 @@ export default function PDFPreview({ file }) {
       </div>
 
       {/* 📄 Main PDF */}
-      <div className="flex-1 overflow-auto border rounded-lg flex justify-center items-start bg-gray-100 p-2">
+      <div className="flex-1 overflow-auto border border-border rounded-lg flex justify-center items-start bg-muted/5 p-2">
         <Document
           file={file}
           onLoadSuccess={onDocumentLoadSuccess}
-          loading={<p>Đang tải PDF...</p>}
-          error={<p>Lỗi khi load PDF</p>}
+          loading={<p className="text-muted">Loading PDF...</p>}
+          error={<p className="text-error">Error loading PDF</p>}
         >
           <Page
             pageNumber={currentPage}

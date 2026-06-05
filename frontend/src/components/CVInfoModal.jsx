@@ -202,19 +202,13 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
           cvInfo: { fullName, selectedSkills }
         };
         
-        // ✅ Quan trọng: set context trước
         startInterview(interviewData);
-        
-        // ✅ Luôn luôn navigate – không chờ callback, không điều kiện
-        // Đóng modal và chuyển trang ngay lập tức
         onClose();
         navigate('/cvinterview');
         
-        // Nếu có callback (tùy chọn) thì gọi sau – không ảnh hưởng navigate
         if (onQuestionsGenerated) onQuestionsGenerated(interviewData);
         if (onStartInterview) onStartInterview(interviewData);
         
-        // Tắt trạng thái generating sau khi đã navigate
         setGlobalGenerating(false);
         setGenerating(false);
       } else {
@@ -243,9 +237,9 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
 
   const SkillGroup = ({ title, items, selectedItems, onToggle }) => (
     <div className="mb-5">
-      <h3 className="font-semibold text-gray-800 mb-2 flex justify-between">
+      <h3 className="font-semibold text-text mb-2 flex justify-between">
         <span>{title}</span>
-        <span className="text-xs bg-gray-200 px-2 py-0.5 rounded-full">{items.length}</span>
+        <span className="text-xs bg-muted/20 text-muted px-2 py-0.5 rounded-full">{items.length}</span>
       </h3>
       <div className="flex flex-wrap gap-2">
         {items.map(skill => (
@@ -253,57 +247,57 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
             key={skill}
             className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200 ${
               selectedItems.includes(skill)
-                ? 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-800 ring-2 ring-indigo-300 shadow-sm'
-                : 'bg-gray-100 hover:bg-gray-200'
+                ? 'bg-primary/20 text-primary ring-2 ring-primary/50 shadow-sm'
+                : 'bg-muted/10 text-text hover:bg-muted/20'
             } ${generating ? 'pointer-events-none opacity-60' : ''}`}
           >
             <input
               type="checkbox"
               checked={selectedItems.includes(skill)}
               onChange={() => onToggle(skill)}
-              className="w-3.5 h-3.5 accent-indigo-600"
+              className="w-3.5 h-3.5 accent-primary"
               disabled={generating}
             />
             <span className="capitalize">{skill}</span>
           </label>
         ))}
-        {items.length === 0 && <p className="text-xs text-gray-400 italic">No skills detected</p>}
+        {items.length === 0 && <p className="text-xs text-muted italic">No skills detected</p>}
       </div>
     </div>
   );
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 md:p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[95vh] flex flex-col overflow-hidden transform transition-all duration-300 scale-100 relative">
+      <div className="bg-card rounded-2xl shadow-soft w-full max-w-7xl max-h-[95vh] flex flex-col overflow-hidden transform transition-all duration-300 scale-100 relative border border-border">
         {generating && (
           <>
             <div className="absolute inset-0 bg-transparent z-40" />
             <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-6 flex flex-col items-center gap-3 pointer-events-auto">
-                <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
-                <p className="text-gray-700 font-medium">AI is generating questions...</p>
+              <div className="bg-card/90 backdrop-blur-sm rounded-2xl shadow-soft p-6 flex flex-col items-center gap-3 pointer-events-auto border border-border">
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                <p className="text-text font-medium">AI is generating questions...</p>
               </div>
             </div>
           </>
         )}
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-indigo-50 to-purple-50 sticky top-0 z-10">
+        <div className="flex justify-between items-center p-4 border-b border-border bg-gradient-to-r from-primary/5 to-secondary/5 sticky top-0 z-10">
           <div>
-            <h2 className="text-xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent">CV Preview & Analysis</h2>
-            <p className="text-sm text-gray-500">{cvData?.fileName || 'Your document'}</p>
+            <h2 className="text-xl font-bold text-text">CV Preview & Analysis</h2>
+            <p className="text-sm text-muted">{cvData?.fileName || 'Your document'}</p>
           </div>
-          <button onClick={() => { updateActivity(); onClose(); }} className="p-2 hover:bg-white/60 rounded-full transition-colors">
-            <X className="w-5 h-5 text-gray-600" />
+          <button onClick={() => { updateActivity(); onClose(); }} className="p-2 hover:bg-muted/20 rounded-full transition-colors">
+            <X className="w-5 h-5 text-muted" />
           </button>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-auto p-4 md:p-6 bg-gray-50/30">
+        <div className="flex-1 overflow-auto p-4 md:p-6 bg-muted/5">
           {errorMessage && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 animate-in slide-in-from-top-2">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 text-sm text-red-700">{errorMessage}</div>
-              <button onClick={() => setErrorMessage('')} className="text-red-500 hover:text-red-700">
+            <div className="mb-4 p-3 bg-error/10 border border-error/30 rounded-lg flex items-start gap-2 animate-in slide-in-from-top-2">
+              <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
+              <div className="flex-1 text-sm text-error">{errorMessage}</div>
+              <button onClick={() => setErrorMessage('')} className="text-error hover:text-error/80">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -313,47 +307,47 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
             {/* CV preview */}
             {(showCvPreview || !isMobileView) && (
               <div className={`${isMobileView ? 'w-full' : 'md:w-1/2 lg:w-3/5'} transition-all duration-300`}>
-                <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
+                <div className="bg-card rounded-xl shadow-soft border border-border p-3">
                   <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-medium text-gray-700">📄 Document Preview</h3>
+                    <h3 className="font-medium text-text">📄 Document Preview</h3>
                     {isMobileView && (
-                      <button onClick={() => { updateActivity(); setShowCvPreview(false); }} className="text-indigo-600 flex gap-1 border px-2 py-1 rounded-full text-sm">
+                      <button onClick={() => { updateActivity(); setShowCvPreview(false); }} className="text-primary flex gap-1 border border-border px-2 py-1 rounded-full text-sm bg-card">
                         <EyeOff className="w-3.5" /> Hide
                       </button>
                     )}
                   </div>
-                  <div className="overflow-auto flex justify-center bg-gray-100 rounded-lg min-h-[300px] p-2">
+                  <div className="overflow-auto flex justify-center bg-muted/10 rounded-lg min-h-[300px] p-2">
                     <Document
                       file={cvData.fileUrl}
                       onLoadSuccess={onLoadSuccess}
-                      loading={<div className="p-10"><Loader2 className="animate-spin text-indigo-600" /></div>}
-                      error={<div className="p-10 text-red-500">Failed to load PDF</div>}
+                      loading={<div className="p-10"><Loader2 className="animate-spin text-primary" /></div>}
+                      error={<div className="p-10 text-error">Failed to load PDF</div>}
                     >
                       <Page
                         pageNumber={pageNumber}
                         width={isMobileView ? 320 : 500}
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
-                        className="shadow-lg"
+                        className="shadow-md"
                       />
                     </Document>
                   </div>
                   {numPages > 1 && (
-                    <div className="flex justify-center gap-4 mt-4 pt-2 border-t">
+                    <div className="flex justify-center gap-4 mt-4 pt-2 border-t border-border">
                       <button
                         disabled={pageNumber === 1}
                         onClick={goPrevPage}
-                        className="p-1.5 disabled:opacity-30 hover:bg-gray-100 rounded-full"
+                        className="p-1.5 disabled:opacity-30 hover:bg-muted/10 rounded-full text-text"
                       >
                         <ChevronLeft />
                       </button>
-                      <span className="text-sm bg-gray-100 px-3 py-1 rounded-full">
+                      <span className="text-sm bg-muted/10 text-text px-3 py-1 rounded-full">
                         Page {pageNumber} / {numPages}
                       </span>
                       <button
                         disabled={pageNumber === numPages}
                         onClick={goNextPage}
-                        className="p-1.5 disabled:opacity-30 hover:bg-gray-100 rounded-full"
+                        className="p-1.5 disabled:opacity-30 hover:bg-muted/10 rounded-full text-text"
                       >
                         <ChevronRight />
                       </button>
@@ -368,42 +362,42 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
               {isMobileView && !showCvPreview && (
                 <button
                   onClick={() => { updateActivity(); setShowCvPreview(true); }}
-                  className="w-full mb-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl flex items-center justify-center gap-2 border"
+                  className="w-full mb-3 py-2 bg-primary/10 text-primary rounded-xl flex items-center justify-center gap-2 border border-border"
                 >
                   <Eye className="w-4" /> Show CV Preview
                 </button>
               )}
-              <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-                <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b">
-                  <h3 className="font-bold flex gap-2 text-indigo-800">
-                    <Sparkles className="text-indigo-600" /> AI Analysis
+              <div className="bg-card rounded-xl shadow-soft border border-border overflow-hidden">
+                <div className="p-4 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border">
+                  <h3 className="font-bold flex gap-2 text-primary">
+                    <Sparkles className="text-primary" /> AI Analysis
                   </h3>
                 </div>
                 <div className="p-4">
                   {analyzing ? (
                     <div className="flex flex-col items-center py-10">
-                      <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-                      <p className="mt-2 font-medium">AI is analyzing your CV...</p>
-                      <p className="text-xs text-gray-400">Scanning all pages for skills</p>
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      <p className="mt-2 font-medium text-text">AI is analyzing your CV...</p>
+                      <p className="text-xs text-muted">Scanning all pages for skills</p>
                     </div>
                   ) : (
                     <>
-                      <div className="mb-5 bg-gradient-to-r from-gray-50 to-indigo-50/30 rounded-xl p-3 border border-indigo-100">
-                        <label className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Full Name</label>
-                        <div className="font-bold text-lg">{fullName || 'Not detected'}</div>
+                      <div className="mb-5 bg-gradient-to-r from-muted/10 to-primary/5 rounded-xl p-3 border border-primary/20">
+                        <label className="text-xs font-semibold uppercase tracking-wide text-primary">Full Name</label>
+                        <div className="font-bold text-lg text-text">{fullName || 'Not detected'}</div>
                       </div>
 
                       <div className="flex justify-between items-center mb-2 text-sm">
-                        <span>🎯 Skills Summary</span>
-                        <span className={`px-2 py-0.5 rounded-full font-medium ${isMaxExceeded ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        <span className="text-text">🎯 Skills Summary</span>
+                        <span className={`px-2 py-0.5 rounded-full font-medium ${isMaxExceeded ? 'bg-error/20 text-error' : 'bg-success/20 text-success'}`}>
                           {totalSelected} / {MAX_SKILLS} selected
                         </span>
                       </div>
 
                       {isMaxExceeded && (
-                        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                          <p className="text-amber-700 font-semibold text-sm">⚠️ Too many skills selected (max {MAX_SKILLS})</p>
-                          <p className="text-amber-600 text-xs mt-1">
+                        <div className="mb-4 p-3 bg-warning/10 border border-warning/30 rounded-lg">
+                          <p className="text-warning font-semibold text-sm">⚠️ Too many skills selected (max {MAX_SKILLS})</p>
+                          <p className="text-warning/80 text-xs mt-1">
                             You have selected {totalSelected} skills. Please deselect some to focus on <strong>2-3 core skills</strong> for a better interview experience.
                           </p>
                         </div>
@@ -442,14 +436,14 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
         </div>
 
         {/* Footer */}
-        <div className="bg-white border-t p-4 sticky bottom-0">
+        <div className="bg-card border-t border-border p-4 sticky bottom-0">
           <button
             onClick={handleGenerate}
             disabled={generating || analyzing || totalSelected === 0 || isMaxExceeded}
             className={`w-full py-3 rounded-xl flex justify-center items-center gap-2 font-bold transition-all duration-300 transform hover:scale-[1.02] ${
               generating || analyzing || totalSelected === 0 || isMaxExceeded
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg'
+                ? 'bg-muted/30 text-muted cursor-not-allowed'
+                : 'bg-primary hover:brightness-105 text-white shadow-md'
             }`}
           >
             <Sparkles className="w-5 h-5" />
@@ -460,7 +454,7 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
               : `Start Interview (${totalSelected} skill${totalSelected > 1 ? 's' : ''})`}
           </button>
           {isMaxExceeded && (
-            <p className="text-center text-xs text-red-500 mt-2">
+            <p className="text-center text-xs text-error mt-2">
               ⚡ Deselect some skills (max {MAX_SKILLS})
             </p>
           )}
