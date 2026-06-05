@@ -498,7 +498,7 @@ export default function CodingInterface({
 
       <EvaluationModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => setIsModalOpen(false)} F
         onNext={handleNextCode} 
         evaluation={codeEvaluation} 
         explainAnswers={explainAnswersList} 
