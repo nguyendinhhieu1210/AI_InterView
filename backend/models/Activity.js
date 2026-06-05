@@ -1,36 +1,29 @@
 const mongoose = require('mongoose');
 
-const activitySchema =
-  new mongoose.Schema({
+const activitySchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
 
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
+  // 👉 vẫn giữ Date nhưng luôn là "00:00 UTC theo ngày VN"
+  date: {
+    type: Date,
+    required: true,
+    index: true,
+  },
 
-      ref: 'User',
+  type: {
+    type: String,
+    enum: ['interview', 'cvinterview', 'adaptiveinterview'],
+    default: 'interview',
+  }
+}, {
+  timestamps: true
+});
 
-      required: true
-    },
+// unique 1 user / 1 ngày
+activitySchema.index({ userId: 1, date: 1 }, { unique: true });
 
-    type: {
-      type: String,
-
-      enum: [
-        'upload_cv',
-        'interview',
-        'submit_answer',
-        'cv_interview',
-        'adaptive_interview' // thêm mới
-      ],
-
-      required: true
-    }
-
-  }, {
-    timestamps: true
-  });
-
-module.exports =
-  mongoose.model(
-    'Activity',
-    activitySchema
-  );
+module.exports = mongoose.model('Activity', activitySchema);

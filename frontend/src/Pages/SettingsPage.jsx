@@ -1,35 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    ArrowLeft, Moon, Sun, Bell, Mail, Lock, Globe, Save, Loader2,
-    AlertCircle, CheckCircle, Eye, EyeOff, BellRing, BellOff,
-    Shield, Languages, Palette, KeyRound
-} from 'lucide-react';
+import { ArrowLeft, Sun, Bell, Mail, Save, Loader2, AlertCircle, CheckCircle, Eye, EyeOff, BellRing, Shield, KeyRound } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 export default function SettingsPage() {
     const navigate = useNavigate();
-    const { theme, toggleDarkMode } = useTheme();       // 👈 Lấy theme (string)
-    const darkMode = theme === 'dark';                 // 👈 Tính boolean
-    const { language, changeLanguage, loadingLang } = useLanguage();
+    const { theme, toggleDarkMode } = useTheme();
     const { isAuthenticated, loading: authLoading } = useAuth();
 
     useEffect(() => {
-        if (!authLoading && !isAuthenticated) {
-            navigate('/login');
-        }
+        if (!authLoading && !isAuthenticated) navigate('/login');
     }, [authLoading, isAuthenticated, navigate]);
 
-    const [emailNotifications, setEmailNotifications] = useState(() => {
-        return localStorage.getItem('emailNotifications') === 'true';
-    });
-    const [browserNotifications, setBrowserNotifications] = useState(() => {
-        return localStorage.getItem('browserNotifications') === 'true';
-    });
-
+    // state cho notifications và password (giữ nguyên)
+    const [emailNotifications, setEmailNotifications] = useState(() => localStorage.getItem('emailNotifications') === 'true');
+    const [browserNotifications, setBrowserNotifications] = useState(() => localStorage.getItem('browserNotifications') === 'true');
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,7 +38,6 @@ export default function SettingsPage() {
         e.preventDefault();
         setPasswordError('');
         setPasswordSuccess('');
-
         if (newPassword !== confirmPassword) {
             setPasswordError('New passwords do not match');
             return;
@@ -60,7 +46,6 @@ export default function SettingsPage() {
             setPasswordError('Password must be at least 6 characters');
             return;
         }
-
         setChanging(true);
         try {
             await api.put('/users/change-password', { oldPassword, newPassword, confirmPassword });
@@ -79,7 +64,7 @@ export default function SettingsPage() {
 
     if (authLoading) {
         return (
-            <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'}`}>
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:bg-gray-950">
                 <div className="relative">
                     <div className="w-16 h-16 border-4 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -89,22 +74,18 @@ export default function SettingsPage() {
             </div>
         );
     }
-
     if (!isAuthenticated) return null;
 
     return (
-        <div className={`min-h-screen transition-all duration-500 ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'} py-8 px-4 sm:px-6 lg:px-8`}>
+        <div className="min-h-screen transition-all duration-500 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:bg-gradient-to-br dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
-                <button
-                    onClick={() => navigate('/welcome')}
-                    className="group mb-8 flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 font-medium"
-                >
+                <button onClick={() => navigate('/welcome')} className="group mb-8 flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300 font-medium">
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                     <span>Back to Dashboard</span>
                 </button>
 
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                    <h1 className="text-3xl font-bold leading-relaxed bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                         Settings
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your preferences and account security</p>
@@ -112,72 +93,33 @@ export default function SettingsPage() {
 
                 <div className="space-y-6">
                     {/* Appearance Card */}
-                    <div className={`group rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
+                    <div className="group rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 bg-white/80 dark:bg-gray-900/80 border-white/50 dark:border-gray-800 backdrop-blur-sm">
                         <div className="p-6">
                             <div className="flex items-center gap-3 mb-5">
                                 <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-md">
-                                    <Palette className="w-5 h-5 text-white" />
+                                    <Sun className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Appearance</h3>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">Customize your visual experience</p>
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
                                 <div>
                                     <span className="font-medium text-gray-800 dark:text-white">Dark Mode</span>
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Switch between light and dark themes</p>
                                 </div>
-                                <button
-                                    onClick={toggleDarkMode}
-                                    className="relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                                    style={{ backgroundColor: darkMode ? '#4f46e5' : '#cbd5e1' }}
-                                >
-                                    <span className={`${darkMode ? 'translate-x-6' : 'translate-x-1'} inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300`} />
-                                    <span className="absolute left-1.5 text-[10px] text-white/70">{!darkMode && '☀️'}</span>
-                                    <span className="absolute right-1.5 text-[10px] text-white/70">{darkMode && '🌙'}</span>
+                                <button onClick={toggleDarkMode} className="relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900" style={{ backgroundColor: theme === 'dark' ? '#4f46e5' : '#cbd5e1' }}>
+                                    <span className={`${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'} inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300`} />
+                                    <span className="absolute left-1.5 text-[10px] text-white/70">{theme !== 'dark' && '☀️'}</span>
+                                    <span className="absolute right-1.5 text-[10px] text-white/70">{theme === 'dark' && '🌙'}</span>
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Language Card */}
-                    <div className={`group rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
-                        <div className="p-6">
-                            <div className="flex items-center gap-3 mb-5">
-                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 shadow-md">
-                                    <Languages className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Language</h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Choose your preferred language</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700/50">
-                                <div>
-                                    <span className="font-medium text-gray-800 dark:text-white">Interface Language</span>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">App content will be translated</p>
-                                </div>
-                                <select
-                                    value={language}
-                                    onChange={(e) => changeLanguage(e.target.value)}
-                                    disabled={loadingLang}
-                                    className={`px-4 py-2 rounded-xl border-2 focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-800'}`}
-                                >
-                                    <option value="en">English</option>
-                                    <option value="vi">Tiếng Việt</option>
-                                </select>
-                            </div>
-                            {loadingLang && (
-                                <div className="mt-3 flex items-center gap-2 text-indigo-500 text-sm">
-                                    <Loader2 className="w-4 h-4 animate-spin" /> Saving...
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
                     {/* Notifications Card */}
-                    <div className={`group rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
+                    <div className="group rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 bg-white/80 dark:bg-gray-900/80 border-white/50 dark:border-gray-800 backdrop-blur-sm">
                         <div className="p-6">
                             <div className="flex items-center gap-3 mb-5">
                                 <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md">
@@ -188,7 +130,7 @@ export default function SettingsPage() {
                                     <p className="text-xs text-gray-500 dark:text-gray-400">Manage how you receive updates</p>
                                 </div>
                             </div>
-                            <div className="space-y-5 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                            <div className="space-y-5 pt-2 border-t border-gray-100 dark:border-gray-800">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Mail className="w-5 h-5 text-gray-400 dark:text-gray-500" />
@@ -223,7 +165,7 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Security Card */}
-                    <div className={`group rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 ${darkMode ? 'bg-gray-800/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white/80 border-white/50 backdrop-blur-sm'}`}>
+                    <div className="group rounded-2xl shadow-lg border transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/20 bg-white/80 dark:bg-gray-900/80 border-white/50 dark:border-gray-800 backdrop-blur-sm">
                         <div className="p-6">
                             <div className="flex items-center gap-3 mb-5">
                                 <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-md">
@@ -234,65 +176,32 @@ export default function SettingsPage() {
                                     <p className="text-xs text-gray-500 dark:text-gray-400">Update your password</p>
                                 </div>
                             </div>
-                            <form onSubmit={handleChangePassword} className="space-y-5 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                            <form onSubmit={handleChangePassword} className="space-y-5 pt-2 border-t border-gray-100 dark:border-gray-800">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Current Password</label>
                                     <div className="relative">
-                                        <input
-                                            type={showOld ? 'text' : 'password'}
-                                            value={oldPassword}
-                                            onChange={(e) => setOldPassword(e.target.value)}
-                                            className={`w-full px-4 py-3 rounded-xl border-2 focus:ring-2 focus:ring-indigo-500 outline-none pr-12 transition-all ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
-                                            required
-                                        />
-                                        <button type="button" onClick={() => setShowOld(!showOld)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                            {showOld ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
+                                        <input type={showOld ? 'text' : 'password'} value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 focus:ring-2 focus:ring-indigo-500 outline-none pr-12 transition-all bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white" required />
+                                        <button type="button" onClick={() => setShowOld(!showOld)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">{showOld ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">New Password</label>
                                     <div className="relative">
-                                        <input
-                                            type={showNew ? 'text' : 'password'}
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                            className={`w-full px-4 py-3 rounded-xl border-2 focus:ring-2 focus:ring-indigo-500 outline-none pr-12 transition-all ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
-                                            required
-                                        />
-                                        <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                            {showNew ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
+                                        <input type={showNew ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 focus:ring-2 focus:ring-indigo-500 outline-none pr-12 transition-all bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white" required />
+                                        <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">{showNew ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Confirm New Password</label>
                                     <div className="relative">
-                                        <input
-                                            type={showConfirm ? 'text' : 'password'}
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className={`w-full px-4 py-3 rounded-xl border-2 focus:ring-2 focus:ring-indigo-500 outline-none pr-12 transition-all ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
-                                            required
-                                        />
-                                        <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                            {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
+                                        <input type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 focus:ring-2 focus:ring-indigo-500 outline-none pr-12 transition-all bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white" required />
+                                        <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">{showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
                                     </div>
                                 </div>
-                                {passwordError && (
-                                    <div className="flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-900/30 p-3 rounded-xl">
-                                        <AlertCircle className="w-5 h-5 flex-shrink-0" /> <span className="text-sm">{passwordError}</span>
-                                    </div>
-                                )}
-                                {passwordSuccess && (
-                                    <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-900/30 p-3 rounded-xl">
-                                        <CheckCircle className="w-5 h-5 flex-shrink-0" /> <span className="text-sm">{passwordSuccess}</span>
-                                    </div>
-                                )}
+                                {passwordError && <div className="flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-900/30 p-3 rounded-xl"><AlertCircle className="w-5 h-5 flex-shrink-0" /><span className="text-sm">{passwordError}</span></div>}
+                                {passwordSuccess && <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-900/30 p-3 rounded-xl"><CheckCircle className="w-5 h-5 flex-shrink-0" /><span className="text-sm">{passwordSuccess}</span></div>}
                                 <button type="submit" disabled={changing} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl transition-all shadow-md disabled:opacity-70">
-                                    {changing ? <Loader2 className="w-5 h-5 animate-spin" /> : <KeyRound className="w-5 h-5" />}
-                                    Change Password
+                                    {changing ? <Loader2 className="w-5 h-5 animate-spin" /> : <KeyRound className="w-5 h-5" />} Change Password
                                 </button>
                             </form>
                         </div>

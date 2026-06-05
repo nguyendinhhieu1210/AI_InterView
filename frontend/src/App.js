@@ -1,7 +1,6 @@
 // App.jsx
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { InterviewProvider } from './contexts/InterviewContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -32,47 +31,50 @@ import AdaptiveSessionDetailPage from './Pages/AdaptiveSessionDetailPage';
 import LiveCodingPage from './Pages/LiveCodingPage';
 import CodingHistoryPage from './Pages/CodingHistoryPage';
 import CodingHistoryDetailPage from './Pages/CodingHistoryDetailPage';
+import { HistoryProvider } from './contexts/HistoryContext';
 
 function App() {
   return (
     <ThemeProvider>
-      <LanguageProvider>
+      
         <AuthProvider>
           <InterviewProvider>
-            <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Register />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/verify-otp" element={<VerifyOTP />} />
+            <HistoryProvider>
+              <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Register />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/verify-otp" element={<VerifyOTP />} />
 
-              {/* Protected routes */}
-              <Route path="/welcome" element={<ProtectedRoute><WelcomePage /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-              <Route path="/help" element={<ProtectedRoute><HelpSupportPage /></ProtectedRoute>} />
-              <Route path="/interview" element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
-              <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-              <Route path="/history/:id" element={<ProtectedRoute><InterviewDetailPag /></ProtectedRoute>} />
-              <Route path="/cvinfo" element={<ProtectedRoute><CVInfoModal /></ProtectedRoute>} />
-              <Route path="/cvinterview" element={<ProtectedRoute><InterviewCVPage /></ProtectedRoute>} />
-              <Route path="/cv-history/:id" element={<ProtectedRoute><CVHistoryDetailPage /></ProtectedRoute>} />
-              <Route path="/adaptive-interview" element={<ProtectedRoute><AdaptiveInterviewPage /></ProtectedRoute>} />
-              <Route path="/adaptive-history" element={<ProtectedRoute><AdaptiveHistoryPage /></ProtectedRoute>} />
-              <Route path="/interview-history" element={<ProtectedRoute><InterviewHistoryPage /></ProtectedRoute>} />
-              <Route path="/cv-history" element={<ProtectedRoute><CVHistoryPage /></ProtectedRoute>} />
-              <Route path="/adaptive-history/:sessionId" element={<ProtectedRoute><AdaptiveSessionDetailPage /></ProtectedRoute>} />
-              
-              {/* Route cho Live Coding */}
-              <Route path="/live-coding" element={<ProtectedRoute><LiveCodingPage /></ProtectedRoute>} />
-              <Route path="/coding-history" element={<ProtectedRoute><CodingHistoryPage /></ProtectedRoute>} />
-              <Route path="/coding-history/:sessionId" element={<ProtectedRoute><CodingHistoryDetailPage /></ProtectedRoute>} />
-            </Routes>
+                {/* Protected routes */}
+                <Route path="/welcome" element={<ProtectedRoute><WelcomePage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                <Route path="/help" element={<ProtectedRoute><HelpSupportPage /></ProtectedRoute>} />
+                <Route path="/interview" element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
+                <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+                <Route path="/history/:id" element={<ProtectedRoute><InterviewDetailPag /></ProtectedRoute>} />
+                <Route path="/cvinfo" element={<ProtectedRoute><CVInfoModal /></ProtectedRoute>} />
+                <Route path="/cvinterview" element={<ProtectedRoute><InterviewCVPage /></ProtectedRoute>} />
+                <Route path="/cv-history/:id" element={<ProtectedRoute><CVHistoryDetailPage /></ProtectedRoute>} />
+                <Route path="/adaptive-interview" element={<ProtectedRoute><AdaptiveInterviewPage /></ProtectedRoute>} />
+                <Route path="/adaptive-history" element={<ProtectedRoute><AdaptiveHistoryPage /></ProtectedRoute>} />
+                <Route path="/interview-history" element={<ProtectedRoute><InterviewHistoryPage /></ProtectedRoute>} />
+                <Route path="/cv-history" element={<ProtectedRoute><CVHistoryPage /></ProtectedRoute>} />
+                <Route path="/adaptive-history/:sessionId" element={<ProtectedRoute><AdaptiveSessionDetailPage /></ProtectedRoute>} />
+
+                {/* Route cho Live Coding */}
+                <Route path="/live-coding" element={<ProtectedRoute><LiveCodingPage /></ProtectedRoute>} />
+                <Route path="/coding-history" element={<ProtectedRoute><CodingHistoryPage /></ProtectedRoute>} />
+                <Route path="/coding-history/:sessionId" element={<ProtectedRoute><CodingHistoryDetailPage /></ProtectedRoute>} />
+              </Routes>
+            </HistoryProvider>
           </InterviewProvider>
         </AuthProvider>
-      </LanguageProvider>
+      
     </ThemeProvider>
   );
 }

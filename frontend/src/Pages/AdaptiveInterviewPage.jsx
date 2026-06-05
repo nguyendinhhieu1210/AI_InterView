@@ -42,12 +42,11 @@ export default function AdaptiveInterviewPage() {
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const isFinishedRef = useRef(false);   // ✅ thêm ref để chặn gọi API sau khi finish
 
-  // Lấy tên hiển thị đúng
+  // Lấy tên hiển thị
   const displayName = user?.fullName || user?.userName || user?.email || 'User';
 
-
-  // Progress
   const answeredCount = messages.filter(m => m.role === 'user').length;
   const progressPercent = (answeredCount / TOTAL_QUESTIONS) * 100;
 
@@ -98,7 +97,8 @@ export default function AdaptiveInterviewPage() {
   };
 
   const sendAnswer = async () => {
-    if (!input.trim() || loading || isAnalyzing || isFinished) return;
+    // ✅ chặn nếu đã finished hoặc đang xử lý
+    if (!input.trim() || loading || isAnalyzing || isFinished || isFinishedRef.current) return;
 
     const userAnswer = input.trim();
     setInput('');
@@ -124,7 +124,9 @@ export default function AdaptiveInterviewPage() {
     try {
       const response = await api.post('/adaptive/answer', { sessionId, answer: userAnswer });
 
+      // ✅ Nếu server báo finished, chặn ngay mọi lần gọi sau đó
       if (response.data.isFinished) {
+        isFinishedRef.current = true;   // chặn gọi tiếp trong cùng lần render
         let finalScoreValue = response.data.finalScore;
         if (finalScoreValue === undefined || finalScoreValue === null) {
           const scores = response.data.conversation
@@ -153,8 +155,10 @@ export default function AdaptiveInterviewPage() {
           setStep('finished');
           setShowReportModal(true);
         }, 1000);
+        return;   // ✅ không xử lý nextQuestion
       }
-      else if (response.data.nextQuestion) {
+      // Xử lý câu hỏi tiếp theo (chỉ khi chưa finished)
+      if (response.data.nextQuestion) {
         setMessages(prev => [...prev, {
           role: 'assistant',
           content: response.data.nextQuestion,
@@ -191,6 +195,7 @@ export default function AdaptiveInterviewPage() {
   };
 
   const resetInterview = () => {
+    isFinishedRef.current = false;   // reset ref
     setStep('preparation');
     setReady(false);
     setCountdown(3);
@@ -221,8 +226,8 @@ export default function AdaptiveInterviewPage() {
             <div className="flex justify-center gap-3 mb-6">
               <span className="px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-sm font-medium shadow-sm">{topic}</span>
               <span className={`px-3 py-1 rounded-full font-medium text-sm shadow-sm ${difficulty === 'easy' ? 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40' :
-                  difficulty === 'medium' ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/40' :
-                    'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40'
+                difficulty === 'medium' ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/40' :
+                  'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40'
                 }`}>{difficulty.toUpperCase()}</span>
             </div>
             {!ready ? (
@@ -293,8 +298,8 @@ export default function AdaptiveInterviewPage() {
               <span className="font-semibold text-gray-800 dark:text-white text-sm">{topic}</span>
             </div>
             <div className={`px-3 py-1.5 rounded-full font-medium text-sm shadow-sm ${difficulty === 'easy' ? 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40' :
-                difficulty === 'medium' ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/40' :
-                  'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40'
+              difficulty === 'medium' ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/40' :
+                'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40'
               }`}>{difficulty}</div>
 
             {/* User info (không có logout) */}

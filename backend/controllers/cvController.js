@@ -244,13 +244,8 @@ exports.generateQuestionsFromText =
 /**
  * Submit interview answers
  */
-exports.submitCVAnswers = async (
-  req,
-  res
-) => {
-
+exports.submitCVAnswers = async (req, res) => {
   try {
-
     const {
       questions,
       answers,
@@ -260,56 +255,40 @@ exports.submitCVAnswers = async (
 
     if (!questions || !answers) {
       return res.status(400).json({
-        error:
-          'Missing questions or answers'
+        error: 'Missing questions or answers'
       });
     }
 
-    // Grade answers
-    const results =
-      await gradeCVAnswersAdvanced(
-        questions,
-        answers
-      );
+    const results = await gradeCVAnswersAdvanced(
+      questions,
+      answers
+    );
+
+    let session;
 
     // Save history if logged in
-    if (
-      req.user &&
-      req.user.id
-    ) {
+    if (req.user?.id) {
 
       const combinedResults = [
         ...(results.mcq || []),
         ...(results.text || [])
       ];
 
-      const session =
-        new CVInterviewSession({
-
-          userId: req.user.id,
-
-          cvName: cvName || '',
-
-          topic: selectedSkills || [],
-
-          questions,
-
-          answers,
-
-          results: combinedResults,
-
-          totalScore:
-            results.totalScore,
-
-          summary:
-            results.summary
-        });
+      session = new CVInterviewSession({
+        userId: req.user.id,
+        cvName: cvName || '',
+        topic: selectedSkills || [],
+        questions,
+        answers,
+        results: combinedResults,
+        totalScore: results.totalScore,
+        summary: results.summary
+      });
 
       await session.save();
-      await saveActivity(
-        req.user.id,
-        'cv_interview'
-      );
+
+      // ✅ FIXED: save activity đúng chuẩn
+      await saveActivity(req.user.id, 'cv_interview');
     }
 
     return res.json({
@@ -317,19 +296,13 @@ exports.submitCVAnswers = async (
       results: {
         mcq: results.mcq,
         text: results.text,
-        totalScore:
-          results.totalScore,
-        summary:
-          results.summary
+        totalScore: results.totalScore,
+        summary: results.summary
       }
     });
 
   } catch (error) {
-
-    console.error(
-      'Submit CV answers error:',
-      error
-    );
+    console.error('Submit CV answers error:', error);
 
     return res.status(500).json({
       error: 'Failed to grade answers'

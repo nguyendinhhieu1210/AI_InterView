@@ -5,22 +5,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Tông màu sáng (off-white, xám nhẹ)
-        light: {
-          bg: '#f8fafc',
-          card: '#ffffff',
-          border: '#e2e8f0',
-          text: '#0f172a',
-          textMuted: '#475569',
-        },
-        // Tông màu tối (xám đen, không phải đen tuyệt đối)
-        dark: {
-          bg: '#0a0c10',
-          card: '#111827',
-          border: '#1f2937',
-          text: '#f1f5f9',
-          textMuted: '#94a3b8',
-        }
+        // Màu nền sáng / tối dùng chung
+        bgLight: '#f8fafc',
+        bgDark: '#0a0c10',
+        cardLight: '#ffffff',
+        cardDark: '#111827',
+        borderLight: '#e2e8f0',
+        borderDark: '#1f2937',
+        textLight: '#0f172a',
+        textDark: '#f1f5f9',
+        textMutedLight: '#475569',
+        textMutedDark: '#94a3b8',
       },
       transitionProperty: {
         'colors': 'background-color, border-color, color, fill, stroke',
