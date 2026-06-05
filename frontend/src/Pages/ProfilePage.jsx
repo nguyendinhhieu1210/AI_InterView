@@ -280,12 +280,11 @@ export default function ProfilePage() {
         let score = item.totalScore;
 
         if (item.type === 'adaptive') {
-            // Nếu score > 10 thì convert từ thang 100 về thang 10
             if (score > 10) {
                 score = score / 10;
             }
 
-            return `${score}/10`;
+            return `${score}/10 Score`;
         }
 
         return `${score} score`;
@@ -340,7 +339,7 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className={`min-h-screen transition-all duration-500 ${darkMode ? 'bg-gray-950' : 'bg-gradient-to-br from-indigo-50 via-slate-50 to-purple-50'} py-6 px-4 sm:px-6 lg:px-8`}>
+        <div className="page-theme min-h-screen">
             <div className="max-w-7xl mx-auto">
                 {/* Back button */}
                 <button

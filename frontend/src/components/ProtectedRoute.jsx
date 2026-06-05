@@ -4,17 +4,25 @@ import { useAuth } from '../contexts/AuthContext';
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
-  // ⛔ Chưa xác định auth → không redirect vội
+  console.log(
+    'ProtectedRoute:',
+    loading,
+    isAuthenticated
+  );
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <span className="text-gray-500 text-lg">Loading...</span>
+        <span className="text-gray-500 text-lg">
+          Loading...
+        </span>
       </div>
     );
   }
 
-  // ✅ Đã xác định → mới check
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  return isAuthenticated
+    ? children
+    : <Navigate to="/login" replace />;
 };
 
 export default ProtectedRoute;

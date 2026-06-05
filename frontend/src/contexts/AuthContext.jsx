@@ -84,6 +84,7 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
       setUser(null);
       setIsAuthenticated(false);
+      window.location.replace('/login');
 
       if (!crossTab) {
         localStorage.setItem(

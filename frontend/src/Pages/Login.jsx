@@ -83,7 +83,7 @@ export default function Login() {
 
             // Redirect sau 2 giây
             redirectTimeoutRef.current = setTimeout(() => {
-                navigate('/welcome');
+                navigate('/welcome', { replace: true });
             }, 2000);
 
         } catch (err) {

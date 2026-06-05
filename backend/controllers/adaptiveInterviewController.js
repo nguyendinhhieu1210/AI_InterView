@@ -1,8 +1,7 @@
-// controllers/adaptiveInterviewController.js
-
 const adaptiveService = require('../services/adaptiveInterviewService');
 const AdaptiveSession = require('../models/AdaptiveSession');
-const Activity = require('../models/Activity'); // ✅ thêm
+const Activity = require('../models/Activity');           // ✅ thêm
+const saveActivity = require('../utils/saveActivity');    // ✅ thêm
 
 exports.startAdaptiveInterview = async (req, res) => {
   try {
@@ -30,11 +29,7 @@ exports.startAdaptiveInterview = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(
-      'Start adaptive interview error:',
-      error
-    );
-
+    console.error('Start adaptive interview error:', error);
     res.status(500).json({
       error: 'Failed to start interview'
     });
@@ -52,28 +47,20 @@ exports.submitAnswer = async (req, res) => {
       });
     }
 
-    const result =
-      await adaptiveService.processAnswer(
-        sessionId,
-        userId,
-        answer
-      );
+    const result = await adaptiveService.processAnswer(
+      sessionId,
+      userId,
+      answer
+    );
 
-    // ✅ chỉ lưu activity khi hoàn thành interview
     if (result.isFinished) {
-      await Activity.create({
-        userId,
-        type: 'adaptive_interview'
-      });
+      await saveActivity(userId);
     }
 
     res.json(result);
 
   } catch (error) {
-    console.error(
-      'Submit answer error:',
-      error
-    );
+    console.error('Submit answer error:', error);
 
     if (error.message === 'Session not found') {
       return res.status(404).json({
@@ -98,11 +85,10 @@ exports.getSession = async (req, res) => {
     const { sessionId } = req.params;
     const userId = req.user.id;
 
-    const session =
-      await AdaptiveSession.findOne({
-        _id: sessionId,
-        userId
-      });
+    const session = await AdaptiveSession.findOne({
+      _id: sessionId,
+      userId
+    });
 
     if (!session) {
       return res.status(404).json({
@@ -111,7 +97,6 @@ exports.getSession = async (req, res) => {
     }
 
     res.json(session);
-
   } catch (error) {
     res.status(500).json({
       error: 'Failed to fetch session'
@@ -119,65 +104,35 @@ exports.getSession = async (req, res) => {
   }
 };
 
-// ✅ SỬA LẠI: Trả về đúng cấu trúc frontend cần
 exports.getHistory = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const sessions =
-      await AdaptiveSession.find({ userId })
-        .sort({ createdAt: -1 })
-        .lean();
+    const sessions = await AdaptiveSession.find({ userId })
+      .sort({ createdAt: -1 })
+      .lean();
 
     const history = sessions.map(session => {
+      const questions = session.conversation?.filter(
+        msg => msg.role === 'assistant' && msg.type === 'question'
+      ) || [];
 
-      // Đếm số câu hỏi thực tế
-      const questions =
-        session.conversation?.filter(
-          msg =>
-            msg.role === 'assistant' &&
-            msg.type === 'question'
-        ) || [];
-
-      const totalQuestions =
-        questions.length;
-
-      // thang điểm 10 -> 100
-      const totalScore =
-        (session.finalScore || 0) * 10;
+      const totalQuestions = questions.length;
+      const totalScore = (session.finalScore || 0) * 10;
 
       return {
         id: session._id,
-
         type: 'adaptive',
-
-        topic:
-          session.topic ||
-          'Adaptive Interview',
-
-        difficulty:
-          session.difficulty ||
-          'Adaptive',
-
+        topic: session.topic || 'Adaptive Interview',
+        difficulty: session.difficulty || 'Adaptive',
         totalQuestions,
-
-        createdAt:
-          session.createdAt,
-
+        createdAt: session.createdAt,
         totalScore,
-
         mcqScore: null,
         mcqCount: null,
-
-        essayScore:
-          totalScore,
-
-        essayCount:
-          totalQuestions,
-
-        detailPath:
-          `/adaptive-history/${session._id}`,
-
+        essayScore: totalScore,
+        essayCount: totalQuestions,
+        detailPath: `/adaptive-history/${session._id}`,
         skillTags: null
       };
     });
@@ -186,13 +141,8 @@ exports.getHistory = async (req, res) => {
       success: true,
       history
     });
-
   } catch (error) {
-    console.error(
-      'Get history error:',
-      error
-    );
-
+    console.error('Get history error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch history'

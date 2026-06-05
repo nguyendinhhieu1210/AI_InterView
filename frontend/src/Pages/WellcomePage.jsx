@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, User, Brain, Zap, ChevronDown, Settings, HelpCircle,
   MessageCircle, TrendingUp, FileText, Sparkles, Clock, Flame,
-  CalendarDays, Lightbulb, Quote, Code2
+  CalendarDays, Lightbulb, Quote, Code2, Target, Award
 } from 'lucide-react';
 
 import { StartInterviewModal } from '../components/StartInterviewModal';
@@ -11,124 +11,98 @@ import { UploadCV } from '../components/UploadCV';
 import { AIFeedback } from '../components/AIFeedback';
 import PerformanceTrendChart from '../components/PerformanceTrendChart';
 import ActivityCalendar from '../components/ActivityCalendar';
-import { CVInfoModal } from '../components/CVInfoModal'; // ✅ Thêm modal CV
+import { CVInfoModal } from '../components/CVInfoModal';
 import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
+import { useHistory } from '../contexts/HistoryContext';
+
+// --- Helper: chuẩn hóa ngày theo múi giờ Việt Nam (Asia/Ho_Chi_Minh) ---
+const toVietnamDateKey = (dateInput) => {
+  if (!dateInput) return null;
+  const date = new Date(dateInput);
+  if (isNaN(date.getTime())) return null;
+
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parts.find(p => p.type === 'year')?.value;
+  const month = parts.find(p => p.type === 'month')?.value;
+  const day = parts.find(p => p.type === 'day')?.value;
+  return `${year}-${month}-${day}`;
+};
 
 export default function WelcomePage() {
   const navigate = useNavigate();
   const { darkMode } = useTheme();
-  const { language } = useLanguage();
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
+  const { normal, cv, adaptive, coding, loading: historyLoading } = useHistory();
 
   const dropdownRef = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [statsLoading, setStatsLoading] = useState(true);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   const [stats, setStats] = useState({ totalInterviews: 0, streak: 0 });
+  const [todayStats, setTodayStats] = useState({
+    normalInterview: 0,
+    cvInterview: 0,
+    adaptiveInterview: 0,
+    codingInterview: 0,
+    total: 0
+  });
   const [activities, setActivities] = useState([]);
   const [dailyTip, setDailyTip] = useState({ tip: '', quote: '' });
 
-  // State cho CV Modal
   const [isCVModalOpen, setIsCVModalOpen] = useState(false);
   const [cvData, setCvData] = useState(null);
 
-  // ---------- Translations ----------
-  const t = (key) => {
-    const translations = {
-      en: {
-        totalSessions: 'Total Sessions', streak: 'Current Streak', days: 'days',
-        performanceTrend: 'Performance Trend', quickActions: 'Quick Actions',
-        startNewInterview: 'Start New Interview', uploadCV: 'Upload CV & Start',
-        interviewHistory: 'History', logout: 'Sign Out', settings: 'Settings',
-        helpSupport: 'Help & Support', yourProfile: 'Your Profile',
-        goodMorning: 'Good Morning', goodAfternoon: 'Good Afternoon', goodEvening: 'Good Evening',
-        readyMessage: 'Ready to ace your next interview? Your AI coach is here to help.',
-        slogan: 'Master your craft, one interview at a time.',
-        motivationTitle: '✨ Daily Growth & Inspiration',
-        helpfulTip: '💡 Tip for today',
-        inspiringQuote: '🌟 Fuel your mind',
-      },
-      vi: {
-        totalSessions: 'Tổng buổi', streak: 'Chuỗi hiện tại', days: 'ngày',
-        performanceTrend: 'Xu hướng điểm', quickActions: 'Thao tác nhanh',
-        startNewInterview: 'Phỏng vấn mới', uploadCV: 'Tải CV & Bắt đầu',
-        interviewHistory: 'Lịch sử', logout: 'Đăng xuất', settings: 'Cài đặt',
-        helpSupport: 'Trợ giúp', yourProfile: 'Hồ sơ',
-        goodMorning: 'Chào buổi sáng', goodAfternoon: 'Chào buổi chiều', goodEvening: 'Chào buổi tối',
-        readyMessage: 'Sẵn sàng chinh phục? Trợ lý AI luôn đồng hành.',
-        slogan: 'Làm chủ kỹ năng, từng buổi phỏng vấn một.',
-        motivationTitle: '✨ Khơi nguồn cảm hứng mỗi ngày',
-        helpfulTip: '💡 Lời khuyên hôm nay',
-        inspiringQuote: '🌟 Nạp năng lượng tri thức',
-      },
-    };
-    return translations[language]?.[key] || translations.en[key];
+  // --- Texts (giữ nguyên) ---
+  const texts = {
+    totalSessions: 'Total Sessions',
+    streak: 'Current Streak',
+    days: 'days',
+    performanceTrend: 'Performance Trend',
+    quickActions: 'Quick Actions',
+    startNewInterview: 'Start New Interview',
+    uploadCV: 'Upload CV & Start',
+    interviewHistory: 'History',
+    logout: 'Sign Out',
+    settings: 'Settings',
+    helpSupport: 'Help & Support',
+    yourProfile: 'Your Profile',
+    goodMorning: 'Good Morning',
+    goodAfternoon: 'Good Afternoon',
+    goodEvening: 'Good Evening',
+    readyMessage: 'Ready to ace your next interview? Your AI coach is here to help.',
+    slogan: 'Master your craft, one interview at a time.',
+    motivationTitle: '✨ Daily Growth & Inspiration',
+    helpfulTip: '💡 Tip for today',
+    inspiringQuote: '🌟 Fuel your mind',
+    todaySessions: "Today's Sessions",
+    normalInt: 'Standard Interviews',
+    cvInt: 'CV Interviews',
+    adaptiveInt: 'Adaptive Interviews',
+    codingInt: 'Coding Interviews',
+    total: 'Total',
+    keepGoing: 'Keep going! 💪',
+    restDay: 'Rest day',
   };
 
   const tipsList = {
-    en: [
-      "Notice a knowledge gap? Turn it into your next mini-project. Master it step by step.",
-      "Admit what you don't know – then go find the answer. Curiosity beats pretending.",
-      "After each interview, write down one thing that felt shaky. That's your growth area.",
-      "The best time to learn something is right after you realize you don't know it.",
-      "Don't fear gaps. Every expert was once a beginner who kept asking questions.",
-      "Set a small learning goal each week: one concept, one question type, one skill.",
-      "Use 'I'm still learning' as a superpower. It opens doors to improvement.",
-      "Compare yourself only to yesterday. Small daily progress wins the race.",
-      "Stuck on a question? Save it, research it, and master it before the next interview.",
-      "Your future self will thank you for every hour you spend learning today.",
-    ],
-    vi: [
-      "Thấy còn lúng túng một mảng nào? Hãy biến nó thành dự án nhỏ tiếp theo. Làm chủ từng bước.",
-      "Thừa nhận điều mình chưa biết – rồi đi tìm câu trả lời. Tò mò tốt hơn giả vờ.",
-      "Sau mỗi buổi phỏng vấn, ghi lại một điều bạn thấy chưa vững. Đó là vùng cần phát triển.",
-      "Thời điểm tốt nhất để học điều mới là ngay sau khi bạn nhận ra mình chưa biết nó.",
-      "Đừng sợ lỗ hổng. Mọi chuyên gia đều từng là người mới và không ngừng hỏi.",
-      "Đặt mục tiêu học nhỏ mỗi tuần: một khái niệm, một dạng câu hỏi, một kỹ năng.",
-      "Coi 'mình vẫn đang học' như siêu năng lực. Nó mở ra cánh cửa cải thiện.",
-      "Chỉ so sánh với chính mình ngày hôm qua. Tiến bộ nhỏ mỗi ngày sẽ thắng cuộc đua.",
-      "Bí một câu hỏi? Lưu lại, nghiên cứu, làm chủ trước buổi phỏng vấn tiếp theo.",
-      "Bản thân tương lai sẽ cảm ơn bạn vì mỗi giờ bạn học hôm nay.",
-    ],
+    en: ["Notice a knowledge gap? Turn it into your next mini-project. Master it step by step."],
   };
-
   const quotesList = {
-    en: [
-      "The expert in anything was once a beginner. – Helen Hayes",
-      "It’s not that I’m so smart, it’s that I stay with problems longer. – Einstein",
-      "Live as if you were to die tomorrow. Learn as if you were to live forever. – Gandhi",
-      "The beautiful thing about learning is no one can take it away from you. – B.B. King",
-      "Don’t let what you cannot do interfere with what you can do. – John Wooden",
-      "Success is no accident. It is hard work, learning, sacrifice, and persistence.",
-      "There is no end to learning. The more you know, the more you realize you don’t know.",
-      "Mistakes are the portals of discovery. – James Joyce",
-      "The only limit to your impact is your imagination and commitment.",
-      "Do the best you can until you know better. Then when you know better, do better. – M. Angelou",
-    ],
-    vi: [
-      "Chuyên gia trong bất cứ lĩnh vực nào cũng từng là người mới bắt đầu. – Helen Hayes",
-      "Không phải tôi thông minh, mà là tôi kiên trì với vấn đề lâu hơn. – Einstein",
-      "Hãy sống như thể bạn sẽ chết vào ngày mai. Hãy học như thể bạn sẽ sống mãi mãi. – Gandhi",
-      "Điều tuyệt vời của việc học là không ai có thể lấy nó đi khỏi bạn. – B.B. King",
-      "Đừng để điều bạn không thể làm cản trở điều bạn có thể làm. – John Wooden",
-      "Thành công không phải ngẫu nhiên. Đó là chăm chỉ, học hỏi, hy sinh và kiên trì.",
-      "Học không bao giờ cùng. Bạn càng biết nhiều, bạn càng thấy mình chưa biết nhiều.",
-      "Sai lầm là cánh cổng dẫn đến khám phá. – James Joyce",
-      "Giới hạn duy nhất cho tác động của bạn là trí tưởng tượng và sự cam kết.",
-      "Hãy làm tốt nhất có thể cho đến khi bạn biết nhiều hơn. Khi biết nhiều hơn, hãy làm tốt hơn. – M. Angelou",
-    ],
+    en: ["The expert in anything was once a beginner. – Helen Hayes"],
   };
 
   const getRandomMotivation = () => {
-    const lang = language;
-    const tips = tipsList[lang] || tipsList.en;
-    const quotes = quotesList[lang] || quotesList.en;
+    const tips = tipsList.en;
+    const quotes = quotesList.en;
     setDailyTip({
       tip: tips[Math.floor(Math.random() * tips.length)],
       quote: quotes[Math.floor(Math.random() * quotes.length)],
@@ -137,79 +111,49 @@ export default function WelcomePage() {
 
   useEffect(() => {
     getRandomMotivation();
-  }, [language]);
+  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return t('goodMorning');
-    if (hour < 18) return t('goodAfternoon');
-    return t('goodEvening');
+    if (hour < 12) return texts.goodMorning;
+    if (hour < 18) return texts.goodAfternoon;
+    return texts.goodEvening;
   };
 
   const formatDate = (date) =>
-    date.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
+    date.toLocaleDateString('en-US', {
       weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
     });
   const formatTime = (date) =>
-    date.toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', {
+    date.toLocaleTimeString('en-US', {
       hour: '2-digit', minute: '2-digit', second: '2-digit',
     });
 
-  const calculateStreak = (sessions) => {
-    if (!sessions.length) return 0;
-    const dates = sessions.map(s => new Date(s.createdAt).toDateString());
-    const uniqueDates = [...new Set(dates)].sort((a, b) => new Date(b) - new Date(a));
-    const today = new Date().toDateString();
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    if (uniqueDates[0] !== today && uniqueDates[0] !== yesterday) return 0;
+  // --- Tính streak dựa trên danh sách ngày hoạt động (mỗi ngày 1 lần) ---
+  const calculateStreakFromActivities = (activitiesList) => {
+    if (!activitiesList || activitiesList.length === 0) return 0;
+
+    // Lấy tất cả ngày hoạt động từ trường dateVN đã được server chuẩn hóa theo VN
+    const activeDates = new Set(activitiesList.map(act => act.dateVN).filter(Boolean));
+
     let streak = 0;
-    let currentDate = uniqueDates[0] === today ? today : yesterday;
-    for (let i = 0; i < uniqueDates.length; i++) {
-      if (uniqueDates[i] === currentDate) {
+    let currentDate = new Date(); // thời điểm hiện tại trên client
+
+    while (true) {
+      const todayKey = toVietnamDateKey(currentDate);
+      if (!todayKey) break;
+
+      if (activeDates.has(todayKey)) {
         streak++;
-        const prevDate = new Date(currentDate);
-        prevDate.setDate(prevDate.getDate() - 1);
-        currentDate = prevDate.toDateString();
-      } else break;
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
+        break;
+      }
     }
     return streak;
   };
 
-  const fetchDashboardData = async () => {
-    if (!user) return;
-    setStatsLoading(true);
-    try {
-      const [normalRes, cvRes, adaptiveRes, codingRes] = await Promise.all([
-        api.get('/interview/history').catch(() => ({ data: { success: false, history: [] } })),
-        api.get('/cv/history').catch(() => ({ data: { success: false, history: [] } })),
-        api.get('/adaptive/history').catch(() => ({ data: { success: false, history: [] } })),
-        api.get('/live-coding/history').catch(() => ({ data: { success: false, history: [] } }))
-      ]);
-
-      const normalList = normalRes.data?.success ? normalRes.data.history : [];
-      const cvList = cvRes.data?.success ? cvRes.data.history : [];
-      const adaptiveList = adaptiveRes.data?.success ? adaptiveRes.data.history : [];
-      const codingList = codingRes.data?.history || [];
-
-      // Combine all sessions (for streak, we only need createdAt)
-      const allSessions = [
-        ...normalList.map(s => ({ createdAt: s.createdAt })),
-        ...cvList.map(s => ({ createdAt: s.createdAt })),
-        ...adaptiveList.map(s => ({ createdAt: s.createdAt })),
-        ...codingList.map(s => ({ createdAt: s.createdAt }))
-      ];
-
-      const total = allSessions.length;
-      const streak = calculateStreak(allSessions);
-
-      setStats({ totalInterviews: total, streak });
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-    } finally {
-      setStatsLoading(false);
-    }
-  };
-
+  // --- Gọi API lấy danh sách ngày hoạt động và cập nhật streak ---
   const fetchActivities = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -217,28 +161,51 @@ export default function WelcomePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success) setActivities(data.activities);
+      if (data.success) {
+        setActivities(data.activities);
+        const newStreak = calculateStreakFromActivities(data.activities);
+        setStats(prev => ({ ...prev, streak: newStreak }));
+      }
     } catch (err) {
       console.error('Fetch activities error:', err);
     }
   };
 
+  // --- Tính tổng số buổi và thống kê hôm nay từ lịch sử (normal, cv, ...) ---
+  useEffect(() => {
+    if (historyLoading) return;
+    const allSessions = [...normal, ...cv, ...adaptive, ...coding];
+    const total = allSessions.length;
+    const todayKey = toVietnamDateKey(new Date());
+
+    const normalCount = normal.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
+    const cvCount = cv.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
+    const adaptiveCount = adaptive.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
+    const codingCount = coding.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
+
+    setTodayStats({
+      normalInterview: normalCount,
+      cvInterview: cvCount,
+      adaptiveInterview: adaptiveCount,
+      codingInterview: codingCount,
+      total: normalCount + cvCount + adaptiveCount + codingCount,
+    });
+    setStats(prev => ({ ...prev, totalInterviews: total }));
+  }, [normal, cv, adaptive, coding, historyLoading]);
+
+  // --- Redirect nếu chưa đăng nhập ---
   useEffect(() => {
     if (!authLoading && !isAuthenticated) navigate('/login');
   }, [authLoading, isAuthenticated, navigate]);
 
+  // --- Lấy dữ liệu hoạt động khi user đăng nhập (chỉ một lần khi mount) ---
   useEffect(() => {
-    if (user) fetchDashboardData();
-  }, [user]);
+    if (user) {
+      fetchActivities();
+    }
+  }, [user]); // sẽ chạy lại nếu user thay đổi (đăng nhập lại)
 
-  useEffect(() => {
-    const handleStorage = (e) => {
-      if (e.key === 'user' || e.key === 'token') fetchDashboardData();
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
-
+  // --- Click outside dropdown ---
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setDropdownOpen(false);
@@ -247,13 +214,20 @@ export default function WelcomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    fetchActivities();
-  }, []);
-
+  // --- Đồng hồ realtime ---
   useEffect(() => {
     const interval = setInterval(() => setCurrentDateTime(new Date()), 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // --- Chặn back button ---
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const handleLogout = async () => {
@@ -265,43 +239,67 @@ export default function WelcomePage() {
     }, 2000);
   };
 
+  // --- Khi bắt đầu interview thường ---
   const handleStartInterview = (data) => {
     console.log('Starting interview:', data);
-    fetchDashboardData();
+    // Cập nhật optimistic UI
+    setTodayStats(prev => ({
+      ...prev,
+      normalInterview: prev.normalInterview + 1,
+      total: prev.total + 1,
+    }));
+    setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
+    // Gọi lại API để lấy hoạt động mới (cập nhật streak)
+    fetchActivities();
   };
 
-  // ✅ Sửa: nhận dữ liệu CV từ UploadCV và mở modal
+  // --- Upload CV thành công ---
   const handleCVUploadSuccess = (uploadedCvData) => {
-    fetchDashboardData(); // cập nhật thống kê
+    setTodayStats(prev => ({
+      ...prev,
+      cvInterview: prev.cvInterview + 1,
+      total: prev.total + 1,
+    }));
+    setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
+    fetchActivities(); // cập nhật streak
     if (uploadedCvData && uploadedCvData.fileUrl) {
       setCvData(uploadedCvData);
       setIsCVModalOpen(true);
     } else {
       console.error('Invalid CV data received from UploadCV:', uploadedCvData);
-      // Có thể thông báo lỗi nhẹ cho người dùng nếu muốn
     }
   };
 
-  // Đóng modal CV
   const handleCloseCVModal = () => {
     setIsCVModalOpen(false);
     setCvData(null);
   };
 
-  // Xử lý khi bắt đầu phỏng vấn từ CV
   const handleStartCVInterview = (interviewData) => {
     console.log('Start CV interview:', interviewData);
     setIsCVModalOpen(false);
-    // Điều hướng đến trang phỏng vấn CV nếu cần
-    // navigate('/cvinterview', { state: { interviewData } });
+    setTodayStats(prev => ({
+      ...prev,
+      cvInterview: prev.cvInterview + 1,
+      total: prev.total + 1,
+    }));
+    setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
+    fetchActivities(); // cập nhật streak
   };
 
-  const displayName = user.fullName || user.userName;
-  const avatarLetter = displayName.charAt(0).toUpperCase();
+  const displayName = user?.fullName || user?.userName;
+  const avatarLetter = displayName?.charAt(0).toUpperCase() || 'U';
 
   const statsCards = [
-    { icon: Zap, label: t('totalSessions'), value: stats.totalInterviews, color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20', gradient: 'from-yellow-500/10 to-orange-500/10' },
-    { icon: Flame, label: t('streak'), value: `${stats.streak} ${t('days')}`, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20', gradient: 'from-orange-500/10 to-red-500/10' },
+    { icon: Zap, label: texts.totalSessions, value: stats.totalInterviews, color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20', gradient: 'from-yellow-500/10 to-orange-500/10' },
+    { icon: Flame, label: texts.streak, value: `${stats.streak} ${texts.days}`, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20', gradient: 'from-orange-500/10 to-red-500/10' },
+  ];
+
+  const todaySessionsCard = [
+    { label: texts.normalInt, value: todayStats.normalInterview, icon: MessageCircle, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-100 dark:bg-blue-900/40' },
+    { label: texts.cvInt, value: todayStats.cvInterview, icon: FileText, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-100 dark:bg-emerald-900/40' },
+    { label: texts.adaptiveInt, value: todayStats.adaptiveInterview, icon: Brain, color: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-100 dark:bg-violet-900/40' },
+    { label: texts.codingInt, value: todayStats.codingInterview, icon: Code2, color: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-100 dark:bg-rose-900/40' }
   ];
 
   if (authLoading) {
@@ -314,8 +312,10 @@ export default function WelcomePage() {
 
   if (!isAuthenticated || !user) return null;
 
+  // --- JSX giữ nguyên (chỉ thay đổi các helper bên trên) ---
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 transition-colors duration-500">
+     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 transition-colors duration-500">
+      {/* Các khối trang trí background giữ nguyên */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-10 animate-blob"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-10 animate-blob animation-delay-2000"></div>
@@ -326,11 +326,12 @@ export default function WelcomePage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl text-center animate-fadeIn">
             <div className="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-700 dark:text-gray-300 font-medium">{t('logout')}...</p>
+            <p className="text-gray-700 dark:text-gray-300 font-medium">{texts.logout}...</p>
           </div>
         </div>
       )}
 
+      {/* Header giữ nguyên, chỉ sửa text */}
       <header className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-gray-200/30 dark:border-gray-800/30 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/welcome')}>
@@ -367,10 +368,10 @@ export default function WelcomePage() {
                 </div>
                 <div className="py-1">
                   {[
-                    { icon: User, label: t('yourProfile'), path: '/profile' },
-                    { icon: Settings, label: t('settings'), path: '/settings' },
-                    { icon: HelpCircle, label: t('helpSupport'), path: '/help' },
-                    { icon: FileText, label: t('interviewHistory'), path: '/history' },
+                    { icon: User, label: texts.yourProfile, path: '/profile' },
+                    { icon: Settings, label: texts.settings, path: '/settings' },
+                    { icon: HelpCircle, label: texts.helpSupport, path: '/help' },
+                    { icon: FileText, label: texts.interviewHistory, path: '/history' },
                   ].map((item) => (
                     <button key={item.path} onClick={() => { setDropdownOpen(false); navigate(item.path); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors">
                       <item.icon className="w-4 h-4 text-indigo-500" /> {item.label}
@@ -379,7 +380,7 @@ export default function WelcomePage() {
                 </div>
                 <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
                 <button onClick={handleLogout} disabled={isLoggingOut} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                  <LogOut className="w-4 h-4" /> {t('logout')}
+                  <LogOut className="w-4 h-4" /> {texts.logout}
                 </button>
               </div>
             )}
@@ -388,7 +389,7 @@ export default function WelcomePage() {
       </header>
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 py-8 animate-fadeIn">
-        {/* Hero */}
+        {/* Hero section */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 mb-10 text-white shadow-2xl">
           <div className="absolute inset-0 bg-black/10 rounded-3xl"></div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
@@ -398,7 +399,7 @@ export default function WelcomePage() {
               <h2 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-2 drop-shadow-lg">
                 {getGreeting()}, {displayName}! <Sparkles className="w-7 h-7 text-yellow-300 animate-pulse" />
               </h2>
-              <p className="text-indigo-100 text-base md:text-lg max-w-2xl drop-shadow-md">{t('readyMessage')}</p>
+              <p className="text-indigo-100 text-base md:text-lg max-w-2xl drop-shadow-md">{texts.readyMessage}</p>
             </div>
             <div className="bg-white/20 backdrop-blur-md rounded-2xl px-5 py-3 border border-white/30 shadow-lg">
               <div className="flex items-center gap-3">
@@ -413,7 +414,7 @@ export default function WelcomePage() {
           </div>
         </div>
 
-        {/* Stats */}
+        {/* Stats cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
           {statsCards.map((stat, idx) => (
             <div key={idx} className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200/50 dark:border-gray-700/50 hover:scale-[1.02]">
@@ -425,7 +426,7 @@ export default function WelcomePage() {
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">{stat.label}</p>
                   <p className="text-2xl font-bold text-gray-800 dark:text-white">
-                    {statsLoading ? <span className="inline-block w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></span> : stat.value}
+                    {historyLoading ? <span className="inline-block w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></span> : stat.value}
                   </p>
                 </div>
               </div>
@@ -433,7 +434,52 @@ export default function WelcomePage() {
           ))}
         </div>
 
-        {/* Enhanced Motivation Card */}
+        {/* Today's Sessions */}
+        <div className="relative rounded-2xl shadow-xl overflow-hidden mb-10 bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 transition-all duration-300 hover:shadow-2xl group">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 group-hover:animate-pulse"></div>
+          <div className="p-6 md:p-7">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-sm ring-1 ring-blue-200/50 dark:ring-blue-700/30">
+                  <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                  {texts.todaySessions}
+                </h3>
+              </div>
+              <div className="px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-full">
+                <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">{todayStats.total} {texts.total}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {todaySessionsCard.map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`rounded-xl p-4 ${item.bgColor} border-l-4 text-center hover:scale-105 transition-all duration-200`}
+                  style={{ borderLeftColor: idx === 0 ? '#3b82f6' : idx === 1 ? '#10b981' : idx === 2 ? '#8b5cf6' : '#f43f5e' }}
+                >
+                  <div className="flex justify-center mb-2">
+                    <div className="p-2 rounded-lg bg-white dark:bg-gray-800/50">
+                      <item.icon className={`w-5 h-5 ${item.color}`} />
+                    </div>
+                  </div>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white">{historyLoading ? '...' : item.value}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">{item.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 pt-4 text-center border-t border-gray-200/60 dark:border-gray-700/60">
+              <p className={`text-sm font-semibold flex items-center justify-center gap-2 ${todayStats.total > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                <Award className="w-4 h-4" />
+                {todayStats.total > 0 ? texts.keepGoing : texts.restDay}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Motivation Card */}
         <div className="relative rounded-2xl shadow-xl overflow-hidden mb-10 bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 transition-all duration-300 hover:shadow-2xl group">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 group-hover:animate-pulse"></div>
           <div className="p-6 md:p-7">
@@ -443,7 +489,7 @@ export default function WelcomePage() {
                   <Sparkles className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                 </div>
                 <h3 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                  {t('motivationTitle')}
+                  {texts.motivationTitle}
                 </h3>
               </div>
             </div>
@@ -454,7 +500,7 @@ export default function WelcomePage() {
                   <div className="p-1.5 bg-white/60 dark:bg-gray-800/60 rounded-full shadow-sm">
                     <Lightbulb className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
                   </div>
-                  <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm uppercase tracking-wide">{t('helpfulTip')}</h4>
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm uppercase tracking-wide">{texts.helpfulTip}</h4>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300 text-md leading-relaxed relative z-10">{dailyTip.tip}</p>
               </div>
@@ -464,15 +510,15 @@ export default function WelcomePage() {
                   <div className="p-1.5 bg-white/60 dark:bg-gray-800/60 rounded-full shadow-sm">
                     <Quote className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm uppercase tracking-wide">{t('inspiringQuote')}</h4>
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm uppercase tracking-wide">{texts.inspiringQuote}</h4>
                 </div>
-                <p className="text-gray-700 dark:text-gray-300 text-md italic leading-relaxed relative z-10">“{dailyTip.quote}”</p>
+                <p className="text-gray-700 dark:text-gray-300 text-md italic leading-relaxed relative z-10">"{dailyTip.quote}"</p>
               </div>
             </div>
             <div className="mt-6 pt-4 text-center border-t border-gray-200/60 dark:border-gray-700/60">
               <p className="text-xs text-gray-500 dark:text-gray-400 italic flex items-center justify-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-indigo-400" />
-                <span>{t('slogan')}</span>
+                <span>{texts.slogan}</span>
                 <Sparkles className="w-3 h-3 text-indigo-400" />
               </p>
             </div>
@@ -485,7 +531,7 @@ export default function WelcomePage() {
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-gray-200/50 dark:border-gray-700/50">
               <h3 className="text-lg font-semibold dark:text-white mb-4 flex items-center gap-2">
                 <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg"><TrendingUp className="w-5 h-5 text-indigo-500" /></div>
-                {t('performanceTrend')}
+                {texts.performanceTrend}
               </h3>
               <div className="w-full">
                 <PerformanceTrendChart />
@@ -496,19 +542,16 @@ export default function WelcomePage() {
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg p-5 border border-gray-200/50 dark:border-gray-700/50">
               <h3 className="text-md font-semibold dark:text-white mb-3 flex items-center gap-2">
                 <div className="p-1.5 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg"><Zap className="w-5 h-5 text-yellow-500" /></div>
-                {t('quickActions')}
+                {texts.quickActions}
               </h3>
               <div className="space-y-3">
                 <button onClick={() => setIsModalOpen(true)} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
-                  <MessageCircle className="w-4 h-4" /> {t('startNewInterview')}
+                  <MessageCircle className="w-4 h-4" /> {texts.startNewInterview}
                 </button>
-                {/* ✅ Truyền callback nhận dữ liệu CV */}
                 <UploadCV onUploadSuccess={handleCVUploadSuccess} />
-
                 <button onClick={() => navigate('/history')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
-                  <Brain className="w-4 h-4" /> {t('interviewHistory')}
+                  <Brain className="w-4 h-4" /> {texts.interviewHistory}
                 </button>
-
                 <button onClick={() => navigate('/live-coding')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
                   <Code2 className="w-4 h-4" />Coding Interview
                 </button>
@@ -529,17 +572,12 @@ export default function WelcomePage() {
       </main>
 
       <StartInterviewModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onStart={handleStartInterview} />
-
-      {/* ✅ Modal CV Info - được render khi có dữ liệu và mở */}
       {isCVModalOpen && cvData && (
         <CVInfoModal
           cvData={cvData}
           onClose={handleCloseCVModal}
           onStartInterview={handleStartCVInterview}
-          onQuestionsGenerated={(data) => {
-            console.log('Questions generated from CV:', data);
-            // Có thể cập nhật thêm nếu cần
-          }}
+          onQuestionsGenerated={(data) => console.log('Questions generated from CV:', data)}
         />
       )}
 
