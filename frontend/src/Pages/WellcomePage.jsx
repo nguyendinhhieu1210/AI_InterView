@@ -36,7 +36,7 @@ const toVietnamDateKey = (dateInput) => {
 export default function WelcomePage() {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
-  const { normal, cv, adaptive, coding, loading: historyLoading } = useHistory();
+  const { normal, cv, adaptive, coding, loading: historyLoading, refreshHistory } = useHistory();
 
   const dropdownRef = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -229,6 +229,7 @@ export default function WelcomePage() {
     }));
     setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
     fetchActivities();
+    refreshHistory(); // ✅ Refresh dữ liệu lịch sử
   };
 
   const handleCVUploadSuccess = (uploadedCvData) => {
@@ -239,6 +240,7 @@ export default function WelcomePage() {
     }));
     setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
     fetchActivities();
+    refreshHistory(); // ✅ Refresh dữ liệu lịch sử
     if (uploadedCvData && uploadedCvData.fileUrl) {
       setCvData(uploadedCvData);
       setIsCVModalOpen(true);
@@ -260,6 +262,7 @@ export default function WelcomePage() {
     }));
     setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
     fetchActivities();
+    refreshHistory(); // ✅ Refresh dữ liệu lịch sử
   };
 
   const displayName = user?.fullName || user?.userName;

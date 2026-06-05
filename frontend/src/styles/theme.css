@@ -1,9 +1,13 @@
 /* =========================
    LIGHT THEME (DEFAULT)
 ========================= */
+
 :root {
   --bg-color: #f8fafc;
-  --text-color: #111827;
+  --text-color: #0f172a;
+  /* đậm hơn một chút */
+  
+  /* bỏ alpha, rõ hơn nhiều */
 
   --primary: #3b82f6;
   --secondary: #6366f1;
@@ -11,7 +15,7 @@
   --card-bg: #f3f4f6;
   --border-color: #e5e7eb;
 
-  --muted-text: #6b7280;
+  --muted-text: #475569;
 
   --success: #22c55e;
   --warning: #f59e0b;
@@ -58,8 +62,8 @@ body {
 
 * {
   transition: background-color 0.3s ease,
-              color 0.3s ease,
-              border-color 0.3s ease;
+    color 0.3s ease,
+    border-color 0.3s ease;
 }
 
 /* focus accessibility */

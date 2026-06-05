@@ -356,19 +356,29 @@ export default function InterviewCVPage() {
                         ))}
                       </div>
                       {submitted && isGraded && (
-                        <div className="ml-10 mt-3 p-3 bg-card rounded-lg text-sm shadow-inner border border-border">
-                          <p className="text-muted">
-                            <span className="font-semibold">Explanation:</span> {mcqResults[idx].explanation || 'No explanation available.'}
-                          </p>
-                          <p className="text-muted mt-1">
-                            <span className="font-semibold">Your answer:</span> {userChoice || 'Not answered'}
-                          </p>
-                          <p className="text-muted mt-1">
-                            <span className="font-semibold">Correct answer:</span> {q.correctAnswer}
-                          </p>
-                          <p className="text-primary font-semibold mt-1">
-                            Score: {resultScore}/10
-                          </p>
+                        <div className="ml-10 mt-3 space-y-3">
+                          <div className="p-3 rounded-lg bg-primary/5 border-l-4 border-primary">
+                            <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                              <HelpCircle className="w-3 h-3" /> Explanation
+                            </p>
+                            <p className="text-sm text-text">{mcqResults[idx].explanation || 'No explanation available.'}</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-warning/5 border-l-4 border-warning">
+                            <p className="text-xs font-semibold text-warning mb-1 flex items-center gap-1">
+                              <User className="w-3 h-3" /> Your answer
+                            </p>
+                            <p className="text-sm text-text">{userChoice || 'Not answered'}</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-success/5 border-l-4 border-success">
+                            <p className="text-xs font-semibold text-success mb-1 flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" /> Correct answer
+                            </p>
+                            <p className="text-sm text-text">{q.correctAnswer}</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-primary/10 text-primary font-semibold text-sm flex items-center gap-2">
+                            <span>Score:</span>
+                            <span>{resultScore}/10</span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -418,41 +428,59 @@ export default function InterviewCVPage() {
                         />
                       </div>
                       {submitted && essayResult && (
-                        <div className="ml-10 mt-3 p-3 bg-card rounded-lg text-sm shadow-inner border border-border space-y-2">
-                          <p className="text-muted">
-                            <span className="font-semibold">Your answer:</span> {essayResult.yourAnswer || 'Not answered'}
-                          </p>
+                        <div className="ml-10 mt-3 space-y-3">
+                          <div className="p-3 rounded-lg bg-warning/5 border-l-4 border-warning">
+                            <p className="text-xs font-semibold text-warning mb-1 flex items-center gap-1">
+                              <User className="w-3 h-3" /> Your answer
+                            </p>
+                            <p className="text-sm text-text whitespace-pre-wrap">{essayResult.yourAnswer || 'Not answered'}</p>
+                          </div>
                           {essayResult.importantKeywords && essayResult.importantKeywords.length > 0 && (
-                            <p className="text-muted">
-                              <span className="font-semibold">Matched keywords:</span> {essayResult.importantKeywords.join(', ')}
-                            </p>
+                            <div className="p-3 rounded-lg bg-success/5 border-l-4 border-success">
+                              <p className="text-xs font-semibold text-success mb-1 flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" /> Matched keywords
+                              </p>
+                              <p className="text-sm text-text">{essayResult.importantKeywords.join(', ')}</p>
+                            </div>
                           )}
-                          <p className="text-muted">
-                            <span className="font-semibold">AI Review:</span> {essayResult.aiReview || 'No review provided.'}
-                          </p>
-                          {essayResult.aiSuggestedAnswer && (
-                            <p className="text-muted">
-                              <span className="font-semibold">Suggested answer:</span> {essayResult.aiSuggestedAnswer}
+                          <div className="p-3 rounded-lg bg-primary/5 border-l-4 border-primary">
+                            <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                              <FileText className="w-3 h-3" /> AI Review
                             </p>
+                            <p className="text-sm text-text">{essayResult.aiReview || 'No review provided.'}</p>
+                          </div>
+                          {essayResult.aiSuggestedAnswer && (
+                            <div className="p-3 rounded-lg bg-primary/10 border-l-4 border-primary">
+                              <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                                <FileText className="w-3 h-3" /> Suggested answer
+                              </p>
+                              <p className="text-sm text-text whitespace-pre-wrap">{essayResult.aiSuggestedAnswer}</p>
+                            </div>
                           )}
                           {essayResult.strengths && essayResult.strengths.length > 0 && (
-                            <div className="text-success">
-                              <span className="font-semibold">✅ Strengths:</span> {essayResult.strengths.join('; ')}
+                            <div className="p-3 rounded-lg bg-success/20 border-l-4 border-success">
+                              <p className="text-xs font-semibold text-success">✅ Strengths</p>
+                              <p className="text-sm text-text">{essayResult.strengths.join('; ')}</p>
                             </div>
                           )}
                           {essayResult.mistakes && essayResult.mistakes.length > 0 && (
-                            <div className="text-error">
-                              <span className="font-semibold">❌ Weaknesses:</span> {essayResult.mistakes.join('; ')}
+                            <div className="p-3 rounded-lg bg-error/20 border-l-4 border-error">
+                              <p className="text-xs font-semibold text-error">❌ Weaknesses</p>
+                              <p className="text-sm text-text">{essayResult.mistakes.join('; ')}</p>
                             </div>
                           )}
                           {essayResult.improvements && essayResult.improvements.length > 0 && (
-                            <div className="text-primary">
-                              <span className="font-semibold">📚 Improvements:</span> {essayResult.improvements.join('; ')}
+                            <div className="p-3 rounded-lg bg-primary/20 border-l-4 border-primary">
+                              <p className="text-xs font-semibold text-primary">📚 Improvements</p>
+                              <p className="text-sm text-text">{essayResult.improvements.join('; ')}</p>
                             </div>
                           )}
-                          <p className={`font-semibold ${isLowScore ? 'text-error' : 'text-success'}`}>
-                            Score: {resultScore}/10
-                          </p>
+                          <div className={`p-3 rounded-lg font-semibold text-sm flex items-center gap-2 ${
+                            resultScore >= 7 ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
+                          }`}>
+                            <span>Score:</span>
+                            <span>{resultScore}/10</span>
+                          </div>
                         </div>
                       )}
                     </div>

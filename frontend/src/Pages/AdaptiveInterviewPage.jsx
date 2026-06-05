@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Send, Loader2, ArrowLeft, Brain, CheckCircle, Timer,
   Sparkles, User, Bot, Trophy, Home, RotateCw, AlertCircle,
-  Mic, Award, CircleUser
+  Mic, Award, CircleUser, Zap
 } from 'lucide-react';
 import api from '../services/api';
 import InterviewReportModal from '../components/InterviewReportModal';
@@ -204,13 +204,12 @@ export default function AdaptiveInterviewPage() {
     setDetailedReport(null);
   };
 
-  // Helper để lấy màu badge theo difficulty
   const getDifficultyBadgeClass = () => {
     switch (difficulty) {
-      case 'easy': return 'bg-success/20 text-success';
-      case 'medium': return 'bg-warning/20 text-warning';
-      case 'hard': return 'bg-error/20 text-error';
-      default: return 'bg-muted/20 text-muted';
+      case 'easy': return 'bg-success/20 text-success border border-success/30';
+      case 'medium': return 'bg-warning/20 text-warning border border-warning/30';
+      case 'hard': return 'bg-error/20 text-error border border-error/30';
+      default: return 'bg-muted/20 text-muted border border-muted/30';
     }
   };
 
@@ -294,21 +293,24 @@ export default function AdaptiveInterviewPage() {
           )}
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 shadow-sm">
+            {/* Topic badge */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40 shadow-sm">
               <Brain className="w-4 h-4 text-primary" />
-              <span className="font-semibold text-text text-sm">{topic}</span>
+              <span className="font-semibold text-primary text-sm">{topic}</span>
             </div>
-            <div className={`px-3 py-1.5 rounded-full font-medium text-sm shadow-sm ${getDifficultyBadgeClass()}`}>
+            {/* Difficulty badge */}
+            <div className={`px-3 py-1.5 rounded-full font-semibold text-sm shadow-sm ${getDifficultyBadgeClass()}`}>
               {difficulty}
             </div>
 
+            {/* User info */}
             <div className="flex items-center gap-2 ml-2">
-              <div className="hidden sm:flex items-center gap-2 text-sm text-text bg-card/50 rounded-full pl-3 pr-3 py-1 border border-border">
+              <div className="hidden sm:flex items-center gap-2 text-sm text-text bg-card/70 rounded-full pl-3 pr-3 py-1 border border-border shadow-sm">
                 <CircleUser className="w-4 h-4 text-primary" />
                 <span className="font-medium">{displayName}</span>
               </div>
               {!isFinished && (
-                <button onClick={resetInterview} className="p-2 text-muted hover:text-text transition-colors" title="Reset interview">
+                <button onClick={resetInterview} className="p-2 text-muted hover:text-text transition-colors hover:bg-muted/10 rounded-full" title="Reset interview">
                   <RotateCw className="w-5 h-5" />
                 </button>
               )}
@@ -346,11 +348,18 @@ export default function AdaptiveInterviewPage() {
             return (
               <div key={idx} className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
                 <div className={`flex max-w-[85%] gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-md ${isUser ? 'bg-primary' : 'bg-muted'}`}>
-                    {isUser ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-white" />}
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-md ${isUser ? 'bg-primary' : 'bg-gradient-to-br from-primary to-secondary'}`}>
+                    {isUser ? <User className="w-4 h-4 text-white" /> : <Zap className="w-4 h-4 text-white" />}
                   </div>
                   <div className={`relative rounded-2xl px-5 py-3 shadow-soft transition-all hover:shadow-md ${isUser ? 'bg-primary text-white rounded-tr-none' : 'bg-card text-text rounded-tl-none border border-border'}`}>
-                    {!isUser && <div className="text-xs font-semibold text-primary mb-1 flex items-center gap-1"><Brain className="w-3 h-3" /> AI Interviewer<span className="text-muted text-[10px] font-normal ml-1">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>}
+                    {!isUser && (
+                      <div className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                        <Zap className="w-3 h-3" /> AI Interviewer
+                        <span className="text-muted text-[10px] font-normal ml-1">
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    )}
                     <div className="whitespace-pre-wrap leading-relaxed text-[15px]">{msg.content.split('\n').map((line, i) => <p key={i} className={i > 0 ? 'mt-2' : ''}>{line}</p>)}</div>
                   </div>
                 </div>
@@ -361,9 +370,16 @@ export default function AdaptiveInterviewPage() {
           {loading && !isAnalyzing && (
             <div className="flex justify-start animate-fadeIn">
               <div className="flex gap-2 max-w-[85%]">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center shadow-md"><Bot className="w-4 h-4 text-white" /></div>
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-md">
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
                 <div className="bg-card rounded-2xl rounded-tl-none px-5 py-3 shadow-soft border border-border">
-                  <div className="flex items-center gap-1"><div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div><div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div><div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div><span className="text-sm text-muted ml-1">AI is thinking</span></div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                    <span className="text-sm text-muted ml-1">AI is thinking</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -8,7 +8,7 @@ import {
 import { generateQuestions } from '../services/interviewAPI';
 import { useAuth } from '../contexts/AuthContext';
 
-// ==================== Error Boundary (đã sửa class) ====================
+// ==================== Error Boundary ====================
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -331,13 +331,12 @@ export default function InterviewPage() {
                     return (
                       <div
                         key={stableKey}
-                        className={`group bg-muted/5 rounded-xl p-5 border transition-all duration-300 ${
-                          submitted
-                            ? isCorrect
-                              ? 'border-success/50 bg-success/5'
-                              : 'border-error/50 bg-error/5'
-                            : 'border-border hover:border-primary/30'
-                        }`}
+                        className={`group bg-muted/5 rounded-xl p-5 border transition-all duration-300 ${submitted
+                          ? isCorrect
+                            ? 'border-success/50 bg-success/5'
+                            : 'border-error/50 bg-error/5'
+                          : 'border-border hover:border-primary/30'
+                          }`}
                       >
                         <div className="flex items-start gap-3 mb-3">
                           <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold shrink-0">
@@ -373,13 +372,12 @@ export default function InterviewPage() {
                                   disabled={submitted}
                                   className="mt-0.5 w-4 h-4"
                                 />
-                                <span className={`text-sm flex-1 ${
-                                  submitted && isCorrectAnswer
-                                    ? 'text-success font-semibold'
-                                    : submitted && isUserAnswer && !isCorrectAnswer
-                                      ? 'text-error font-semibold'
-                                      : 'text-text'
-                                }`}>
+                                <span className={`text-sm flex-1 ${submitted && isCorrectAnswer
+                                  ? 'text-success font-semibold'
+                                  : submitted && isUserAnswer && !isCorrectAnswer
+                                    ? 'text-error font-semibold'
+                                    : 'text-text'
+                                  }`}>
                                   {opt}
                                 </span>
                                 {submitted && isCorrectAnswer && <span className="text-xs text-success font-semibold ml-auto">Correct</span>}
@@ -389,12 +387,31 @@ export default function InterviewPage() {
                           })}
                         </div>
 
+                        {/* Improved submitted details for MCQ */}
                         {submitted && (
-                          <div className="ml-10 mt-3 p-3 bg-card rounded-lg text-sm shadow-inner border border-border space-y-1">
-                            <p className="text-muted"><span className="font-semibold">Explanation:</span> {mcqResults[idx]?.explanation || 'No explanation available.'}</p>
-                            <p className="text-muted"><span className="font-semibold">Your answer:</span> {userChoice || 'Not answered'}</p>
-                            <p className="text-success"><span className="font-semibold">Correct answer:</span> {q.correctAnswer}</p>
-                            <p className="text-primary font-semibold">Score: {mcqResults[idx]?.score || 0}/10</p>
+                          <div className="ml-10 mt-3 space-y-3">
+                            <div className="p-3 rounded-lg bg-primary/5 border-l-4 border-primary">
+                              <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                                <HelpCircle className="w-3 h-3" /> Explanation
+                              </p>
+                              <p className="text-sm text-text">{mcqResults[idx]?.explanation || 'No explanation available.'}</p>
+                            </div>
+                            <div className="p-3 rounded-lg bg-warning/5 border-l-4 border-warning">
+                              <p className="text-xs font-semibold text-warning mb-1 flex items-center gap-1">
+                                <User className="w-3 h-3" /> Your answer
+                              </p>
+                              <p className="text-sm text-text">{userChoice || 'Not answered'}</p>
+                            </div>
+                            <div className="p-3 rounded-lg bg-success/5 border-l-4 border-success">
+                              <p className="text-xs font-semibold text-success mb-1 flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" /> Correct answer
+                              </p>
+                              <p className="text-sm text-text">{q.correctAnswer}</p>
+                            </div>
+                            <div className="p-3 rounded-lg bg-primary/10 text-primary font-semibold text-sm flex items-center gap-2">
+                              <span>Score:</span>
+                              <span>{mcqResults[idx]?.score || 0}/10</span>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -416,13 +433,12 @@ export default function InterviewPage() {
                     return (
                       <div
                         key={stableKey}
-                        className={`bg-muted/5 rounded-xl p-5 border transition-all duration-300 ${
-                          submitted
-                            ? isLowScore
-                              ? 'border-error/50 bg-error/5'
-                              : 'border-success/50 bg-success/5'
-                            : 'border-border hover:border-primary/30'
-                        }`}
+                        className={`bg-muted/5 rounded-xl p-5 border transition-all duration-300 ${submitted
+                          ? isLowScore
+                            ? 'border-error/50 bg-error/5'
+                            : 'border-success/50 bg-success/5'
+                          : 'border-border hover:border-primary/30'
+                          }`}
                       >
                         <div className="flex items-start gap-3 mb-3">
                           <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">
@@ -441,11 +457,34 @@ export default function InterviewPage() {
                           />
                         </div>
                         {submitted && essayResult && (
-                          <div className="ml-10 mt-3 p-3 bg-card rounded-lg text-sm shadow-inner border border-border space-y-2">
-                            <p className="text-muted"><span className="font-semibold">Your answer:</span> {essayResult.userAnswer || 'Not answered'}</p>
-                            <p className="text-muted"><span className="font-semibold">Ideal keywords:</span> {essayResult.idealAnswerKeywords?.join(', ') || 'None'}</p>
-                            <p className="text-muted"><span className="font-semibold">Sample answer:</span> {essayResult.sampleAnswer || essayResult.aiSuggestedAnswer || 'N/A'}</p>
-                            <p className={`font-semibold ${isLowScore ? 'text-error' : 'text-success'}`}>Score: {essayResult.score}/10</p>
+                          <div className="ml-10 mt-3 space-y-3">
+                            <div className="p-3 rounded-lg bg-warning/5 border-l-4 border-warning">
+                              <p className="text-xs font-semibold text-warning mb-1 flex items-center gap-1">
+                                <User className="w-3 h-3" /> Your answer
+                              </p>
+                              <p className="text-sm text-text whitespace-pre-wrap">{essayResult.userAnswer || 'Not answered'}</p>
+                            </div>
+                            {essayResult.idealAnswerKeywords?.length > 0 && (
+                              <div className="p-3 rounded-lg bg-success/5 border-l-4 border-success">
+                                <p className="text-xs font-semibold text-success mb-1 flex items-center gap-1">
+                                  <CheckCircle className="w-3 h-3" /> Ideal keywords
+                                </p>
+                                <p className="text-sm text-text">{essayResult.idealAnswerKeywords.join(', ')}</p>
+                              </div>
+                            )}
+                            {(essayResult.sampleAnswer || essayResult.aiSuggestedAnswer) && (
+                              <div className="p-3 rounded-lg bg-primary/5 border-l-4 border-primary">
+                                <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                                  <FileText className="w-3 h-3" /> Sample answer
+                                </p>
+                                <p className="text-sm text-text whitespace-pre-wrap">{essayResult.sampleAnswer || essayResult.aiSuggestedAnswer}</p>
+                              </div>
+                            )}
+                            <div className={`p-3 rounded-lg font-semibold text-sm flex items-center gap-2 ${essayResult.score >= 7 ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
+                              }`}>
+                              <span>Score:</span>
+                              <span>{essayResult.score}/10</span>
+                            </div>
                           </div>
                         )}
                       </div>
