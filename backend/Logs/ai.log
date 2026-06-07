@@ -1,0 +1,145 @@
+[2026-06-05T16:39:18.877Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780677558877-ebd7gueg | Temp: 0.5
+{
+  "promptPreview": "You are a SENIOR TECHNICAL INTERVIEWER.\n\nYour task: Generate a REALISTIC technical interview for topic: \"React\" Difficulty: \"medium\"\n\n==================================================\nDIFFICULTY REQU"
+}
+----------------------------------------
+[2026-06-05T16:42:42.160Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780677762159-yovjs2bf | Temp: 0.5
+{
+  "promptPreview": "You are a SENIOR TECHNICAL INTERVIEWER.\n\nYour task: Generate a REALISTIC technical interview for topic: \"React\" Difficulty: \"medium\"\n\n==================================================\nDIFFICULTY REQU"
+}
+----------------------------------------
+[2026-06-05T16:42:46.231Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780677762159-yovjs2bf | Duration: 4071ms
+{
+  "responsePreview": "```\n{\n  \"mcq\": [\n    {\n      \"question\": \"What is the primary purpose of the 'key' prop in React?\",\n      \"difficulty\": \"medium\",\n      \"options\": [\"To uniquely identify DOM elements\", \"To improve ren"
+}
+----------------------------------------
+[2026-06-05T16:42:46.232Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780677766232-ngw3bpwy | Temp: 0.2
+{
+  "promptPreview": "\nYou are a STRICT technical interviewer.\n\nQuestion:\nWhat is React state?\n\nExpected keywords:\nstate, data, re-render\n\nUser answer:\nState is data that changes over time and causes re-renders.\n\nRULES:\n- "
+}
+----------------------------------------
+[2026-06-05T16:42:47.063Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780677766232-ngw3bpwy | Duration: 831ms
+{
+  "responsePreview": "{\n  \"score\": 9,\n  \"explanation\": \"The user's answer correctly identifies state as data that changes over time and causes re-renders, covering the expected keywords. However, the answer is brief and la"
+}
+----------------------------------------
+[2026-06-05T16:52:44.267Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780678364267-17q1uua7 | Temp: 0.5
+{
+  "promptPreview": "You are a SENIOR TECHNICAL INTERVIEWER.\n\nYour task: Generate a REALISTIC technical interview for topic: \"React\" Difficulty: \"medium\"\n\n==================================================\nDIFFICULTY REQU"
+}
+----------------------------------------
+[2026-06-05T16:52:49.076Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780678364267-17q1uua7 | Duration: 4809ms
+{
+  "responsePreview": "```\n{\n  \"mcq\": [\n    {\n      \"question\": \"What is the primary purpose of the 'key' prop in React?\",\n      \"difficulty\": \"medium\",\n      \"options\": [\"To uniquely identify a component\", \"To pass data fr"
+}
+----------------------------------------
+[2026-06-05T16:52:49.076Z] [INFO] TOKEN_USAGE | Model: llama-3.3-70b-versatile | RequestId: 1780678364267-17q1uua7 | Prompt: 403 | Completion: 1631 | Total: 2034
+----------------------------------------
+[2026-06-05T16:52:49.077Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780678369077-bucw320r | Temp: 0.2
+{
+  "promptPreview": "\nYou are a STRICT technical interviewer.\n\nQuestion:\nWhat is React state?\n\nExpected keywords:\nstate, data, re-render\n\nUser answer:\nState is data that changes over time and causes re-renders.\n\nRULES:\n- "
+}
+----------------------------------------
+[2026-06-05T16:52:49.866Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780678369077-bucw320r | Duration: 789ms
+{
+  "responsePreview": "{\n  \"score\": 9,\n  \"explanation\": \"The answer is mostly correct, it covers the key concept of state in React, including the fact that it's data that changes over time and causes re-renders, which match"
+}
+----------------------------------------
+[2026-06-05T16:52:49.866Z] [INFO] TOKEN_USAGE | Model: llama-3.3-70b-versatile | RequestId: 1780678369077-bucw320r | Prompt: 137 | Completion: 141 | Total: 278
+----------------------------------------
+[2026-06-05T16:55:30.909Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780678530909-93489ja8 | Temp: 0.5
+{
+  "promptPreview": "You are a SENIOR TECHNICAL INTERVIEWER.\n\nYour task: Generate a REALISTIC technical interview for topic: \"C#\" Difficulty: \"medium\"\n\n==================================================\nDIFFICULTY REQUIRE"
+}
+----------------------------------------
+[2026-06-05T16:55:34.813Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780678530909-93489ja8 | Duration: 3904ms
+{
+  "responsePreview": "```\n{\n  \"mcq\": [\n    {\n      \"question\": \"What is the purpose of the 'using' statement in C#?\",\n      \"difficulty\": \"medium\",\n      \"options\": [\"A) To handle exceptions\", \"B) To implement interfaces\","
+}
+----------------------------------------
+[2026-06-05T16:55:34.813Z] [INFO] TOKEN_USAGE | Model: llama-3.3-70b-versatile | RequestId: 1780678530909-93489ja8 | Prompt: 403 | Completion: 1515 | Total: 1918
+----------------------------------------
+[2026-06-05T16:57:19.221Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780678639221-qw89fa96 | Temp: 0.2
+{
+  "promptPreview": "\nYou are a STRICT technical interviewer.\n\nQuestion:\nExplain how you would optimize the performance of a C# application that uses a large amount of data from a database.\n\nExpected keywords:\ndatabase in"
+}
+----------------------------------------
+[2026-06-05T16:57:20.265Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780678639221-qw89fa96 | Duration: 1044ms
+{
+  "responsePreview": "{\n  \"score\": 6,\n  \"explanation\": \"The answer demonstrates a basic understanding of database optimization techniques, such as using efficient SQL queries, creating indexes, and implementing caching. Ho"
+}
+----------------------------------------
+[2026-06-05T16:57:20.265Z] [INFO] TOKEN_USAGE | Model: llama-3.3-70b-versatile | RequestId: 1780678639221-qw89fa96 | Prompt: 167 | Completion: 145 | Total: 312
+----------------------------------------
+[2026-06-05T16:57:20.265Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780678640265-4r9vwjop | Temp: 0.2
+{
+  "promptPreview": "\nYou are a STRICT technical interviewer.\n\nQuestion:\nDescribe a scenario where you would use a 'try-catch' block in C# to handle exceptions, and explain how you would handle the exception.\n\nExpected ke"
+}
+----------------------------------------
+[2026-06-05T16:57:21.702Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780678640265-4r9vwjop | Duration: 1437ms
+{
+  "responsePreview": "{\n  \"score\": 6,\n  \"explanation\": \"The user's answer demonstrates a basic understanding of exception handling and the use of try-catch blocks in C#. However, the answer lacks specificity and technical "
+}
+----------------------------------------
+[2026-06-05T16:57:21.702Z] [INFO] TOKEN_USAGE | Model: llama-3.3-70b-versatile | RequestId: 1780678640265-4r9vwjop | Prompt: 184 | Completion: 250 | Total: 434
+----------------------------------------
+[2026-06-05T16:57:21.702Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780678641702-9at2xarp | Temp: 0.2
+{
+  "promptPreview": "\nYou are a STRICT technical interviewer.\n\nQuestion:\nExplain how you would design a C# class to represent a real-world object, such as a car or a person.\n\nExpected keywords:\nencapsulation, inheritance,"
+}
+----------------------------------------
+[2026-06-05T16:57:22.781Z] [INFO] TOKEN_USAGE | Model: llama-3.3-70b-versatile | RequestId: 1780678641702-9at2xarp | Prompt: 181 | Completion: 158 | Total: 339
+----------------------------------------
+[2026-06-05T16:57:22.781Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780678641702-9at2xarp | Duration: 1079ms
+{
+  "responsePreview": "{\n  \"score\": 4,\n  \"explanation\": \"The user's answer demonstrates a basic understanding of object-oriented programming concepts by mentioning properties and methods. However, it lacks depth and fails t"
+}
+----------------------------------------
+[2026-06-05T16:58:00.622Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780678680622-cq3ynkks | Temp: 0.7
+{
+  "promptPreview": "You are a SENIOR TECHNICAL INTERVIEWER.\n\nYour task: Generate a REALISTIC technical interview for topic: \"Python\" Difficulty: \"hard\"\n\n==================================================\nDIFFICULTY REQUI"
+}
+----------------------------------------
+[2026-06-05T16:58:04.510Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780678680622-cq3ynkks | Duration: 3888ms
+{
+  "responsePreview": "```\n{\n  \"mcq\": [\n    {\n      \"question\": \"What is the time complexity of the built-in Python function 'sorted()'?\",\n      \"difficulty\": \"hard\",\n      \"options\": [\"O(n)\", \"O(n log n)\", \"O(n^2)\", \"O(2^n"
+}
+----------------------------------------
+[2026-06-05T16:58:04.510Z] [INFO] TOKEN_USAGE | Model: llama-3.3-70b-versatile | RequestId: 1780678680622-cq3ynkks | Prompt: 414 | Completion: 1460 | Total: 1874
+----------------------------------------
+[2026-06-05T17:00:54.419Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780678854419-jtujqltz | Temp: 0.2
+{
+  "promptPreview": "\nYou are a STRICT technical interviewer.\n\nQuestion:\nDesign a scalable REST API for a social media platform that allows users to create and share posts. What are the key considerations and how would yo"
+}
+----------------------------------------
+[2026-06-05T17:00:55.460Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780678854419-jtujqltz | Duration: 1041ms
+{
+  "responsePreview": "```\n{\n  \"score\": 8,\n  \"explanation\": \"The user has demonstrated a good understanding of key considerations for designing a scalable REST API, including scalability, authentication, database design, ca"
+}
+----------------------------------------
+[2026-06-05T17:00:55.460Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780678855460-0tk9dcaq | Temp: 0.2
+{
+  "promptPreview": "\nYou are a STRICT technical interviewer.\n\nQuestion:\nHow would you optimize the performance of a Python program that uses a lot of I/O operations, such as reading and writing to files or databases?\n\nEx"
+}
+----------------------------------------
+[2026-06-05T17:00:55.460Z] [INFO] TOKEN_USAGE | Model: llama-3.3-70b-versatile | RequestId: 1780678854419-jtujqltz | Prompt: 266 | Completion: 198 | Total: 464
+----------------------------------------
+[2026-06-05T17:00:56.325Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780678855460-0tk9dcaq | Duration: 865ms
+{
+  "responsePreview": "{\n  \"score\": 9,\n  \"explanation\": \"The user's answer covers most of the expected keywords and demonstrates a good understanding of optimizing I/O operations in Python. They correctly mention using asyn"
+}
+----------------------------------------
+[2026-06-05T17:00:56.325Z] [INFO] TOKEN_USAGE | Model: llama-3.3-70b-versatile | RequestId: 1780678855460-0tk9dcaq | Prompt: 202 | Completion: 143 | Total: 345
+----------------------------------------
+[2026-06-05T17:00:56.325Z] [INFO] REQUEST | Model: llama-3.3-70b-versatile | RequestId: 1780678856325-rjx1lfst | Temp: 0.2
+{
+  "promptPreview": "\nYou are a STRICT technical interviewer.\n\nQuestion:\nDesign a system to handle and process large amounts of log data from a web application. What are the key considerations and how would you implement "
+}
+----------------------------------------
+[2026-06-05T17:00:57.597Z] [INFO] RESPONSE | Model: llama-3.3-70b-versatile | RequestId: 1780678856325-rjx1lfst | Duration: 1272ms
+{
+  "responsePreview": "{\n  \"score\": 8,\n  \"explanation\": \"The user's answer covers most of the key considerations and implementation details for handling large amounts of log data, including log collection, processing, stora"
+}
+----------------------------------------
+[2026-06-05T17:00:57.597Z] [INFO] TOKEN_USAGE | Model: llama-3.3-70b-versatile | RequestId: 1780678856325-rjx1lfst | Prompt: 233 | Completion: 177 | Total: 410
+----------------------------------------
