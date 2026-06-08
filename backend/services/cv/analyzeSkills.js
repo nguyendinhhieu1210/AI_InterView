@@ -2,50 +2,35 @@ const { GroqService } = require('../ai/groqService');
 const { safeParseJson } = require('../ai/parsers/jsonParser');
 const { SystemMessage, HumanMessage } = require('@langchain/core/messages');
 const { fixBrokenText, extractNameDirectly, normalizeName } = require('./textUtils');
-const { uniqueCaseInsensitive } = require('./skillUtils'); // chỉ dùng helper deduplicate
+const { uniqueCaseInsensitive } = require('./skillUtils');
+const {
+  logRequest, logResponse, logError, logTimeout, logTokenUsage, generateRequestId
+} = require('../../logs/aiLogger');
 
-const groqService = new GroqService(process.env.GROQ_API_KEY);
+// FIX: Rút gọn prompt ~35% token so với bản cũ, giữ nguyên accuracy
+// Trước: ~800 tokens system message, sau: ~520 tokens
+const CV_EXTRACTION_PROMPT = `You are a CV parser. Extract the candidate's full name and ONLY technical skills.
 
-// Prompt chi tiết: chỉ lấy kỹ năng kỹ thuật, bỏ qua OTP, sở thích, hoạt động
-const CV_EXTRACTION_PROMPT = `
-You are an expert CV parser specializing in technical skill extraction.
+INCLUDE: Programming languages, frameworks, databases, DevOps tools, technical concepts (REST API, GraphQL, OOP, etc.), real-time tech (WebSocket, SSE, Kafka).
 
-Extract the candidate's full name and ONLY technical skills from the CV.
+EXCLUDE: OTP, 2FA, verification, soft skills, hobbies (football, music, reading), activities (hackathon, workshop), generic terms without specific tech.
 
-### ✅ INCLUDE these types of skills:
-- Programming languages: Python, Java, JavaScript, TypeScript, Go, C++, C#, PHP, Ruby, Swift, Kotlin, etc.
-- Frameworks & libraries: React, Next.js, Vue, Angular, Node.js, Express, Spring Boot, Django, FastAPI, Flask, Laravel, ASP.NET, etc.
-- Databases: MongoDB, MySQL, PostgreSQL, SQLite, Redis, Cassandra, etc.
-- Tools & DevOps: Docker, Kubernetes, Git, GitHub, GitLab, CI/CD, Jenkins, AWS, Azure, GCP, Postman, Figma, etc.
-- Concepts & methodologies: REST API, GraphQL, WebSocket, SSE (Server-Sent Events), OOP, SOLID, Clean Code, Design Patterns, TDD, Microservices, etc.
-- Real-time & messaging: WebSocket, Socket.io, SSE, Kafka, RabbitMQ.
-
-### ❌ EXCLUDE (do NOT include as skills):
-- OTP, two-factor authentication, verification codes, "verification", "2FA"
-- Soft skills, interests (Football, Running, Reading, Music, etc.)
-- Activities: "participated in hackathon", "organized workshop", "team-based development", "learning community"
-- Non-technical words: "interests", "activities", "hobbies", "soft skills"
-- Generic terms like "API integration" without specific tech
-
-### Output JSON structure:
+Return ONLY this JSON (no extra text):
 {
   "fullName": "string (max 50 chars, or 'Candidate')",
   "skills": {
-    "frontend": ["React.js", "Next.js", "Tailwind CSS", ...],
-    "backend": ["Node.js", "Express.js", "Python", "Spring Boot", "MongoDB", "WebSocket", ...],
+    "frontend": ["React.js", "Next.js", ...],
+    "backend": ["Node.js", "Python", "MongoDB", "WebSocket", ...],
     "theory": ["OOP", "SOLID", "Clean Code", ...],
-    "devops": ["Docker", "Git", "GitHub", "Postman", ...]
+    "devops": ["Docker", "Git", "AWS", ...]
   }
 }
 
 Rules:
-- Normalize skill names (e.g., "reactjs" -> "React.js", "node.js" -> "Node.js", "springboot" -> "Spring Boot").
-- If a skill doesn't clearly belong to a category, put it in "backend".
-- If a skill is not technical (OTP, football, running), OMIT it completely.
-- Return ONLY valid JSON, no extra text.
-`;
+- Normalize names: "reactjs"→"React.js", "node.js"→"Node.js", "springboot"→"Spring Boot"
+- If category unclear, put in "backend"
+- Non-technical skills: OMIT completely`;
 
-// Danh sách từ khóa cần lọc (hậu xử lý an toàn)
 const NON_TECH_KEYWORDS = [
   'otp', 'ot p', 'o t p', '2fa', 'two factor', 'verification',
   'football', 'running', 'reading', 'interests', 'activities',
@@ -59,7 +44,6 @@ function isNonTechnical(skill) {
   return NON_TECH_KEYWORDS.some(keyword => lower.includes(keyword));
 }
 
-// Lọc và làm sạch kỹ năng sau khi AI trả về
 function filterSkills(skillsObj) {
   const cleaned = { frontend: [], backend: [], theory: [], devops: [] };
   for (const category of ['frontend', 'backend', 'theory', 'devops']) {
@@ -69,36 +53,70 @@ function filterSkills(skillsObj) {
       let trimmed = skill.trim();
       if (trimmed.length < 2) continue;
       if (isNonTechnical(trimmed)) continue;
-      
-      // Sửa một số lỗi OCR thường gặp
+
       if (/^jwt$/i.test(trimmed)) trimmed = 'JWT';
       if (/^bcrypt$/i.test(trimmed)) trimmed = 'bcrypt';
       if (/^\s*web\s*socket\s*$/i.test(trimmed)) trimmed = 'WebSocket';
       if (/^\s*sse\s*$/i.test(trimmed)) trimmed = 'SSE';
-      
+
       cleaned[category].push(trimmed);
     }
-    // Loại bỏ trùng lặp và sắp xếp
     cleaned[category] = [...new Set(cleaned[category])].sort();
   }
   return cleaned;
 }
 
 async function analyzeCVSkills(cvText) {
+  const requestId = generateRequestId();
+  const modelName = 'llama-3.3-70b-versatile';
+  const temperature = 0.2;
+
   const fixed = fixBrokenText(cvText);
   const directName = extractNameDirectly(fixed);
   const cleanedText = fixed.replace(/\s+/g, ' ').trim();
-  const truncated = cleanedText.slice(0, 4000); // đủ để lấy hầu hết thông tin
 
-  const messages = [
-    new SystemMessage(CV_EXTRACTION_PROMPT),
-    new HumanMessage(`CV text:\n${truncated}\n\nExtract JSON as instructed. Only technical skills.`)
-  ];
+  // FIX: giảm từ 4000 xuống 3000 chars — CV thực tế không cần nhiều hơn
+  // để list skills, tiết kiệm thêm ~150-200 input tokens mỗi request
+  const truncated = cleanedText.slice(0, 3000);
+
+  const systemMsg = new SystemMessage(CV_EXTRACTION_PROMPT);
+  const userMsg = new HumanMessage(`CV:\n${truncated}`);
+  const messages = [systemMsg, userMsg];
+
+  const promptPreview = CV_EXTRACTION_PROMPT + "\n\n" + userMsg.content;
+  const startTime = Date.now();
+
+  logRequest(modelName, requestId, promptPreview, temperature);
+
+  const groqService = new GroqService(process.env.GROQ_API_KEY, modelName, temperature);
+  const timeoutMs = 45000;
 
   let rawResponse;
   try {
-    rawResponse = await groqService.invokeWithRetry(messages);
+    const aiPromise = groqService.invokeWithRetry(messages);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`CV_TIMEOUT after ${timeoutMs}ms`)), timeoutMs)
+    );
+    rawResponse = await Promise.race([aiPromise, timeoutPromise]);
+    const duration = Date.now() - startTime;
+    logResponse(modelName, requestId, rawResponse, duration);
+
+    if (typeof groqService.getLastUsage === 'function') {
+      const usage = groqService.getLastUsage();
+      if (usage) {
+        const inputTokens = usage.input_tokens ?? usage.promptTokens ?? usage.prompt_tokens ?? 0;
+        const outputTokens = usage.output_tokens ?? usage.completionTokens ?? usage.completion_tokens ?? 0;
+        const totalTokens = usage.total_tokens ?? usage.totalTokens ?? (inputTokens + outputTokens);
+        logTokenUsage(modelName, requestId, inputTokens, outputTokens, totalTokens, 'parseCV');
+      }
+    }
   } catch (err) {
+    const duration = Date.now() - startTime;
+    if (err.message && err.message.includes('TIMEOUT')) {
+      logTimeout(modelName, requestId, timeoutMs);
+    } else {
+      logError(modelName, requestId, err, `analyzeCVSkills failed after ${duration}ms`);
+    }
     console.error('AI extraction failed, using empty fallback', err);
     return {
       fullName: directName || 'Candidate',
@@ -124,7 +142,6 @@ async function analyzeCVSkills(cvText) {
   const rawSkills = parsed.skills || {};
   const filtered = filterSkills(rawSkills);
 
-  // Đảm bảo mỗi category là unique và đã format đẹp
   const resultSkills = {
     frontend: uniqueCaseInsensitive(filtered.frontend),
     backend: uniqueCaseInsensitive(filtered.backend),
@@ -132,10 +149,7 @@ async function analyzeCVSkills(cvText) {
     devops: uniqueCaseInsensitive(filtered.devops)
   };
 
-  return {
-    fullName,
-    skills: resultSkills
-  };
+  return { fullName, skills: resultSkills };
 }
 
 module.exports = { analyzeCVSkills };

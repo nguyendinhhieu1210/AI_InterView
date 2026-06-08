@@ -15,16 +15,13 @@ import { CVInfoModal } from '../components/CVInfoModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useHistory } from '../contexts/HistoryContext';
 
-// --- Helper: chuẩn hóa ngày theo múi giờ Việt Nam ---
 const toVietnamDateKey = (dateInput) => {
   if (!dateInput) return null;
   const date = new Date(dateInput);
   if (isNaN(date.getTime())) return null;
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Ho_Chi_Minh',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+    year: 'numeric', month: '2-digit', day: '2-digit',
   });
   const parts = formatter.formatToParts(date);
   const year = parts.find(p => p.type === 'year')?.value;
@@ -46,11 +43,8 @@ export default function WelcomePage() {
 
   const [stats, setStats] = useState({ totalInterviews: 0, streak: 0 });
   const [todayStats, setTodayStats] = useState({
-    normalInterview: 0,
-    cvInterview: 0,
-    adaptiveInterview: 0,
-    codingInterview: 0,
-    total: 0
+    normalInterview: 0, cvInterview: 0,
+    adaptiveInterview: 0, codingInterview: 0, total: 0
   });
   const [activities, setActivities] = useState([]);
   const [dailyTip, setDailyTip] = useState({ tip: '', quote: '' });
@@ -58,44 +52,24 @@ export default function WelcomePage() {
   const [isCVModalOpen, setIsCVModalOpen] = useState(false);
   const [cvData, setCvData] = useState(null);
 
-  // --- Texts ---
   const texts = {
-    totalSessions: 'Total Sessions',
-    streak: 'Current Streak',
-    days: 'days',
-    performanceTrend: 'Performance Trend',
-    quickActions: 'Quick Actions',
-    startNewInterview: 'Start New Interview',
-    uploadCV: 'Upload CV & Start',
-    interviewHistory: 'History',
-    logout: 'Sign Out',
-    settings: 'Settings',
-    helpSupport: 'Help & Support',
-    yourProfile: 'Your Profile',
-    goodMorning: 'Good Morning',
-    goodAfternoon: 'Good Afternoon',
-    goodEvening: 'Good Evening',
+    totalSessions: 'Total Sessions', streak: 'Current Streak', days: 'days',
+    performanceTrend: 'Performance Trend', quickActions: 'Quick Actions',
+    startNewInterview: 'Start New Interview', uploadCV: 'Upload CV & Start',
+    interviewHistory: 'History', logout: 'Sign Out', settings: 'Settings',
+    helpSupport: 'Help & Support', yourProfile: 'Your Profile',
+    goodMorning: 'Good Morning', goodAfternoon: 'Good Afternoon', goodEvening: 'Good Evening',
     readyMessage: 'Ready to ace your next interview? Your AI coach is here to help.',
     slogan: 'Master your craft, one interview at a time.',
     motivationTitle: '✨ Daily Growth & Inspiration',
-    helpfulTip: '💡 Tip for today',
-    inspiringQuote: '🌟 Fuel your mind',
-    todaySessions: "Today's Sessions",
-    normalInt: 'Standard Interviews',
-    cvInt: 'CV Interviews',
-    adaptiveInt: 'Adaptive Interviews',
-    codingInt: 'Coding Interviews',
-    total: 'Total',
-    keepGoing: 'Keep going! 💪',
-    restDay: 'Rest day',
+    helpfulTip: '💡 Tip for today', inspiringQuote: '🌟 Fuel your mind',
+    todaySessions: "Today's Sessions", normalInt: 'Standard Interviews',
+    cvInt: 'CV Interviews', adaptiveInt: 'Adaptive Interviews', codingInt: 'Coding Interviews',
+    total: 'Total', keepGoing: 'Keep going! 💪', restDay: 'Rest day',
   };
 
-  const tipsList = {
-    en: ["Notice a knowledge gap? Turn it into your next mini-project. Master it step by step."],
-  };
-  const quotesList = {
-    en: ["The expert in anything was once a beginner. – Helen Hayes"],
-  };
+  const tipsList = { en: ["Notice a knowledge gap? Turn it into your next mini-project. Master it step by step."] };
+  const quotesList = { en: ["The expert in anything was once a beginner. – Helen Hayes"] };
 
   const getRandomMotivation = () => {
     const tips = tipsList.en;
@@ -106,9 +80,7 @@ export default function WelcomePage() {
     });
   };
 
-  useEffect(() => {
-    getRandomMotivation();
-  }, []);
+  useEffect(() => { getRandomMotivation(); }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -118,15 +90,10 @@ export default function WelcomePage() {
   };
 
   const formatDate = (date) =>
-    date.toLocaleDateString('en-US', {
-      weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-    });
+    date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
   const formatTime = (date) =>
-    date.toLocaleTimeString('en-US', {
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    });
+    date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-  // --- Tính streak từ activities ---
   const calculateStreakFromActivities = (activitiesList) => {
     if (!activitiesList || activitiesList.length === 0) return 0;
     const activeDates = new Set(activitiesList.map(act => act.dateVN).filter(Boolean));
@@ -160,23 +127,18 @@ export default function WelcomePage() {
     }
   };
 
-  // --- Tính tổng số buổi và thống kê hôm nay ---
   useEffect(() => {
     if (historyLoading) return;
     const allSessions = [...normal, ...cv, ...adaptive, ...coding];
     const total = allSessions.length;
     const todayKey = toVietnamDateKey(new Date());
-
     const normalCount = normal.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
     const cvCount = cv.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
     const adaptiveCount = adaptive.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
     const codingCount = coding.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
-
     setTodayStats({
-      normalInterview: normalCount,
-      cvInterview: cvCount,
-      adaptiveInterview: adaptiveCount,
-      codingInterview: codingCount,
+      normalInterview: normalCount, cvInterview: cvCount,
+      adaptiveInterview: adaptiveCount, codingInterview: codingCount,
       total: normalCount + cvCount + adaptiveCount + codingCount,
     });
     setStats(prev => ({ ...prev, totalInterviews: total }));
@@ -190,7 +152,6 @@ export default function WelcomePage() {
     if (user) fetchActivities();
   }, [user]);
 
-  // --- Click outside dropdown ---
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setDropdownOpen(false);
@@ -214,33 +175,20 @@ export default function WelcomePage() {
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
-    setTimeout(async () => {
-      await logout();
-      navigate('/login');
-    }, 2000);
+    setTimeout(async () => { await logout(); navigate('/login'); }, 2000);
   };
 
   const handleStartInterview = (data) => {
     console.log('Starting interview:', data);
-    setTodayStats(prev => ({
-      ...prev,
-      normalInterview: prev.normalInterview + 1,
-      total: prev.total + 1,
-    }));
-    setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
+    // FIX: không tăng stats thủ công ở đây nữa
+    // refreshHistory sẽ trigger useEffect tính lại từ data thực
     fetchActivities();
-    refreshHistory(); // ✅ Refresh dữ liệu lịch sử
+    refreshHistory();
   };
 
+  // FIX: handleCVUploadSuccess chỉ lưu data và mở modal
+  // KHÔNG tăng stats ở đây — stats sẽ được tính lại sau khi interview thực sự hoàn thành
   const handleCVUploadSuccess = (uploadedCvData) => {
-    setTodayStats(prev => ({
-      ...prev,
-      cvInterview: prev.cvInterview + 1,
-      total: prev.total + 1,
-    }));
-    setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
-    fetchActivities();
-    refreshHistory(); // ✅ Refresh dữ liệu lịch sử
     if (uploadedCvData && uploadedCvData.fileUrl) {
       setCvData(uploadedCvData);
       setIsCVModalOpen(true);
@@ -252,17 +200,12 @@ export default function WelcomePage() {
     setCvData(null);
   };
 
+  // FIX: chỉ tăng stats 1 lần duy nhất ở đây khi interview CV thực sự bắt đầu
   const handleStartCVInterview = (interviewData) => {
     console.log('Start CV interview:', interviewData);
     setIsCVModalOpen(false);
-    setTodayStats(prev => ({
-      ...prev,
-      cvInterview: prev.cvInterview + 1,
-      total: prev.total + 1,
-    }));
-    setStats(prev => ({ ...prev, totalInterviews: prev.totalInterviews + 1 }));
     fetchActivities();
-    refreshHistory(); // ✅ Refresh dữ liệu lịch sử
+    refreshHistory(); // trigger useEffect → tính lại stats từ server data
   };
 
   const displayName = user?.fullName || user?.userName;
@@ -292,7 +235,6 @@ export default function WelcomePage() {
 
   return (
     <div className="min-h-screen bg-bg transition-colors duration-500">
-      {/* Các khối trang trí background giữ nguyên với dark: prefix (vì gradient đặc biệt) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-10 animate-blob"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-10 animate-blob animation-delay-2000"></div>
@@ -308,7 +250,6 @@ export default function WelcomePage() {
         </div>
       )}
 
-      {/* Header */}
       <header className="bg-card/70 backdrop-blur-xl border-b border-border sticky top-0 z-40 shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/welcome')}>
@@ -332,17 +273,9 @@ export default function WelcomePage() {
               </div>
               <ChevronDown className={`w-4 h-4 text-muted transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
+
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-card/95 backdrop-blur-md rounded-2xl shadow-soft border border-border py-1.5 z-50 animate-fadeIn overflow-hidden">
-                <div className="px-4 py-2 border-b border-border bg-gradient-to-r from-indigo-50/80 to-blue-50/80 dark:from-indigo-900/30 dark:to-blue-900/30 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">{avatarLetter}</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-text">{displayName}</p>
-                    <p className="text-xs text-muted truncate max-w-[150px]">{user.email}</p>
-                  </div>
-                </div>
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 animate-fadeIn overflow-hidden">
                 <div className="py-1">
                   {[
                     { icon: User, label: texts.yourProfile, path: '/profile' },
@@ -350,13 +283,15 @@ export default function WelcomePage() {
                     { icon: HelpCircle, label: texts.helpSupport, path: '/help' },
                     { icon: FileText, label: texts.interviewHistory, path: '/history' },
                   ].map((item) => (
-                    <button key={item.path} onClick={() => { setDropdownOpen(false); navigate(item.path); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-primary/10 transition-colors">
+                    <button key={item.path} onClick={() => { setDropdownOpen(false); navigate(item.path); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                       <item.icon className="w-4 h-4 text-primary" /> {item.label}
                     </button>
                   ))}
                 </div>
-                <div className="border-t border-border my-1"></div>
-                <button onClick={handleLogout} disabled={isLoggingOut} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-error hover:bg-error/10 transition-colors">
+                <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                <button onClick={handleLogout} disabled={isLoggingOut}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                   <LogOut className="w-4 h-4" /> {texts.logout}
                 </button>
               </div>
@@ -366,7 +301,6 @@ export default function WelcomePage() {
       </header>
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 py-8 animate-fadeIn">
-        {/* Hero section - gradient giữ dark: prefix */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 p-8 mb-10 text-white shadow-2xl">
           <div className="absolute inset-0 bg-black/10 rounded-3xl"></div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
@@ -391,7 +325,6 @@ export default function WelcomePage() {
           </div>
         </div>
 
-        {/* Stats cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
           {statsCards.map((stat, idx) => (
             <div key={idx} className="group relative bg-card/80 backdrop-blur-sm rounded-2xl p-5 shadow-soft hover:shadow-lg transition-all duration-300 border border-border hover:scale-[1.02]">
@@ -411,7 +344,6 @@ export default function WelcomePage() {
           ))}
         </div>
 
-        {/* Today's Sessions */}
         <div className="relative rounded-2xl shadow-soft overflow-hidden mb-10 bg-card border border-border transition-all duration-300 hover:shadow-lg group">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 group-hover:animate-pulse"></div>
           <div className="p-6 md:p-7">
@@ -420,22 +352,16 @@ export default function WelcomePage() {
                 <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-sm ring-1 ring-blue-200/50 dark:ring-blue-700/30">
                   <Target className="w-5 h-5 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-text">
-                  {texts.todaySessions}
-                </h3>
+                <h3 className="text-xl font-bold text-text">{texts.todaySessions}</h3>
               </div>
               <div className="px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-full">
                 <p className="text-sm font-bold text-primary dark:text-primary/90">{todayStats.total} {texts.total}</p>
               </div>
             </div>
-
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {todaySessionsCard.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`rounded-xl p-4 ${item.bgColor} border-l-4 text-center hover:scale-105 transition-all duration-200`}
-                  style={{ borderLeftColor: idx === 0 ? '#3b82f6' : idx === 1 ? '#10b981' : idx === 2 ? '#8b5cf6' : '#f43f5e' }}
-                >
+                <div key={idx} className={`rounded-xl p-4 ${item.bgColor} border-l-4 text-center hover:scale-105 transition-all duration-200`}
+                  style={{ borderLeftColor: idx === 0 ? '#3b82f6' : idx === 1 ? '#10b981' : idx === 2 ? '#8b5cf6' : '#f43f5e' }}>
                   <div className="flex justify-center mb-2">
                     <div className="p-2 rounded-lg bg-white dark:bg-gray-800/50">
                       <item.icon className={`w-5 h-5 ${item.color}`} />
@@ -446,7 +372,6 @@ export default function WelcomePage() {
                 </div>
               ))}
             </div>
-
             <div className="mt-5 pt-4 text-center border-t border-border">
               <p className={`text-sm font-semibold flex items-center justify-center gap-2 ${todayStats.total > 0 ? 'text-success' : 'text-muted'}`}>
                 <Award className="w-4 h-4" />
@@ -456,7 +381,6 @@ export default function WelcomePage() {
           </div>
         </div>
 
-        {/* Motivation Card */}
         <div className="relative rounded-2xl shadow-soft overflow-hidden mb-10 bg-card border border-border transition-all duration-300 hover:shadow-lg group">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 group-hover:animate-pulse"></div>
           <div className="p-6 md:p-7">
@@ -465,9 +389,7 @@ export default function WelcomePage() {
                 <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl shadow-sm ring-1 ring-amber-200/50 dark:ring-amber-700/30">
                   <Sparkles className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                 </div>
-                <h3 className="text-xl font-bold text-text">
-                  {texts.motivationTitle}
-                </h3>
+                <h3 className="text-xl font-bold text-text">{texts.motivationTitle}</h3>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -502,7 +424,6 @@ export default function WelcomePage() {
           </div>
         </div>
 
-        {/* Two columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-soft p-6 border border-border">
@@ -510,9 +431,7 @@ export default function WelcomePage() {
                 <div className="p-1.5 bg-primary/10 rounded-lg"><TrendingUp className="w-5 h-5 text-primary" /></div>
                 {texts.performanceTrend}
               </h3>
-              <div className="w-full">
-                <PerformanceTrendChart />
-              </div>
+              <div className="w-full"><PerformanceTrendChart /></div>
             </div>
           </div>
           <div className="space-y-6">
@@ -535,7 +454,6 @@ export default function WelcomePage() {
               </div>
             </div>
             <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-soft p-4 border border-border">
-              <div className="flex items-center gap-2 px-1"></div>
               <ActivityCalendar sessions={activities} />
             </div>
             <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-soft border border-border overflow-hidden">

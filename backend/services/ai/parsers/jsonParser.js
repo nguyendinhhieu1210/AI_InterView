@@ -1,60 +1,47 @@
-const { JsonOutputParser } = require("@langchain/core/output_parsers");
+// safeParseJson và repairTruncatedJson
 
-const jsonParser = new JsonOutputParser();
-
-function cleanJsonString(str) {
-  return str
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
-}
-
-function extractJSON(str) {
-  str = cleanJsonString(str);
-
-  // tìm object
-  const objectMatch = str.match(/\{[\s\S]*\}/);
-
-  if (objectMatch) {
-    try {
-      return JSON.parse(objectMatch[0]);
-    } catch (e) {}
-  }
-
-  // tìm array
-  const arrayMatch = str.match(/\[[\s\S]*\]/);
-
-  if (arrayMatch) {
-    try {
-      return JSON.parse(arrayMatch[0]);
-    } catch (e) {}
-  }
-
-  return null;
-}
-
-async function safeParseJson(raw) {
+async function safeParseJson(str) {
+  if (!str || typeof str !== 'string') return null;
+  // Loại bỏ markdown code block
+  let cleaned = str.replace(/```json\s*|\s*```/g, '').trim();
   try {
-    return await jsonParser.parse(raw);
+    return JSON.parse(cleaned);
   } catch (e) {
-    try {
-      const extracted = extractJSON(raw);
+    // Thử repair nếu là truncate
+    const repaired = repairTruncatedJson(cleaned);
+    if (repaired) {
+      try {
+        return JSON.parse(repaired);
+      } catch (e2) {}
+    }
+    return null;
+  }
+}
 
-      if (extracted) {
-        return extracted;
-      }
-
-      console.error("RAW AI RESPONSE:\n", raw);
-
-      throw new Error("Cannot parse JSON from AI response");
-    } catch (err) {
-      console.error("JSON PARSE ERROR:", err.message);
-      throw err;
+function repairTruncatedJson(jsonString) {
+  // Nếu thiếu dấu đóng ngoặc ở cuối
+  let repaired = jsonString.trim();
+  if (!repaired.endsWith('}') && !repaired.endsWith(']')) {
+    // Đếm số dấu { và } còn thiếu
+    let openBraces = (repaired.match(/{/g) || []).length;
+    let closeBraces = (repaired.match(/}/g) || []).length;
+    let missingBraces = openBraces - closeBraces;
+    if (missingBraces > 0) {
+      repaired += '}'.repeat(missingBraces);
+    }
+    // Thêm dấu đóng ngoặc vuông nếu cần
+    let openBrackets = (repaired.match(/\[/g) || []).length;
+    let closeBrackets = (repaired.match(/\]/g) || []).length;
+    let missingBrackets = openBrackets - closeBrackets;
+    if (missingBrackets > 0) {
+      repaired += ']'.repeat(missingBrackets);
+    }
+    // Nếu cắt giữa string, thêm dấu " và đóng ngoặc
+    if ((repaired.match(/"/g) || []).length % 2 !== 0) {
+      repaired += '"';
     }
   }
+  return repaired;
 }
 
-module.exports = {
-  safeParseJson,
-  extractJSON,
-};
+module.exports = { safeParseJson, repairTruncatedJson };

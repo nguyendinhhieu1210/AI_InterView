@@ -443,12 +443,6 @@ export default function InterviewCVPage() {
                               <p className="text-sm text-text">{essayResult.importantKeywords.join(', ')}</p>
                             </div>
                           )}
-                          <div className="p-3 rounded-lg bg-primary/5 border-l-4 border-primary">
-                            <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
-                              <FileText className="w-3 h-3" /> AI Review
-                            </p>
-                            <p className="text-sm text-text">{essayResult.aiReview || 'No review provided.'}</p>
-                          </div>
                           {essayResult.aiSuggestedAnswer && (
                             <div className="p-3 rounded-lg bg-primary/10 border-l-4 border-primary">
                               <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
@@ -542,14 +536,7 @@ export default function InterviewCVPage() {
                         </ul>
                       </div>
                     )}
-                    {suggestions.length > 0 && (
-                      <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
-                        <p className="font-semibold text-primary">📚 Suggestions</p>
-                        <ul className="list-disc list-inside text-sm text-muted">
-                          {suggestions.map((sug, i) => <li key={i}>{sug}</li>)}
-                        </ul>
-                      </div>
-                    )}
+                    
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">

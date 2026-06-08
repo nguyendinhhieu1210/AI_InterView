@@ -4,7 +4,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { InterviewProvider } from './contexts/InterviewContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import './i18n';
+//import './i18n';
 import { Toaster } from 'react-hot-toast';
 
 import Register from './Pages/Register';

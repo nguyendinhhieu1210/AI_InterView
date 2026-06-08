@@ -51,6 +51,23 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
     }
   }, [errorMessage]);
 
+  // FIX: Nếu cvData đã có đủ fullName + skills + rawText từ bước upload
+  // thì set luôn, không cần gọi API analyze lần 2
+  useEffect(() => {
+    if (cvData?.fullName && cvData?.skills && cvData?.rawText) {
+      setFullName(cvData.fullName);
+      setCvText(cvData.rawText);
+      const s = cvData.skills;
+      setSkills(s);
+      setSelectedSkills({
+        frontend: [...(s.frontend || [])],
+        backend: [...(s.backend || [])],
+        theory: [...(s.theory || [])],
+        devops: [...(s.devops || [])],
+      });
+    }
+  }, [cvData]);
+
   const fetchWithAuth = async (url, options = {}) => {
     if (!token) {
       logout();
@@ -95,9 +112,7 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
           lineText = '';
           lastX = null;
         }
-        if (lastX !== null && x - lastX > 10) {
-          lineText += ' ';
-        }
+        if (lastX !== null && x - lastX > 10) lineText += ' ';
         lineText += item.str;
         lastY = y;
         lastX = x;
@@ -108,13 +123,21 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
     return mergeBrokenVietnamese(fullText);
   };
 
+  // FIX: onLoadSuccess chỉ dùng để render PDF preview + đếm số trang
+  // KHÔNG gọi API analyze nữa nếu đã có data từ upload
   const onLoadSuccess = async (pdf) => {
     setNumPages(pdf.numPages);
     setPageNumber(1);
-    setAnalyzing(true);
-    setErrorMessage('');
     updateActivity();
 
+    // Nếu đã có đủ data từ cvData (upload flow) → skip analyze
+    if (cvData?.rawText && cvData?.skills && cvData?.fullName) {
+      return;
+    }
+
+    // Fallback: chỉ analyze nếu KHÔNG có rawText (ví dụ: modal mở từ luồng khác)
+    setAnalyzing(true);
+    setErrorMessage('');
     try {
       const rawText = await extractFullText(pdf);
       setCvText(rawText);
@@ -154,13 +177,11 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
   const toggleSkill = (category, skill) => {
     if (generating) return;
     updateActivity();
-
     const isCurrentlySelected = selectedSkills[category].includes(skill);
     if (!isCurrentlySelected && totalSelected >= MAX_SKILLS) {
       setErrorMessage(`You can only select up to ${MAX_SKILLS} skills. Please deselect another skill first.`);
       return;
     }
-
     setSelectedSkills(prev => ({
       ...prev,
       [category]: prev[category].includes(skill)
@@ -184,7 +205,6 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
       return;
     }
     updateActivity();
-
     setGenerating(true);
     setGlobalGenerating(true);
     setErrorMessage('');
@@ -201,14 +221,11 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
           questions: result.questions,
           cvInfo: { fullName, selectedSkills }
         };
-        
         startInterview(interviewData);
         onClose();
         navigate('/cvinterview');
-        
         if (onQuestionsGenerated) onQuestionsGenerated(interviewData);
         if (onStartInterview) onStartInterview(interviewData);
-        
         setGlobalGenerating(false);
         setGenerating(false);
       } else {
@@ -222,18 +239,8 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
     }
   };
 
-  const goPrevPage = () => {
-    if (pageNumber > 1) {
-      setPageNumber(p => p - 1);
-      updateActivity();
-    }
-  };
-  const goNextPage = () => {
-    if (numPages && pageNumber < numPages) {
-      setPageNumber(p => p + 1);
-      updateActivity();
-    }
-  };
+  const goPrevPage = () => { if (pageNumber > 1) { setPageNumber(p => p - 1); updateActivity(); } };
+  const goNextPage = () => { if (numPages && pageNumber < numPages) { setPageNumber(p => p + 1); updateActivity(); } };
 
   const SkillGroup = ({ title, items, selectedItems, onToggle }) => (
     <div className="mb-5">
@@ -243,21 +250,13 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
       </h3>
       <div className="flex flex-wrap gap-2">
         {items.map(skill => (
-          <label
-            key={skill}
-            className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200 ${
-              selectedItems.includes(skill)
-                ? 'bg-primary/20 text-primary ring-2 ring-primary/50 shadow-sm'
-                : 'bg-muted/10 text-text hover:bg-muted/20'
-            } ${generating ? 'pointer-events-none opacity-60' : ''}`}
-          >
-            <input
-              type="checkbox"
-              checked={selectedItems.includes(skill)}
-              onChange={() => onToggle(skill)}
-              className="w-3.5 h-3.5 accent-primary"
-              disabled={generating}
-            />
+          <label key={skill} className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200 ${
+            selectedItems.includes(skill)
+              ? 'bg-primary/20 text-primary ring-2 ring-primary/50 shadow-sm'
+              : 'bg-muted/10 text-text hover:bg-muted/20'
+          } ${generating ? 'pointer-events-none opacity-60' : ''}`}>
+            <input type="checkbox" checked={selectedItems.includes(skill)} onChange={() => onToggle(skill)}
+              className="w-3.5 h-3.5 accent-primary" disabled={generating} />
             <span className="capitalize">{skill}</span>
           </label>
         ))}
@@ -280,7 +279,7 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
             </div>
           </>
         )}
-        {/* Header */}
+
         <div className="flex justify-between items-center p-4 border-b border-border bg-gradient-to-r from-primary/5 to-secondary/5 sticky top-0 z-10">
           <div>
             <h2 className="text-xl font-bold text-text">CV Preview & Analysis</h2>
@@ -291,27 +290,24 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
           </button>
         </div>
 
-        {/* Main Content */}
         <div className="flex-1 overflow-auto p-4 md:p-6 bg-muted/5">
           {errorMessage && (
             <div className="mb-4 p-3 bg-error/10 border border-error/30 rounded-lg flex items-start gap-2 animate-in slide-in-from-top-2">
               <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
               <div className="flex-1 text-sm text-error">{errorMessage}</div>
-              <button onClick={() => setErrorMessage('')} className="text-error hover:text-error/80">
-                <X className="w-4 h-4" />
-              </button>
+              <button onClick={() => setErrorMessage('')} className="text-error hover:text-error/80"><X className="w-4 h-4" /></button>
             </div>
           )}
 
           <div className={`flex flex-col ${!isMobileView ? 'md:flex-row' : ''} gap-5`}>
-            {/* CV preview */}
             {(showCvPreview || !isMobileView) && (
               <div className={`${isMobileView ? 'w-full' : 'md:w-1/2 lg:w-3/5'} transition-all duration-300`}>
                 <div className="bg-card rounded-xl shadow-soft border border-border p-3">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="font-medium text-text">📄 Document Preview</h3>
                     {isMobileView && (
-                      <button onClick={() => { updateActivity(); setShowCvPreview(false); }} className="text-primary flex gap-1 border border-border px-2 py-1 rounded-full text-sm bg-card">
+                      <button onClick={() => { updateActivity(); setShowCvPreview(false); }}
+                        className="text-primary flex gap-1 border border-border px-2 py-1 rounded-full text-sm bg-card">
                         <EyeOff className="w-3.5" /> Hide
                       </button>
                     )}
@@ -323,32 +319,21 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
                       loading={<div className="p-10"><Loader2 className="animate-spin text-primary" /></div>}
                       error={<div className="p-10 text-error">Failed to load PDF</div>}
                     >
-                      <Page
-                        pageNumber={pageNumber}
-                        width={isMobileView ? 320 : 500}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                        className="shadow-md"
-                      />
+                      <Page pageNumber={pageNumber} width={isMobileView ? 320 : 500}
+                        renderTextLayer={false} renderAnnotationLayer={false} className="shadow-md" />
                     </Document>
                   </div>
                   {numPages > 1 && (
                     <div className="flex justify-center gap-4 mt-4 pt-2 border-t border-border">
-                      <button
-                        disabled={pageNumber === 1}
-                        onClick={goPrevPage}
-                        className="p-1.5 disabled:opacity-30 hover:bg-muted/10 rounded-full text-text"
-                      >
+                      <button disabled={pageNumber === 1} onClick={goPrevPage}
+                        className="p-1.5 disabled:opacity-30 hover:bg-muted/10 rounded-full text-text">
                         <ChevronLeft />
                       </button>
                       <span className="text-sm bg-muted/10 text-text px-3 py-1 rounded-full">
                         Page {pageNumber} / {numPages}
                       </span>
-                      <button
-                        disabled={pageNumber === numPages}
-                        onClick={goNextPage}
-                        className="p-1.5 disabled:opacity-30 hover:bg-muted/10 rounded-full text-text"
-                      >
+                      <button disabled={pageNumber === numPages} onClick={goNextPage}
+                        className="p-1.5 disabled:opacity-30 hover:bg-muted/10 rounded-full text-text">
                         <ChevronRight />
                       </button>
                     </div>
@@ -357,13 +342,10 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
               </div>
             )}
 
-            {/* Analysis Panel */}
             <div className={`${isMobileView ? 'w-full' : 'md:w-1/2 lg:w-2/5'}`}>
               {isMobileView && !showCvPreview && (
-                <button
-                  onClick={() => { updateActivity(); setShowCvPreview(true); }}
-                  className="w-full mb-3 py-2 bg-primary/10 text-primary rounded-xl flex items-center justify-center gap-2 border border-border"
-                >
+                <button onClick={() => { updateActivity(); setShowCvPreview(true); }}
+                  className="w-full mb-3 py-2 bg-primary/10 text-primary rounded-xl flex items-center justify-center gap-2 border border-border">
                   <Eye className="w-4" /> Show CV Preview
                 </button>
               )}
@@ -398,35 +380,19 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
                         <div className="mb-4 p-3 bg-warning/10 border border-warning/30 rounded-lg">
                           <p className="text-warning font-semibold text-sm">⚠️ Too many skills selected (max {MAX_SKILLS})</p>
                           <p className="text-warning/80 text-xs mt-1">
-                            You have selected {totalSelected} skills. Please deselect some to focus on <strong>2-3 core skills</strong> for a better interview experience.
+                            You have selected {totalSelected} skills. Please deselect some to focus on <strong>2-3 core skills</strong>.
                           </p>
                         </div>
                       )}
 
-                      <SkillGroup
-                        title="Frontend"
-                        items={skills.frontend}
-                        selectedItems={selectedSkills.frontend}
-                        onToggle={(s) => toggleSkill('frontend', s)}
-                      />
-                      <SkillGroup
-                        title="Backend"
-                        items={skills.backend}
-                        selectedItems={selectedSkills.backend}
-                        onToggle={(s) => toggleSkill('backend', s)}
-                      />
-                      <SkillGroup
-                        title="Core Knowledge"
-                        items={skills.theory}
-                        selectedItems={selectedSkills.theory}
-                        onToggle={(s) => toggleSkill('theory', s)}
-                      />
-                      <SkillGroup
-                        title="Tools & DevOps"
-                        items={skills.devops || []}
-                        selectedItems={selectedSkills.devops || []}
-                        onToggle={(s) => toggleSkill('devops', s)}
-                      />
+                      <SkillGroup title="Frontend" items={skills.frontend}
+                        selectedItems={selectedSkills.frontend} onToggle={(s) => toggleSkill('frontend', s)} />
+                      <SkillGroup title="Backend" items={skills.backend}
+                        selectedItems={selectedSkills.backend} onToggle={(s) => toggleSkill('backend', s)} />
+                      <SkillGroup title="Core Knowledge" items={skills.theory}
+                        selectedItems={selectedSkills.theory} onToggle={(s) => toggleSkill('theory', s)} />
+                      <SkillGroup title="Tools & DevOps" items={skills.devops || []}
+                        selectedItems={selectedSkills.devops || []} onToggle={(s) => toggleSkill('devops', s)} />
                     </>
                   )}
                 </div>
@@ -435,17 +401,14 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
           </div>
         </div>
 
-        {/* Footer */}
         <div className="bg-card border-t border-border p-4 sticky bottom-0">
-          <button
-            onClick={handleGenerate}
+          <button onClick={handleGenerate}
             disabled={generating || analyzing || totalSelected === 0 || isMaxExceeded}
             className={`w-full py-3 rounded-xl flex justify-center items-center gap-2 font-bold transition-all duration-300 transform hover:scale-[1.02] ${
               generating || analyzing || totalSelected === 0 || isMaxExceeded
                 ? 'bg-muted/30 text-muted cursor-not-allowed'
                 : 'bg-primary hover:brightness-105 text-white shadow-md'
-            }`}
-          >
+            }`}>
             <Sparkles className="w-5 h-5" />
             {totalSelected === 0
               ? 'Select at least one skill'
@@ -454,9 +417,7 @@ export const CVInfoModal = ({ cvData, onClose, onStartInterview, onQuestionsGene
               : `Start Interview (${totalSelected} skill${totalSelected > 1 ? 's' : ''})`}
           </button>
           {isMaxExceeded && (
-            <p className="text-center text-xs text-error mt-2">
-              ⚡ Deselect some skills (max {MAX_SKILLS})
-            </p>
+            <p className="text-center text-xs text-error mt-2">⚡ Deselect some skills (max {MAX_SKILLS})</p>
           )}
         </div>
       </div>
