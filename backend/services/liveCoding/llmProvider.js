@@ -9,6 +9,61 @@ const groq = new GroqService(
   0.2
 );
 
+// ========== UTILITY: Lấy các dòng code có ý nghĩa (không phải dấu ngoặc/comment/trống) ==========
+function getMeaningfulLines(code) {
+  const lines = code.split('\n');
+  const meaningful = [];
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    // Bỏ qua dòng trống, dòng chỉ có {} () [] ; , , comment //
+    if (trimmed === '' || /^[{}()\[\];,]+$/.test(trimmed) || trimmed.startsWith('//') || trimmed.startsWith('#')) {
+      continue;
+    }
+    meaningful.push({ lineNum: i + 1, content: lines[i] });
+  }
+  return meaningful;
+}
+
+// ========== VALIDATION: Kiểm tra câu hỏi có tham chiếu đến code thật không ==========
+function validateQuestion(question, code) {
+  const lines = code.split('\n');
+  const maxLine = lines.length;
+  const meaningfulLines = getMeaningfulLines(code);
+  const meaningfulLineNumbers = meaningfulLines.map(l => l.lineNum);
+
+  // Tìm tất cả số dòng được nhắc đến (dạng "dòng 50", "line 50", "dòng số 50")
+  const lineMatches = question.match(/\b(?:dòng|line)\s+(\d+)\b/gi) || [];
+  for (const match of lineMatches) {
+    const lineNum = parseInt(match.match(/\d+/)[0]);
+    if (lineNum < 1 || lineNum > maxLine) {
+      console.warn(`⚠️  Line ${lineNum} out of range (1-${maxLine})`);
+      return false;
+    }
+    if (!meaningfulLineNumbers.includes(lineNum)) {
+      console.warn(`⚠️  Line ${lineNum} is not meaningful (only braces/comments/empty)`);
+      return false;
+    }
+  }
+
+  // Kiểm tra hallucination (các từ khóa bịa đặt)
+  const hallucinations = [
+    'addCargo', 'removeCargo', 'loadCargo', 'unloadCargo',
+    'getCapacity', 'setCapacity', 'isFull', 'isEmpty',
+    'thread', 'mutex', 'semaphore', 'async', 'await',
+    'spawn', 'fork', 'join', 'synchronize'
+  ];
+  for (const hallucination of hallucinations) {
+    if (question.toLowerCase().includes(hallucination)) {
+      if (!code.includes(hallucination)) {
+        console.warn(`⚠️  Question mentions hallucinated method: ${hallucination}`);
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// ========== GỌI AI (giữ nguyên) ==========
 async function callAI(prompt, systemMessage = `
 You are an AI programming expert.
 
@@ -36,34 +91,7 @@ IMPORTANT RULES:
   }
 }
 
-function validateQuestion(question, code) {
-  const functionMatches = question.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\s*\(/g) || [];
-  for (const match of functionMatches) {
-    const fn = match.replace('(', '').trim();
-    if (!code.includes(fn)) {
-      console.warn(`⚠️  Question references non-existent function: ${fn}`);
-      return false;
-    }
-  }
-
-  const hallucinations = [
-    'addCargo', 'removeCargo', 'loadCargo', 'unloadCargo',
-    'getCapacity', 'setCapacity', 'isFull', 'isEmpty',
-    'thread', 'mutex', 'semaphore', 'async', 'await',
-    'spawn', 'fork', 'join', 'synchronize'
-  ];
-
-  for (const hallucination of hallucinations) {
-    if (question.toLowerCase().includes(hallucination)) {
-      if (!code.includes(hallucination)) {
-        console.warn(`⚠️  Question mentions hallucinated method: ${hallucination}`);
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
+// ========== FALLBACK (cũ, không thay đổi nhiều) ==========
 function fallbackResponse(prompt) {
   const lowerPrompt = prompt.toLowerCase();
   if (lowerPrompt.includes('coding question') || lowerPrompt.includes('coding problem')) {
@@ -106,48 +134,44 @@ function fallbackResponse(prompt) {
 }
 
 // ===============================
-// GENERATE CODE QUESTION (difficulty-aware)
+// GENERATE CODE QUESTION (difficulty-aware + kiểm tra độ phức tạp)
 // ===============================
 async function generateCodeQuestion(language, domain, topic, difficulty) {
-  // Difficulty-based constraints
+  // Difficulty-based constraints (siết chặt hơn)
   let difficultyConstraints = '';
-  
   if (difficulty.toLowerCase() === 'beginner') {
     difficultyConstraints = `
 BEGINNER PROBLEM CONSTRAINTS (MUST FOLLOW):
-- Keep problem SHORT and SIMPLE (10-15 lines of code maximum).
-- Single task only - do NOT ask for multiple related classes or features.
-- Do NOT require inheritance hierarchies with multiple classes.
-- Do NOT require multiple methods - keep to 1-2 simple methods.
-- Do NOT require complex data structures - use simple arrays or single variables.
-- Focus on basic syntax, loops, conditionals, simple functions.
-- Example for OOP/Inheritance topic: "Create a simple Dog class with a name attribute and a bark() method."
-- Example for Arrays/Loops topic: "Write a function to find the maximum number in an array."
-- Problem should be solvable in 5-10 minutes.
-- Keep example input/output simple and clear.`;
+- Problem MUST be solvable within 10-15 lines of code (excluding boilerplate).
+- Only 1 function or 1 simple class with 1-2 methods.
+- No recursion, no nested loops, no complex data structures (only arrays or simple variables).
+- Input size <= 5 elements.
+- Do NOT require handling edge cases (empty, null, etc.) unless explicitly taught.
+- Example must be concrete and simple.
+- Problem description length < 80 words.
+- Do NOT use terms like "optimize", "efficient", "scalable", "concurrent", "thread".
+- Focus on basic syntax: loops, conditionals, simple arithmetic.
+`;
   } else if (difficulty.toLowerCase() === 'intermediate') {
     difficultyConstraints = `
-INTERMEDIATE PROBLEM CONSTRAINTS (MUST FOLLOW):
-- Moderate complexity - 15-30 lines of code.
-- Can involve 2-3 related classes or multiple methods.
-- Can ask for basic inheritance or simple design patterns.
-- Can involve basic error handling or edge cases.
-- Problem should require 15-25 minutes to solve.
-- Example for OOP/Inheritance: "Create a Vehicle parent class with 2 child classes (Car, Motorcycle) with specific attributes and a shared method."
-- Example for DSA: "Implement a Stack using an array, with push/pop/peek methods."
-- More structured problem with clear requirements.`;
-  } else if (difficulty.toLowerCase() === 'advanced') {
+INTERMEDIODE CONSTRAINTS:
+- 20-30 lines of code.
+- May involve 2-3 related classes or multiple methods.
+- May require basic error handling (e.g., check for empty input).
+- May ask for simple recursion or one nested loop.
+- Do NOT require multi-threading, advanced design patterns, or heavy optimization.
+- Problem should be challenging but doable in 20 minutes.
+`;
+  } else {
     difficultyConstraints = `
-ADVANCED PROBLEM CONSTRAINTS (MUST FOLLOW):
-- High complexity - 30+ lines of code.
-- Can involve multiple classes, inheritance chains, or interfaces.
-- Can ask for advanced design patterns (Factory, Singleton, Strategy, etc.).
-- Can require comprehensive error handling and edge case management.
-- Can involve optimization, scalability, or performance considerations.
-- Problem should require 30+ minutes to solve.
-- Example for OOP/Inheritance: "Implement an Employee management system with abstract classes, multiple inheritance levels, method overriding, and polymorphism."
-- Example for DSA: "Implement a self-balancing BST (AVL tree) with insert, delete, and rebalancing logic."
-- Complex, real-world like scenarios.`;
+ADVANCED CONSTRAINTS:
+- 30+ lines of code.
+- May involve multiple classes, inheritance, interfaces.
+- May require recursion, backtracking, or moderate algorithm (e.g., binary tree traversal, graph BFS).
+- May ask for error handling and edge cases.
+- Avoid overkill: no need for complex design patterns unless topic demands it.
+- Problem should be solvable in 30-40 minutes.
+`;
   }
 
   const prompt = `Generate a ${difficulty} level coding problem in ${language}.
@@ -164,16 +188,28 @@ Requirements:
 
 Return ONLY valid JSON, no markdown:
 {
-  "problemStatement": "Detailed problem description (${difficulty === 'beginner' ? 'short, simple' : difficulty === 'intermediate' ? 'moderate' : 'detailed and complex'})",
+  "problemStatement": "Detailed problem description",
   "content": "Brief description",
-  "testCriteria": "Constraints or edge cases appropriate for ${difficulty} level",
+  "testCriteria": "Constraints or edge cases",
   "exampleInput": "Simple and clear example input",
   "exampleOutput": "Clear example output",
   "description": "Short summary"
 }`;
 
-  const result = await callAI(prompt);
-  const parsed = extractJson(result);
+  let result = await callAI(prompt);
+  let parsed = extractJson(result);
+  
+  // Kiểm tra lại độ phức tạp (nếu quá khó so với level, sinh lại)
+  if (parsed && parsed.problemStatement) {
+    const isTooHard = await isProblemTooComplex(parsed.problemStatement, difficulty);
+    if (isTooHard) {
+      console.warn(`⚠️ Generated problem too hard for ${difficulty}, regenerating...`);
+      const retryPrompt = `The previous problem was too complex for ${difficulty} level. Make it SIMPLER. ${prompt}`;
+      result = await callAI(retryPrompt);
+      parsed = extractJson(result);
+    }
+  }
+  
   if (parsed && typeof parsed === 'object') {
     if (!parsed.problemStatement) parsed.problemStatement = parsed.content || parsed.description || "Problem statement not provided";
     return parsed;
@@ -181,69 +217,56 @@ Return ONLY valid JSON, no markdown:
   return extractJson(fallbackResponse(prompt));
 }
 
+// Helper: kiểm tra sơ bộ xem bài toán có quá khó không
+async function isProblemTooComplex(problemStatement, difficulty) {
+  const wordCount = problemStatement.split(/\s+/).length;
+  if (difficulty === 'beginner' && wordCount > 80) return true;
+  const hardKeywords = /\b(?:recurs|backtrack|dynamic|graph|tree|thread|mutex|async|await|synchronized|volatile|concurrent|parallel|optimize|scalable|heap|stack|pointer|deque|priority queue|red.?black|avl|b-?tree)\b/i;
+  if (hardKeywords.test(problemStatement)) return true;
+  return false;
+}
+
 // ===============================
-// GENERATE EXPLANATION QUESTION (first)
+// GENERATE EXPLANATION QUESTION (cải tiến: chỉ hỏi dòng có nghĩa)
 // ===============================
 async function generateExplanationQuestion(language, userCode, originalQuestion, difficulty = 'beginner') {
+  const meaningfulLines = getMeaningfulLines(userCode);
+  const lineNumbersStr = meaningfulLines.map(l => l.lineNum).join(', ');
+  const totalLines = userCode.split('\n').length;
+  
   let difficultyRules = '';
   if (difficulty.toLowerCase() === 'beginner') {
-    difficultyRules = `
-BEGINNER RULES:
-- Ask ONLY simple questions about what the code does.
-- Do not ask about optimization, design patterns, or advanced concepts.
-- Do not ask about thread safety, concurrency, or async operations.
-- Do not ask about edge cases beyond obvious ones.
-- Ask about: What does this variable store? What does this method do? How does this loop work?
-- Example: "On line 5, what does the 'name' variable store?"
-- Example: "What is the purpose of this constructor?"
-- Keep it basic and direct.
-`;
+    difficultyRules = `Hỏi về chức năng cơ bản của một dòng code cụ thể. Ví dụ: "Dòng X làm gì?" hoặc "Biến Y dùng để làm gì?". Không hỏi về tối ưu hay design pattern.`;
   } else if (difficulty.toLowerCase() === 'intermediate') {
-    difficultyRules = `
-INTERMEDIATE RULES:
-- Ask about implementation details and logic flow.
-- Can ask about why certain approaches were chosen.
-- Can ask about basic performance considerations.
-- Can ask about how the code handles common edge cases.
-- Can ask about inheritance or polymorphism concepts used.
-- Do not ask about advanced design patterns or complex optimization.
-`;
+    difficultyRules = `Hỏi về logic hoặc cách dữ liệu biến đổi qua các dòng. Có thể hỏi về lý do chọn cách viết này.`;
   } else {
-    difficultyRules = `
-ADVANCED RULES:
-- Ask about design patterns, architecture, and optimization.
-- Can ask about edge cases and error handling comprehensively.
-- Can ask about time/space complexity.
-- Can ask about scalability and performance improvements.
-- Can ask about design trade-offs and limitations.
-- Can ask about why this design is superior to alternatives.
-`;
+    difficultyRules = `Hỏi về thuật toán, độ phức tạp, hoặc cách cải tiến. Có thể hỏi về trade-off thiết kế.`;
   }
 
   const prompt = `Language: ${language}
 Difficulty: ${difficulty}
 
-SOURCE CODE:
+SOURCE CODE (dòng 1 đến ${totalLines}):
 \`\`\`${language}
 ${userCode}
 \`\`\`
 
-IMPORTANT RULES:
-1. ONLY ask about code that actually exists in SOURCE CODE.
-2. NEVER invent methods, variables, properties, classes, loops, conditions, arrays or functions.
-3. If a method name does not appear in SOURCE CODE, do not mention it.
-4. If a variable name does not appear in SOURCE CODE, do not mention it.
-5. Questions must reference actual code lines or blocks that exist.
-6. Be specific - reference line numbers or code blocks when possible.
+CÁC DÒNG CÓ NỘI DUNG Ý NGHĨA (có thể hỏi): ${lineNumbersStr}
+
+QUAN TRỌNG:
+- Chỉ được hỏi về một dòng nằm trong danh sách ${lineNumbersStr}.
+- Không hỏi dòng quá ${totalLines} (không tồn tại).
+- Không hỏi về dòng chỉ có dấu ngoặc, comment, hoặc dòng trống.
+- Câu hỏi phải rõ ràng, nên ghi rõ "Trên dòng X, đoạn code ... làm gì?".
 
 ${difficultyRules}
 
-TASK: Ask ONE specific, in-depth explanation question about this code.
+TASK: Hỏi MỘT câu hỏi giải thích cụ thể về code trên.
 
 RETURN JSON:
 {
   "type": "explain",
-  "question": "Your question (in English, specific, include line numbers when possible)"
+  "question": "Câu hỏi bằng tiếng Việt hoặc tiếng Anh (nhưng phải rõ ràng)"
 }`;
 
   const result = await callAI(prompt);
@@ -253,86 +276,34 @@ RETURN JSON:
     return { type: 'explain', question: parsed.question };
   }
   
-  console.warn('⚠️  Question validation failed, using fallback...');
-  const lines = userCode.split('\n');
-  let fallbackQuestion = '';
-
-  if (difficulty.toLowerCase() === 'beginner') {
-    // Simple fallback for beginners
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (/^\s*(public|private|protected)?.*\s+(\w+)\s*\(/.test(lines[i])) {
-        const match = lines[i].match(/(\w+)\s*\(/);
-        if (match && match[1] !== 'class' && match[1] !== 'if' && match[1] !== 'for' && match[1] !== 'while') {
-          fallbackQuestion = `What is the purpose of the ${match[1]} method on line ${i + 1}?`;
-          break;
-        }
-      }
-    }
-    if (!fallbackQuestion) {
-      const match = userCode.match(/class\s+(\w+)/);
-      fallbackQuestion = match 
-        ? `What is the main responsibility of the ${match[1]} class?`
-        : `Explain what this code does in simple terms.`;
-    }
-  } else if (difficulty.toLowerCase() === 'intermediate') {
-    // Moderate fallback
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (/for|while/.test(line) && line.includes('(')) {
-        fallbackQuestion = `On line ${i + 1}: ${line.substring(0, 60)}..., explain how this loop works and what it accomplishes.`;
-        break;
-      }
-    }
-    if (!fallbackQuestion) {
-      fallbackQuestion = `Explain the overall logic flow of this code and how the different parts work together.`;
-    }
-  } else {
-    // Advanced fallback
-    fallbackQuestion = `Analyze the design and architecture of this code. What design patterns or principles are being applied? How could it be optimized?`;
+  console.warn('⚠️  Question validation failed, using fallback with meaningful line...');
+  // Fallback thông minh: chọn ngẫu nhiên một dòng có nghĩa
+  if (meaningfulLines.length > 0) {
+    const random = meaningfulLines[Math.floor(Math.random() * meaningfulLines.length)];
+    const fallbackQuestion = `Trên dòng ${random.lineNum}: "${random.content.trim()}". Hãy giải thích đoạn code này làm gì và tại sao lại cần nó.`;
+    return { type: 'explain', question: fallbackQuestion };
   }
-
-  return { type: 'explain', question: fallbackQuestion };
+  return { type: 'explain', question: "Hãy giải thích mục đích chính của đoạn code trên." };
 }
 
 // ===============================
-// GENERATE NEXT EXPLANATION QUESTION
+// GENERATE NEXT EXPLANATION QUESTION (tương tự)
 // ===============================
 async function generateNextExplanationQuestion(language, userCode, userAnswer, currentQuestion, explainCount, difficulty = 'beginner') {
-  let difficultyRules = '';
-  if (difficulty.toLowerCase() === 'beginner') {
-    difficultyRules = `
-BEGINNER RULES:
-- Ask ONLY simple questions about what the code does.
-- Do not ask about optimization, design patterns, or advanced concepts.
-- Focus on basic understanding: variables, methods, loops, conditionals.
-- Keep questions simple and direct.
-`;
-  } else if (difficulty.toLowerCase() === 'intermediate') {
-    difficultyRules = `
-INTERMEDIATE RULES:
-- Ask about implementation details and logic flow.
-- Can ask about why certain approaches were chosen.
-- Can ask about basic performance considerations.
-- Can ask about edge cases.
-`;
-  } else {
-    difficultyRules = `
-ADVANCED RULES:
-- Ask about design patterns, architecture, optimization.
-- Can ask about time/space complexity.
-- Can ask about scalability and design trade-offs.
-`;
-  }
-
+  const meaningfulLines = getMeaningfulLines(userCode);
+  const lineNumbersStr = meaningfulLines.map(l => l.lineNum).join(', ');
+  const totalLines = userCode.split('\n').length;
+  
   const prompt = `Language: ${language}
 Difficulty: ${difficulty}
 Question Number: ${explainCount + 1}/3
 
-SOURCE CODE (UNCHANGED):
+SOURCE CODE (dòng 1 đến ${totalLines}):
 \`\`\`${language}
 ${userCode}
 \`\`\`
+
+Các dòng có thể hỏi: ${lineNumbersStr}
 
 PREVIOUS QUESTION:
 ${currentQuestion.question}
@@ -340,22 +311,18 @@ ${currentQuestion.question}
 STUDENT'S ANSWER TO PREVIOUS QUESTION:
 ${userAnswer}
 
-IMPORTANT RULES:
-1. ONLY ask about code that actually exists in SOURCE CODE above.
-2. NEVER invent methods, variables, properties, classes, loops, conditions, arrays or functions.
-3. Do not ask about code that is not in SOURCE CODE.
-4. Questions must reference actual lines or blocks from SOURCE CODE.
-5. Make the NEXT question go DEEPER into a different aspect.
+QUAN TRỌNG:
+- Chỉ được hỏi về một dòng trong danh sách ${lineNumbersStr}.
+- Không hỏi dòng ngoài khoảng 1-${totalLines}.
+- Câu hỏi tiếp theo phải khác khía cạnh so với câu trước.
+- Độ khó ${difficulty}.
 
-${difficultyRules}
-
-TASK: Generate the NEXT explanation question (${explainCount + 1}/3) about the same code.
-The question should explore a different aspect than the previous question.
+TASK: Hỏi MỘT câu hỏi giải thích tiếp theo.
 
 RETURN JSON:
 {
   "type":"explain",
-  "question":"Your next question (in English, specific, reference actual code)"
+  "question":"Câu hỏi (có thể kèm số dòng cụ thể)"
 }`;
 
   const result = await callAI(prompt);
@@ -365,53 +332,18 @@ RETURN JSON:
     return { type: 'explain', question: parsed.question };
   }
 
-  console.warn('⚠️  Question validation failed, using fallback...');
-  
-  // Difficulty-aware fallbacks for questions 2 and 3
-  if (explainCount === 1) {
-    if (difficulty.toLowerCase() === 'beginner') {
-      return { 
-        type: 'explain', 
-        question: `What are the inputs and outputs of this code? Give a specific example of what values are used.` 
-      };
-    } else if (difficulty.toLowerCase() === 'intermediate') {
-      return { 
-        type: 'explain', 
-        question: `How does your code handle different input values? What would happen with edge cases like empty input or maximum/minimum values?` 
-      };
-    } else {
-      return { 
-        type: 'explain', 
-        question: `Analyze the time and space complexity (Big O) of your algorithm. Is there a more efficient approach?` 
-      };
-    }
-  } else if (explainCount === 2) {
-    if (difficulty.toLowerCase() === 'beginner') {
-      return { 
-        type: 'explain', 
-        question: `Describe one specific line or block of code and explain what it does step by step.` 
-      };
-    } else if (difficulty.toLowerCase() === 'intermediate') {
-      return { 
-        type: 'explain', 
-        question: `Could you improve or optimize your code? What would you change and why?` 
-      };
-    } else {
-      return { 
-        type: 'explain', 
-        question: `What are the limitations of your current design? How could it be improved to handle more complex scenarios or larger data sets?` 
-      };
-    }
-  }
-
-  return { 
-    type: 'explain', 
-    question: `Explain a different aspect of your code that we haven't discussed yet.` 
-  };
+  // Fallback thông minh: chọn dòng khác với dòng đã hỏi trước đó (nếu có)
+  const previousLineMatch = currentQuestion.question.match(/\b(?:dòng|line)\s+(\d+)\b/i);
+  let previousLineNum = previousLineMatch ? parseInt(previousLineMatch[1]) : null;
+  let available = meaningfulLines.filter(l => l.lineNum !== previousLineNum);
+  if (available.length === 0) available = meaningfulLines;
+  const random = available[Math.floor(Math.random() * available.length)];
+  const fallbackQuestion = `Trên dòng ${random.lineNum}: "${random.content.trim()}". Giải thích tại sao dòng này cần thiết cho chương trình.`;
+  return { type: 'explain', question: fallbackQuestion };
 }
 
 // ===============================
-// EVALUATE EXPLANATION (SHORT + NATURAL, no ellipsis)
+// EVALUATE EXPLANATION (giữ nguyên, đã ok)
 // ===============================
 async function evaluateExplanation(language, answer, currentQuestion) {
   const prompt = `Language: ${language}
@@ -565,5 +497,5 @@ module.exports = {
   evaluateCodeAndExplanations,
   evaluateCodeSubmission,
   validateQuestion,
+  getMeaningfulLines, // export để frontend có thể dùng nếu cần
 };
-

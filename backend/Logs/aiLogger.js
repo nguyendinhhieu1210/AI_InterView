@@ -1,58 +1,102 @@
-// logs/aiLogger.js
 const fs = require('fs');
 const path = require('path');
 
-// Vì file này nằm trong thư mục logs, file log sẽ được ghi ngay cạnh nó
 const logFilePath = path.join(__dirname, 'ai.log');
+const tokenLogPath = path.join(__dirname, 'token_usage.log');
 
-// Hàm tạo timestamp
 const getTimestamp = () => new Date().toISOString();
 
-// Ghi log bất đồng bộ
-const writeLog = (level, message, data = null) => {
-  const timestamp = getTimestamp();
-  let logEntry = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-  if (data) {
-    let dataStr;
-    if (data instanceof Error) {
-      dataStr = data.stack || data.message;
-    } else if (typeof data === 'object') {
-      dataStr = JSON.stringify(data, null, 2);
-    } else {
-      dataStr = String(data);
-    }
-    logEntry += `\n${dataStr}`;
-  }
-  logEntry += '\n----------------------------------------\n';
-  
-  fs.appendFile(logFilePath, logEntry, (err) => {
-    if (err) console.error('Lỗi ghi log:', err);
+// Ghi log dạng JSON (mỗi dòng 1 object)
+const writeJsonLog = (targetFile, logObject) => {
+  const logLine = JSON.stringify(logObject) + '\n';
+  fs.appendFile(targetFile, logLine, (err) => {
+    if (err) console.error('Lỗi ghi log JSON:', err);
   });
 };
 
-// Các hàm tiện ích
+// ========== LOG CHUNG (ai.log) ==========
 const logRequest = (model, requestId, prompt, temperature) => {
-  writeLog('INFO', `REQUEST | Model: ${model} | RequestId: ${requestId} | Temp: ${temperature}`, { promptPreview: prompt.substring(0, 200) });
+  const entry = {
+    timestamp: getTimestamp(),
+    level: 'INFO',
+    type: 'REQUEST',
+    model,
+    requestId,
+    temperature,
+    promptPreview: prompt.substring(0, 200),
+  };
+  writeJsonLog(logFilePath, entry);
 };
 
 const logResponse = (model, requestId, responseText, durationMs) => {
-  writeLog('INFO', `RESPONSE | Model: ${model} | RequestId: ${requestId} | Duration: ${durationMs}ms`, { responsePreview: responseText.substring(0, 200) });
+  const entry = {
+    timestamp: getTimestamp(),
+    level: 'INFO',
+    type: 'RESPONSE',
+    model,
+    requestId,
+    durationMs,
+    responsePreview: responseText.substring(0, 200),
+  };
+  writeJsonLog(logFilePath, entry);
 };
 
 const logError = (model, requestId, error, context = '') => {
-  writeLog('ERROR', `ERROR | Model: ${model} | RequestId: ${requestId} | ${context}`, error);
+  const entry = {
+    timestamp: getTimestamp(),
+    level: 'ERROR',
+    type: 'ERROR',
+    model,
+    requestId,
+    context,
+    error: {
+      message: error.message,
+      stack: error.stack,
+    },
+  };
+  writeJsonLog(logFilePath, entry);
 };
 
 const logTimeout = (model, requestId, timeoutMs) => {
-  writeLog('WARN', `TIMEOUT | Model: ${model} | RequestId: ${requestId} | Timeout: ${timeoutMs}ms`, `Request exceeded ${timeoutMs}ms without response`);
+  const entry = {
+    timestamp: getTimestamp(),
+    level: 'WARN',
+    type: 'TIMEOUT',
+    model,
+    requestId,
+    timeoutMs,
+    message: `Request exceeded ${timeoutMs}ms without response`,
+  };
+  writeJsonLog(logFilePath, entry);
 };
 
 const logRateLimit = (model, requestId, retryAfter, error) => {
-  writeLog('WARN', `RATE_LIMIT | Model: ${model} | RequestId: ${requestId} | RetryAfter: ${retryAfter || 'unknown'}s`, error);
+  const entry = {
+    timestamp: getTimestamp(),
+    level: 'WARN',
+    type: 'RATE_LIMIT',
+    model,
+    requestId,
+    retryAfter: retryAfter || 'unknown',
+    errorMessage: error?.message,
+  };
+  writeJsonLog(logFilePath, entry);
 };
 
-const logTokenUsage = (model, requestId, promptTokens, completionTokens, totalTokens) => {
-  writeLog('INFO', `TOKEN_USAGE | Model: ${model} | RequestId: ${requestId} | Prompt: ${promptTokens} | Completion: ${completionTokens} | Total: ${totalTokens}`);
+// ========== LOG TOKEN RIÊNG (token_usage.log) ==========
+const logTokenUsage = (model, requestId, inputTokens, outputTokens, totalTokens, feature = 'general') => {
+  const entry = {
+    timestamp: getTimestamp(),
+    level: 'INFO',
+    type: 'TOKEN_USAGE',
+    feature,
+    model,
+    requestId,
+    inputTokens,
+    outputTokens,
+    totalTokens,
+  };
+  writeJsonLog(tokenLogPath, entry);
 };
 
 const generateRequestId = () => {
@@ -67,4 +111,5 @@ module.exports = {
   logRateLimit,
   logTokenUsage,
   generateRequestId,
-};
+}; 
+//nhưng mà thêm tính năng nào để xem token với chỉnh sao cho dễ nhìn tính năng này vừa log vào file ai.log nhưng có định dạng rõ ràng hơn để dễ dàng phân biệt với các log khác. Dưới đây là phiên bản đã chỉnh sửa:

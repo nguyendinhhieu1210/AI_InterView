@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import EvaluationModal from '../components/EvaluationModal';
 import { useNavigate } from 'react-router-dom';
+import * as monaco from 'monaco-editor';
 
 const toMonacoLang = (lang = '') => {
   const map = {
@@ -55,7 +56,6 @@ const getExt = (lang = '') => {
   return map[lang.toLowerCase()] || 'txt';
 };
 
-// Semantic badge classes (still use specific colors for language/difficulty, but with opacity)
 const LANG_BADGE = {
   java: 'border-primary/50 text-primary bg-primary/10',
   python: 'border-blue-500/50 text-blue-500 bg-blue-50 dark:bg-blue-950/30',
@@ -84,6 +84,13 @@ const safeDisplayValue = (value) => {
   }
 };
 
+// Helper: Lấy số dòng từ câu hỏi (nếu có)
+const extractLineNumberFromQuestion = (question) => {
+  if (!question) return null;
+  const match = question.match(/\b(?:dòng|line)\s+(\d+)\b/i);
+  return match ? parseInt(match[1], 10) : null;
+};
+
 export default function CodingInterface({
   sessionId,
   problemStatement: initialProblemStatement,
@@ -99,7 +106,7 @@ export default function CodingInterface({
   const navigate = useNavigate();
   const { token } = useAuth();
   const { theme } = useTheme();
-  const isDark = theme === 'dark'; // only for monaco editor theme
+  const isDark = theme === 'dark';
   const language = initialLanguage.toLowerCase();
 
   const [phase, setPhase] = useState('coding');
@@ -129,12 +136,14 @@ export default function CodingInterface({
   const [submittedExampleInput, setSubmittedExampleInput] = useState('');
   const [submittedExampleOutput, setSubmittedExampleOutput] = useState('');
   const [showExitModal, setShowExitModal] = useState(false);
+  const [invalidLineError, setInvalidLineError] = useState(null);
 
   const editorRef = useRef(null);
   const decorationsRef = useRef([]);
 
   const getExplainQuestionText = (questionObj) => questionObj?.question || questionObj?.content || '';
 
+  // Thêm style highlight
   useEffect(() => {
     const id = 'cdi-highlight-style';
     if (!document.getElementById(id)) {
@@ -157,6 +166,44 @@ export default function CodingInterface({
       decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, []);
     }
   };
+
+  // HIGHLIGHT dòng được hỏi (và kiểm tra dòng có tồn tại không)
+  useEffect(() => {
+    if (phase === 'explaining' && currentQuestion?.type === 'explain' && editorRef.current) {
+      const questionText = getExplainQuestionText(currentQuestion);
+      const lineNum = extractLineNumberFromQuestion(questionText);
+      const codeLines = code.split('\n');
+      const maxLine = codeLines.length;
+      
+      // Kiểm tra hợp lệ
+      if (lineNum !== null) {
+        if (lineNum < 1 || lineNum > maxLine) {
+          setInvalidLineError(`⚠️ Câu hỏi tham chiếu dòng ${lineNum} nhưng code chỉ có ${maxLine} dòng. Vui lòng báo lỗi.`);
+          toast.error(`Dòng ${lineNum} không tồn tại!`);
+          clearDecorations();
+          return;
+        }
+        const lineContent = codeLines[lineNum - 1].trim();
+        if (lineContent === '' || /^[{}()\[\];,]+$/.test(lineContent) || lineContent.startsWith('//')) {
+          setInvalidLineError(`⚠️ Dòng ${lineNum} không có nội dung có ý nghĩa (chỉ dấu ngoặc/comment). Hãy trả lời dựa trên ngữ cảnh.`);
+        } else {
+          setInvalidLineError(null);
+        }
+        
+        // Highlight dòng đó
+        const decorations = [{
+          range: new monaco.Range(lineNum, 1, lineNum, 1),
+          options: { isWholeLine: true, className: 'error-line-highlight' }
+        }];
+        decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, decorations);
+      } else {
+        setInvalidLineError(null);
+        clearDecorations();
+      }
+    } else {
+      clearDecorations();
+    }
+  }, [phase, currentQuestion, code]);
 
   useEffect(() => {
     setCodeProblem({
@@ -185,6 +232,7 @@ export default function CodingInterface({
     setSubmittedExampleOutput('');
     setIsModalOpen(false);
     clearDecorations();
+    setInvalidLineError(null);
   }, [initialProblemStatement, initialTestCriteria, initialExampleInput, initialExampleOutput, language]);
 
   const handleSubmitCode = async () => {
@@ -361,18 +409,12 @@ export default function CodingInterface({
     if (window.confirm('Change topic? All progress will be lost.')) onReset();
   };
 
-  const handleExit = () => {
-    setShowExitModal(true);
-  };
-
+  const handleExit = () => setShowExitModal(true);
   const confirmExit = () => {
     setShowExitModal(false);
     navigate('/welcome');
   };
-
-  const cancelExit = () => {
-    setShowExitModal(false);
-  };
+  const cancelExit = () => setShowExitModal(false);
 
   const langBadgeClass = LANG_BADGE[language] || 'border-border text-muted bg-muted/10';
   const diffBadgeClass = DIFF_BADGE[difficulty] || 'border-border text-muted bg-muted/10';
@@ -470,6 +512,13 @@ export default function CodingInterface({
                 </div>
               )}
 
+              {/* Warning about invalid line */}
+              {invalidLineError && (
+                <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-warning text-sm">
+                  {invalidLineError}
+                </div>
+              )}
+
               {/* Explanation card */}
               {phase === 'explaining' && currentQuestion?.type === 'explain' && explainQuestionText && (
                 <div className="bg-card border border-primary/30 rounded-xl p-5 shadow-soft">
@@ -498,7 +547,7 @@ export default function CodingInterface({
 
       <EvaluationModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} F
+        onClose={() => setIsModalOpen(false)}
         onNext={handleNextCode} 
         evaluation={codeEvaluation} 
         explainAnswers={explainAnswersList} 

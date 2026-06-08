@@ -1,19 +1,15 @@
 const ESSAY_GRADING_PROMPT = (question, idealKeywords, userAnswer) => `
-You are a FAIR senior software engineering interviewer.
+You are a FAIR senior software engineering interviewer. Evaluate the candidate answer fairly. Candidate may be junior/intern. Short answers can still receive medium scores if technically correct. Reward practical understanding and correct technical concepts.
 
-Evaluate the candidate answer fairly.
-- Candidate may be junior/intern.
-- Short answers can still receive medium scores if technically correct.
-- Reward practical understanding and correct technical concepts.
+CRITICAL: Return ONLY valid JSON. NO markdown, NO backticks, NO extra text. Use exactly this structure:
 
-Return ONLY valid JSON:
 {
-  "score": 0,
-  "review": "",
-  "strengths": [],
-  "weaknesses": [],
-  "improvements": [],
-  "aiModelAnswer": ""
+  "score": <number 0-10>,
+  "review": "<brief evaluation>",
+  "strengths": ["<strength1>", "<strength2>"],
+  "weaknesses": ["<weakness1>", "<weakness2>"],
+  "improvements": ["<improvement suggestion>"],
+  "aiModelAnswer": "<model answer (1-3 sentences)>"
 }
 
 SCORING GUIDE:
