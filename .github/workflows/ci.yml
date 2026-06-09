@@ -34,9 +34,11 @@ jobs:
         run: npm ci
 
       - name: Build React App
-        run: npm run build
+        run: |
+          export NODE_OPTIONS="--max_old_space_size=4096"
+          npm run build
 
-  backend:
+    backend:
     runs-on: ubuntu-latest
 
     defaults:
@@ -56,3 +58,8 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Start backend (production mode)
+        run: |
+          npm start &
+          sleep 10
