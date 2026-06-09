@@ -184,7 +184,8 @@ export default function CodingInterface({
           return;
         }
         const lineContent = codeLines[lineNum - 1].trim();
-        if (lineContent === '' || /^[{}()\[\];,]+$/.test(lineContent) || lineContent.startsWith('//')) {
+        // FIX: bỏ escape [ trong character class
+        if (lineContent === '' || /^[{}()[\];,]+$/.test(lineContent) || lineContent.startsWith('//')) {
           setInvalidLineError(`⚠️ Dòng ${lineNum} không có nội dung có ý nghĩa (chỉ dấu ngoặc/comment). Hãy trả lời dựa trên ngữ cảnh.`);
         } else {
           setInvalidLineError(null);
