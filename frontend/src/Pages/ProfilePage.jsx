@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Mail, Calendar, Camera, ArrowLeft, Loader2,
     Edit3, Zap, Clock, Briefcase,
-    CheckCircle, AlertCircle, RefreshCw
+    CheckCircle, AlertCircle
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';

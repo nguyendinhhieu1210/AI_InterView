@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Send, Loader2, ArrowLeft, Brain, CheckCircle, Timer,
-  Sparkles, User, Bot, Trophy, Home, RotateCw, AlertCircle,
+  Sparkles, User, Trophy, Home, RotateCw, AlertCircle,
   Mic, Award, CircleUser, Zap
 } from 'lucide-react';
 import api from '../services/api';

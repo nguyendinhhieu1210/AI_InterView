@@ -140,7 +140,7 @@ export default function InterviewCVPage() {
     };
   };
 
-  const { strengths, weaknesses, suggestions } = computeStrengthsWeaknesses();
+  const { strengths, weaknesses} = computeStrengthsWeaknesses();
 
   if (loading || isGenerating) {
     return (

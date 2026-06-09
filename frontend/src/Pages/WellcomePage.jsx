@@ -1,39 +1,60 @@
-import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  LogOut, User, Brain, Zap, ChevronDown, Settings, HelpCircle,
-  MessageCircle, TrendingUp, FileText, Sparkles, Clock, Flame,
-  CalendarDays, Target, Award, BarChart3, CheckCircle2
-} from 'lucide-react';
+  LogOut,
+  User,
+  Brain,
+  Zap,
+  ChevronDown,
+  Settings,
+  HelpCircle,
+  MessageCircle,
+  TrendingUp,
+  FileText,
+  Clock,
+  Flame,
+  Target,
+  Award,
+  BarChart3,
+} from "lucide-react";
 
-import { StartInterviewModal } from '../components/StartInterviewModal';
-import { UploadCV } from '../components/UploadCV';
-import { AIFeedback } from '../components/AIFeedback';
-import PerformanceTrendChart from '../components/PerformanceTrendChart';
-import ActivityCalendar from '../components/ActivityCalendar';
-import { CVInfoModal } from '../components/CVInfoModal';
-import { useAuth } from '../contexts/AuthContext';
-import { useHistory } from '../contexts/HistoryContext';
+import { StartInterviewModal } from "../components/StartInterviewModal";
+import { UploadCV } from "../components/UploadCV";
+import { AIFeedback } from "../components/AIFeedback";
+import PerformanceTrendChart from "../components/PerformanceTrendChart";
+import ActivityCalendar from "../components/ActivityCalendar";
+import { CVInfoModal } from "../components/CVInfoModal";
+import { useAuth } from "../contexts/AuthContext";
+import { useHistory } from "../contexts/HistoryContext";
 
 const toVietnamDateKey = (dateInput) => {
   if (!dateInput) return null;
   const date = new Date(dateInput);
   if (isNaN(date.getTime())) return null;
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    year: 'numeric', month: '2-digit', day: '2-digit',
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
   const parts = formatter.formatToParts(date);
-  const year = parts.find(p => p.type === 'year')?.value;
-  const month = parts.find(p => p.type === 'month')?.value;
-  const day = parts.find(p => p.type === 'day')?.value;
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  const day = parts.find((p) => p.type === "day")?.value;
   return `${year}-${month}-${day}`;
 };
 
 export default function WelcomePage() {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
-  const { normal, cv, adaptive, coding, loading: historyLoading, refreshHistory } = useHistory();
+  const {
+    normal,
+    cv,
+    adaptive,
+    coding,
+    loading: historyLoading,
+    refreshHistory,
+  } = useHistory();
 
   const dropdownRef = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -43,8 +64,11 @@ export default function WelcomePage() {
 
   const [stats, setStats] = useState({ totalInterviews: 0, streak: 0 });
   const [todayStats, setTodayStats] = useState({
-    normalInterview: 0, cvInterview: 0,
-    adaptiveInterview: 0, codingInterview: 0, total: 0
+    normalInterview: 0,
+    cvInterview: 0,
+    adaptiveInterview: 0,
+    codingInterview: 0,
+    total: 0,
   });
   const [activities, setActivities] = useState([]);
 
@@ -52,31 +76,32 @@ export default function WelcomePage() {
   const [cvData, setCvData] = useState(null);
 
   const texts = {
-    totalSessions: 'Total Interviews',
-    streak: 'Current Streak',
-    days: 'days',
-    performanceTrend: 'Performance Overview',
-    quickActions: 'Quick Actions',
-    startNewInterview: 'Start Interview',
-    uploadCV: 'CV-based Interview',
-    interviewHistory: 'History',
-    logout: 'Sign Out',
-    settings: 'Settings',
-    helpSupport: 'Help & Support',
-    yourProfile: 'Your Profile',
-    goodMorning: 'Good Morning',
-    goodAfternoon: 'Good Afternoon',
-    goodEvening: 'Good Evening',
-    readyMessage: 'Ready to ace your next interview? Your AI coach is here to help.',
+    totalSessions: "Total Interviews",
+    streak: "Current Streak",
+    days: "days",
+    performanceTrend: "Performance Overview",
+    quickActions: "Quick Actions",
+    startNewInterview: "Start Interview",
+    uploadCV: "CV-based Interview",
+    interviewHistory: "History",
+    logout: "Sign Out",
+    settings: "Settings",
+    helpSupport: "Help & Support",
+    yourProfile: "Your Profile",
+    goodMorning: "Good Morning",
+    goodAfternoon: "Good Afternoon",
+    goodEvening: "Good Evening",
+    readyMessage:
+      "Ready to ace your next interview? Your AI coach is here to help.",
     todaySessions: "Today's Activity",
-    normalInt: 'Standard',
-    cvInt: 'CV Based',
-    adaptiveInt: 'Adaptive',
-    codingInt: 'Coding',
-    total: 'Total',
-    keepGoing: 'Great progress today! Keep going! 💪',
-    restDay: 'Take a break today',
-    codingInterview: 'Coding Challenge'
+    normalInt: "Standard",
+    cvInt: "CV Based",
+    adaptiveInt: "Adaptive",
+    codingInt: "Coding",
+    total: "Total",
+    keepGoing: "Great progress today! Keep going! 💪",
+    restDay: "Take a break today",
+    codingInterview: "Coding Challenge",
   };
 
   const getGreeting = () => {
@@ -87,13 +112,20 @@ export default function WelcomePage() {
   };
 
   const formatDate = (date) =>
-    date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    date.toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   const formatTime = (date) =>
-    date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
   const calculateStreakFromActivities = (activitiesList) => {
     if (!activitiesList || activitiesList.length === 0) return 0;
-    const activeDates = new Set(activitiesList.map(act => act.dateVN).filter(Boolean));
+    const activeDates = new Set(
+      activitiesList.map((act) => act.dateVN).filter(Boolean),
+    );
     let streak = 0;
     let currentDate = new Date();
     while (true) {
@@ -109,18 +141,18 @@ export default function WelcomePage() {
 
   const fetchActivities = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/activity/calendar', {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/api/activity/calendar", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.success) {
         setActivities(data.activities);
         const newStreak = calculateStreakFromActivities(data.activities);
-        setStats(prev => ({ ...prev, streak: newStreak }));
+        setStats((prev) => ({ ...prev, streak: newStreak }));
       }
     } catch (err) {
-      console.error('Fetch activities error:', err);
+      console.error("Fetch activities error:", err);
     }
   };
 
@@ -129,20 +161,30 @@ export default function WelcomePage() {
     const allSessions = [...normal, ...cv, ...adaptive, ...coding];
     const total = allSessions.length;
     const todayKey = toVietnamDateKey(new Date());
-    const normalCount = normal.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
-    const cvCount = cv.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
-    const adaptiveCount = adaptive.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
-    const codingCount = coding.filter(s => toVietnamDateKey(s.createdAt) === todayKey).length;
+    const normalCount = normal.filter(
+      (s) => toVietnamDateKey(s.createdAt) === todayKey,
+    ).length;
+    const cvCount = cv.filter(
+      (s) => toVietnamDateKey(s.createdAt) === todayKey,
+    ).length;
+    const adaptiveCount = adaptive.filter(
+      (s) => toVietnamDateKey(s.createdAt) === todayKey,
+    ).length;
+    const codingCount = coding.filter(
+      (s) => toVietnamDateKey(s.createdAt) === todayKey,
+    ).length;
     setTodayStats({
-      normalInterview: normalCount, cvInterview: cvCount,
-      adaptiveInterview: adaptiveCount, codingInterview: codingCount,
+      normalInterview: normalCount,
+      cvInterview: cvCount,
+      adaptiveInterview: adaptiveCount,
+      codingInterview: codingCount,
       total: normalCount + cvCount + adaptiveCount + codingCount,
     });
-    setStats(prev => ({ ...prev, totalInterviews: total }));
+    setStats((prev) => ({ ...prev, totalInterviews: total }));
   }, [normal, cv, adaptive, coding, historyLoading]);
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) navigate('/login');
+    if (!authLoading && !isAuthenticated) navigate("/login");
   }, [authLoading, isAuthenticated, navigate]);
 
   useEffect(() => {
@@ -151,10 +193,11 @@ export default function WelcomePage() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setDropdownOpen(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target))
+        setDropdownOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -163,20 +206,24 @@ export default function WelcomePage() {
   }, []);
 
   useEffect(() => {
-    window.history.pushState(null, '', window.location.href);
-    const handlePopState = () => window.history.pushState(null, '', window.location.href);
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () =>
+      window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
-    setTimeout(async () => { await logout(); navigate('/login'); }, 2000);
+    setTimeout(async () => {
+      await logout();
+      navigate("/login");
+    }, 2000);
   };
 
   const handleStartInterview = (data) => {
-    console.log('Starting interview:', data);
+    console.log("Starting interview:", data);
     fetchActivities();
     refreshHistory();
   };
@@ -194,37 +241,65 @@ export default function WelcomePage() {
   };
 
   const handleStartCVInterview = (interviewData) => {
-    console.log('Start CV interview:', interviewData);
+    console.log("Start CV interview:", interviewData);
     setIsCVModalOpen(false);
     fetchActivities();
     refreshHistory();
   };
 
   const displayName = user?.fullName || user?.userName;
-  const avatarLetter = displayName?.charAt(0).toUpperCase() || 'U';
+  const avatarLetter = displayName?.charAt(0).toUpperCase() || "U";
 
   const statsCards = [
-    { 
-      icon: BarChart3, 
-      label: texts.totalSessions, 
-      value: stats.totalInterviews, 
-      color: 'text-primary', 
-      bg: 'bg-primary/10' 
+    {
+      icon: BarChart3,
+      label: texts.totalSessions,
+      value: stats.totalInterviews,
+      color: "text-primary",
+      bg: "bg-primary/10",
     },
-    { 
-      icon: Flame, 
-      label: texts.streak, 
-      value: `${stats.streak} ${texts.days}`, 
-      color: 'text-orange-500', 
-      bg: 'bg-orange-500/10' 
+    {
+      icon: Flame,
+      label: texts.streak,
+      value: `${stats.streak} ${texts.days}`,
+      color: "text-orange-500",
+      bg: "bg-orange-500/10",
     },
   ];
 
   const todaySessionsCard = [
-    { label: texts.normalInt, value: todayStats.normalInterview, icon: MessageCircle, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-100 dark:bg-blue-900/40', borderColor: '#3b82f6' },
-    { label: texts.cvInt, value: todayStats.cvInterview, icon: FileText, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-100 dark:bg-emerald-900/40', borderColor: '#10b981' },
-    { label: texts.adaptiveInt, value: todayStats.adaptiveInterview, icon: Brain, color: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-100 dark:bg-violet-900/40', borderColor: '#8b5cf6' },
-    { label: texts.codingInt, value: todayStats.codingInterview, icon: Zap, color: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-100 dark:bg-rose-900/40', borderColor: '#f43f5e' }
+    {
+      label: texts.normalInt,
+      value: todayStats.normalInterview,
+      icon: MessageCircle,
+      color: "text-blue-600 dark:text-blue-400",
+      bgColor: "bg-blue-100 dark:bg-blue-900/40",
+      borderColor: "#3b82f6",
+    },
+    {
+      label: texts.cvInt,
+      value: todayStats.cvInterview,
+      icon: FileText,
+      color: "text-emerald-600 dark:text-emerald-400",
+      bgColor: "bg-emerald-100 dark:bg-emerald-900/40",
+      borderColor: "#10b981",
+    },
+    {
+      label: texts.adaptiveInt,
+      value: todayStats.adaptiveInterview,
+      icon: Brain,
+      color: "text-violet-600 dark:text-violet-400",
+      bgColor: "bg-violet-100 dark:bg-violet-900/40",
+      borderColor: "#8b5cf6",
+    },
+    {
+      label: texts.codingInt,
+      value: todayStats.codingInterview,
+      icon: Zap,
+      color: "text-rose-600 dark:text-rose-400",
+      bgColor: "bg-rose-100 dark:bg-rose-900/40",
+      borderColor: "#f43f5e",
+    },
   ];
 
   if (authLoading) {
@@ -259,7 +334,10 @@ export default function WelcomePage() {
       {/* Header */}
       <header className="bg-card/70 backdrop-blur-xl border-b border-border sticky top-0 z-40 shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/welcome')}>
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => navigate("/welcome")}
+          >
             <div className="w-11 h-11 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
               <span className="text-white font-bold text-xl">AI</span>
             </div>
@@ -270,35 +348,64 @@ export default function WelcomePage() {
           </div>
 
           <div className="relative" ref={dropdownRef}>
-            <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 focus:outline-none group">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center gap-2 focus:outline-none group"
+            >
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-800 group-hover:ring-primary/30 transition-all">
-                <span className="text-white font-semibold text-base">{avatarLetter}</span>
+                <span className="text-white font-semibold text-base">
+                  {avatarLetter}
+                </span>
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-semibold text-text">{displayName}</p>
                 <p className="text-xs text-muted">{user.email}</p>
               </div>
-              <ChevronDown className={`w-4 h-4 text-muted transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-4 h-4 text-muted transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+              />
             </button>
 
             {dropdownOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 animate-fadeIn overflow-hidden">
                 <div className="py-1">
                   {[
-                    { icon: User, label: texts.yourProfile, path: '/profile' },
-                    { icon: Settings, label: texts.settings, path: '/settings' },
-                    { icon: HelpCircle, label: texts.helpSupport, path: '/help' },
-                    { icon: FileText, label: texts.interviewHistory, path: '/history' },
+                    { icon: User, label: texts.yourProfile, path: "/profile" },
+                    {
+                      icon: Settings,
+                      label: texts.settings,
+                      path: "/settings",
+                    },
+                    {
+                      icon: HelpCircle,
+                      label: texts.helpSupport,
+                      path: "/help",
+                    },
+                    {
+                      icon: FileText,
+                      label: texts.interviewHistory,
+                      path: "/history",
+                    },
                   ].map((item) => (
-                    <button key={item.path} onClick={() => { setDropdownOpen(false); navigate(item.path); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                      <item.icon className="w-4 h-4 text-primary" /> {item.label}
+                    <button
+                      key={item.path}
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        navigate(item.path);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <item.icon className="w-4 h-4 text-primary" />{" "}
+                      {item.label}
                     </button>
                   ))}
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                <button onClick={handleLogout} disabled={isLoggingOut}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
                   <LogOut className="w-4 h-4" /> {texts.logout}
                 </button>
               </div>
@@ -321,8 +428,12 @@ export default function WelcomePage() {
               <Clock className="w-5 h-5 text-primary" />
               <div>
                 <div className="text-xs text-muted">Local Time</div>
-                <div className="text-sm font-semibold text-text">{formatDate(currentDateTime)}</div>
-                <div className="text-lg font-mono font-bold text-primary">{formatTime(currentDateTime)}</div>
+                <div className="text-sm font-semibold text-text">
+                  {formatDate(currentDateTime)}
+                </div>
+                <div className="text-lg font-mono font-bold text-primary">
+                  {formatTime(currentDateTime)}
+                </div>
               </div>
             </div>
           </div>
@@ -331,12 +442,15 @@ export default function WelcomePage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {statsCards.map((stat, idx) => (
-            <div key={idx} className="bg-card rounded-2xl p-6 shadow-soft border border-border hover:shadow-lg transition-all">
+            <div
+              key={idx}
+              className="bg-card rounded-2xl p-6 shadow-soft border border-border hover:shadow-lg transition-all"
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted mb-1">{stat.label}</p>
                   <p className="text-3xl font-bold text-text">
-                    {historyLoading ? '--' : stat.value}
+                    {historyLoading ? "--" : stat.value}
                   </p>
                 </div>
                 <div className={`p-3 rounded-xl ${stat.bg}`}>
@@ -356,28 +470,41 @@ export default function WelcomePage() {
                 <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-sm ring-1 ring-blue-200/50 dark:ring-blue-700/30">
                   <Target className="w-5 h-5 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-text">{texts.todaySessions}</h3>
+                <h3 className="text-xl font-bold text-text">
+                  {texts.todaySessions}
+                </h3>
               </div>
               <div className="px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-full">
-                <p className="text-sm font-bold text-primary dark:text-primary/90">{todayStats.total} {texts.total}</p>
+                <p className="text-sm font-bold text-primary dark:text-primary/90">
+                  {todayStats.total} {texts.total}
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {todaySessionsCard.map((item, idx) => (
-                <div key={idx} className={`rounded-xl p-4 ${item.bgColor} border-l-4 text-center hover:scale-105 transition-all duration-200`}
-                  style={{ borderLeftColor: item.borderColor }}>
+                <div
+                  key={idx}
+                  className={`rounded-xl p-4 ${item.bgColor} border-l-4 text-center hover:scale-105 transition-all duration-200`}
+                  style={{ borderLeftColor: item.borderColor }}
+                >
                   <div className="flex justify-center mb-2">
                     <div className="p-2 rounded-lg bg-white dark:bg-gray-800/50">
                       <item.icon className={`w-5 h-5 ${item.color}`} />
                     </div>
                   </div>
-                  <p className="text-2xl font-bold text-text">{historyLoading ? '...' : item.value}</p>
-                  <p className="text-xs text-muted mt-1 font-medium">{item.label}</p>
+                  <p className="text-2xl font-bold text-text">
+                    {historyLoading ? "..." : item.value}
+                  </p>
+                  <p className="text-xs text-muted mt-1 font-medium">
+                    {item.label}
+                  </p>
                 </div>
               ))}
             </div>
             <div className="mt-5 pt-4 text-center border-t border-border">
-              <p className={`text-sm font-semibold flex items-center justify-center gap-2 ${todayStats.total > 0 ? 'text-success' : 'text-muted'}`}>
+              <p
+                className={`text-sm font-semibold flex items-center justify-center gap-2 ${todayStats.total > 0 ? "text-success" : "text-muted"}`}
+              >
                 <Award className="w-4 h-4" />
                 {todayStats.total > 0 ? texts.keepGoing : texts.restDay}
               </p>
@@ -392,7 +519,9 @@ export default function WelcomePage() {
             <div className="bg-card rounded-2xl border border-border p-6 shadow-soft">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-semibold text-text">{texts.performanceTrend}</h3>
+                <h3 className="text-lg font-semibold text-text">
+                  {texts.performanceTrend}
+                </h3>
               </div>
               <PerformanceTrendChart />
             </div>
@@ -404,7 +533,9 @@ export default function WelcomePage() {
             <div className="bg-card rounded-2xl border border-border p-6 shadow-soft">
               <div className="flex items-center gap-2 mb-4">
                 <Zap className="w-5 h-5 text-yellow-500" />
-                <h3 className="text-lg font-semibold text-text">{texts.quickActions}</h3>
+                <h3 className="text-lg font-semibold text-text">
+                  {texts.quickActions}
+                </h3>
               </div>
               <div className="space-y-3">
                 <button
@@ -414,19 +545,19 @@ export default function WelcomePage() {
                   <MessageCircle className="w-4 h-4" />
                   {texts.startNewInterview}
                 </button>
-                
+
                 <UploadCV onUploadSuccess={handleCVUploadSuccess} />
-                
+
                 <button
-                  onClick={() => navigate('/live-coding')}
+                  onClick={() => navigate("/live-coding")}
                   className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                 >
                   <Zap className="w-4 h-4" />
                   {texts.codingInterview}
                 </button>
-                
+
                 <button
-                  onClick={() => navigate('/history')}
+                  onClick={() => navigate("/history")}
                   className="w-full py-2.5 px-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                 >
                   <FileText className="w-4 h-4" />
@@ -449,18 +580,20 @@ export default function WelcomePage() {
       </main>
 
       {/* Modals */}
-      <StartInterviewModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onStart={handleStartInterview} 
+      <StartInterviewModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onStart={handleStartInterview}
       />
-      
+
       {isCVModalOpen && cvData && (
         <CVInfoModal
           cvData={cvData}
           onClose={handleCloseCVModal}
           onStartInterview={handleStartCVInterview}
-          onQuestionsGenerated={(data) => console.log('Questions generated from CV:', data)}
+          onQuestionsGenerated={(data) =>
+            console.log("Questions generated from CV:", data)
+          }
         />
       )}
 
@@ -485,9 +618,8 @@ export default function WelcomePage() {
           50% { opacity: 0.7; }
         }
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
-        .group-hover\:animate-pulse:hover { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+        .group-hover:animate-pulse:hover { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
       `}</style>
     </div>
   );
 }
-
