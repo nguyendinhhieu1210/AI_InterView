@@ -24,8 +24,6 @@ import { useAuth } from "../contexts/AuthContext";
 export default function HelpSupportPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-
-  const [isLoggingOut] = useState(false);
   const guideRef = useRef(null);
 
   useEffect(() => {
