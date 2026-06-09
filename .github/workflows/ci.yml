@@ -1,32 +1,79 @@
-backend:
-  runs-on: ubuntu-latest
+name: AI Interview CI
 
-  defaults:
-    run:
-      working-directory: backend
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
 
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build React App
+        run: |
+          export NODE_OPTIONS="--max_old_space_size=4096"
+          npm run build
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        cache: npm
-        cache-dependency-path: backend/package-lock.json
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Install wait-on globally
-      run: npm install -g wait-on
-
-    - name: Start backend
-      run: |
-        npm start &
-        npx wait-on http://localhost:5000/health --timeout 30000
-        echo "✅ Backend is ready"
-
-    - name: Health check
-      run: curl http://localhost:5000/health
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Start backend
+        run: |
+          npm start > backend.log 2>&1 &
+          echo $! > backend.pid
+      - name: Wait for backend to be ready
+        run: |
+          echo "Waiting for backend to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:5000/health > /dev/null 2>&1; then
+              echo "✅ Backend is ready"
+              exit 0
+            fi
+            echo "Attempt $i/30: Backend not ready yet..."
+            sleep 2
+          done
+          echo "❌ Backend failed to start"
+          echo "=== Backend logs ==="
+          cat backend.log
+          exit 1
+      - name: Health check
+        run: |
+          echo "=== Health check response ==="
+          curl -v http://localhost:5000/health
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) 2>/dev/null || true
+          fi
