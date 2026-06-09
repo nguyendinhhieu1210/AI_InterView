@@ -38,7 +38,7 @@ jobs:
           export NODE_OPTIONS="--max_old_space_size=4096"
           npm run build
 
-    backend:
+  backend:
     runs-on: ubuntu-latest
 
     defaults:
@@ -62,4 +62,7 @@ jobs:
       - name: Start backend (production mode)
         run: |
           npm start &
-          sleep 10
+          sleep 5
+
+      - name: Health check
+        run: curl http://localhost:5000/health
