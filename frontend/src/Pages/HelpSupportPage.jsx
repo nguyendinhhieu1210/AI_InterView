@@ -23,9 +23,9 @@ import { useAuth } from "../contexts/AuthContext";
 
 export default function HelpSupportPage() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isLoggingOut] = useState(false);
   const guideRef = useRef(null);
 
   useEffect(() => {
@@ -129,15 +129,6 @@ export default function HelpSupportPage() {
 
   return (
     <div className="min-h-screen bg-bg py-8 px-4 sm:px-6 lg:px-8">
-      {isLoggingOut && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-card rounded-2xl p-8 shadow-soft text-center animate-fadeIn border border-border">
-            <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-text">Logging out...</p>
-          </div>
-        </div>
-      )}
-
       <div className="max-w-7xl mx-auto">
         <button
           onClick={() => navigate("/welcome")}

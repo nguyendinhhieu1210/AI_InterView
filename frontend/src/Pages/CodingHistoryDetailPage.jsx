@@ -25,7 +25,6 @@ import {
   ChevronDown,
 } from "lucide-react";
 import api from "../services/api";
-import { useAuth } from "../contexts/AuthContext";
 
 export default function CodingHistoryDetailPage() {
   const { sessionId } = useParams();
