@@ -85,21 +85,21 @@ module.exports = {
 
 ```jsx
 // App.js
-<ThemeProvider>         // Dark/Light mode
-  <LanguageProvider>   // VI/EN language (i18next)
-    <AuthProvider>     // User auth state (JWT token, user info)
-      <InterviewProvider>  // Interview state
+<ThemeProvider>         // Chế độ tối/sáng (Dark/Light mode)
+  <AuthProvider>        // Thông tin người dùng, token JWT
+    <InterviewProvider> // Trạng thái phỏng vấn tiêu chuẩn / CV
+      <HistoryProvider> // Quản lý lịch sử luyện tập
         <Routes>...</Routes>
-      </InterviewProvider>
-    </AuthProvider>
-  </LanguageProvider>
+      </HistoryProvider>
+    </InterviewProvider>
+  </AuthProvider>
 </ThemeProvider>
 ```
 
 ### AuthContext – Dữ liệu quan trọng
 ```js
 {
-  user: { _id, userName, fullName, email, avatar, role },
+  user: { id, userName, fullName, email, role },
   token: "eyJhbGci...",
   isAuthenticated: true/false,
   login(token, user) {},
@@ -120,12 +120,33 @@ module.exports = {
 </ProtectedRoute>
 ```
 
-Route structure:
+Cấu trúc Routes trong ứng dụng:
 ```
-Public:  /, /login, /forgot-password, /verify-otp, /reset-password
-Private: /welcome, /interview, /cvinterview, /adaptive-interview,
-         /live-coding, /history/*, /cv-history/*, /adaptive-history/*,
-         /profile, /settings, /help
+Public Routes:
+├── /                     ← Landing / Login Page
+├── /login                ← Đăng nhập
+├── /register             ← Đăng ký tài khoản
+├── /verify-otp           ← Xác thực OTP reset mật khẩu
+├── /reset-password       ← Đặt lại mật khẩu mới
+
+Private Routes (Yêu cầu đăng nhập):
+├── /welcome              ← Dashboard chính (ActivityCalendar, charts)
+├── /profile              ← Trang thông tin cá nhân & Thống kê chi tiết
+├── /settings             ← Cài đặt tài khoản (Đổi mật khẩu, ngôn ngữ, dark mode)
+├── /help                 ← Trợ giúp & Câu hỏi FAQ
+├── /interview            ← Phỏng vấn tiêu chuẩn (Standard Interview)
+├── /history              ← Lịch sử phỏng vấn tiêu chuẩn
+├── /history/:id          ← Chi tiết kết quả phỏng vấn tiêu chuẩn
+├── /cvinfo               ← Màn hình thông tin CV & phân tích kỹ năng
+├── /cvinterview          ← Phỏng vấn dựa trên CV
+├── /cv-history           ← Lịch sử phỏng vấn CV
+├── /cv-history/:id       ← Chi tiết kết quả phỏng vấn CV
+├── /adaptive-interview   ← Phỏng vấn thích ứng (Adaptive Interview)
+├── /adaptive-history     ← Lịch sử phỏng vấn thích ứng
+├── /adaptive-history/:sessionId  ← Chi tiết kết quả phỏng vấn thích ứng
+├── /live-coding          ← Lập trình trực tiếp (Live Coding)
+├── /coding-history       ← Lịch sử phỏng vấn coding
+└── /coding-history/:sessionId   ← Chi tiết kết quả phỏng vấn coding
 ```
 
 ---

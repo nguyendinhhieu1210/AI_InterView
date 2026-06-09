@@ -170,26 +170,27 @@ GOOGLE_AI_API_KEY=AIza...
 ```javascript
 const jwt = require('jsonwebtoken');
 
-const verifyToken = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
+module.exports = (req, res, next) => {
+  const authHeader = req.header('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Không có token, truy cập bị từ chối' });
+  }
 
+  const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // { _id, email, role }
+    req.user = decoded; // { id, role, iat, exp }
     next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Invalid token' });
+  } catch (error) {
+    return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
   }
 };
-
-module.exports = { verifyToken };
 ```
 
 **Cách dùng trong routes:**
 ```javascript
-const { verifyToken } = require('../middleware/auth');
-router.get('/profile', verifyToken, userController.getProfile);
+const auth = require('../middleware/auth');
+router.get('/profile', auth, userController.getProfile);
 ```
 
 ---

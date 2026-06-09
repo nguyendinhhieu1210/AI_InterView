@@ -49,7 +49,7 @@
              ▼
   ┌──────────────────────────┐
   │  AI sinh câu hỏi         │
-  │  (5 MCQ + 5 tự luận)     │
+  │  (7 MCQ + 3 tự luận)     │
   │  via Groq / Gemini AI    │
   └──────────┬───────────────┘
              │
@@ -153,7 +153,7 @@
   │  Điều chỉnh độ khó       │   │ Lặp lại
   └──────────┬───────────────┘   │ theo từng câu
              │ Kết thúc session  │
-             │ POST /api/adaptive/complete
+             │ (sessionComplete) │
              ▼
   ┌──────────────────────────┐
   │  Tổng kết session        │
