@@ -5,7 +5,7 @@ const { fixBrokenText, extractNameDirectly, normalizeName } = require('./textUti
 const { uniqueCaseInsensitive } = require('./skillUtils');
 const {
   logRequest, logResponse, logError, logTimeout, logTokenUsage, generateRequestId
-} = require('../../logs/aiLogger');
+} = require('../../utils/aiLogger');
 
 // FIX: Rút gọn prompt ~35% token so với bản cũ, giữ nguyên accuracy
 // Trước: ~800 tokens system message, sau: ~520 tokens

@@ -4,7 +4,7 @@ const { safeParseJson } = require('../ai/parsers/jsonParser');
 const { HumanMessage } = require('@langchain/core/messages');
 const {
   logRequest, logResponse, logError, logTimeout, logTokenUsage, generateRequestId
-} = require('../../logs/aiLogger');
+} = require('../../utils/aiLogger');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROMPT - YÊU CẦU GIẢI THÍCH CHI TIẾT VÀ MODEL ANSWER CỤ THỂ
