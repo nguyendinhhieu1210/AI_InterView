@@ -187,8 +187,10 @@ export default function WelcomePage() {
     if (!authLoading && !isAuthenticated) navigate("/login");
   }, [authLoading, isAuthenticated, navigate]);
 
+  // Sửa thành:
   useEffect(() => {
     if (user) fetchActivities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
