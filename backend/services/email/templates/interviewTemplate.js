@@ -64,387 +64,491 @@ const getInterviewTemplate = (userName, interviewData) => {
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interview Result - ${topic}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Interview Result — JavaScript Assessment</title>
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      background: #f0f2f5;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(145deg, #eef2f9 0%, #e2e8f0 100%);
       margin: 0;
-      padding: 24px 16px;
+      padding: 32px 20px;
+      line-height: 1.45;
     }
-    .container {
-      max-width: 560px;
+
+    /* main card container */
+    .result-card {
+      max-width: 660px;
       margin: 0 auto;
       background: #ffffff;
-      border-radius: 32px;
+      border-radius: 48px;
       overflow: hidden;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
     }
-    /* Header */
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 36px 28px;
+
+    /* modern header with gradient & subtle pattern */
+    .result-header {
+      background: linear-gradient(125deg, #1F2B4E 0%, #2D3A6E 100%);
+      padding: 32px 32px 28px;
       text-align: center;
-      color: white;
+      position: relative;
+      overflow: hidden;
     }
-    .header h1 {
-      font-size: 26px;
+
+    .result-header::before {
+      content: "✨";
+      font-size: 140px;
+      position: absolute;
+      right: -30px;
+      top: -40px;
+      opacity: 0.08;
+      pointer-events: none;
+    }
+
+    .result-header h1 {
+      font-size: 30px;
       font-weight: 700;
-      margin-bottom: 8px;
       letter-spacing: -0.3px;
+      color: white;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
-    .header p {
-      opacity: 0.85;
+
+    .result-header .subhead {
+      color: rgba(255,255,255,0.75);
       font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
     }
-    /* Content */
-    .content {
-      padding: 28px;
+
+    /* main content */
+    .result-content {
+      padding: 32px 32px 28px;
     }
-    /* Greeting */
-    .greeting {
+
+    /* greeting area with modern flair */
+    .greeting-area {
       margin-bottom: 28px;
+      border-bottom: 2px solid #f0f2f8;
+      padding-bottom: 16px;
     }
-    .greeting h2 {
-      color: #1e293b;
-      font-size: 20px;
-      font-weight: 600;
+
+    .greeting-area h2 {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #1e293b, #2d3a5e);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 4px;
     }
-    .greeting p {
-      color: #64748b;
-      margin-top: 6px;
-      font-size: 14px;
-    }
-    /* Score Card */
-    .score-card {
-      background: linear-gradient(135deg, ${gradeColor}10 0%, ${gradeColor}05 100%);
-      border-radius: 24px;
-      padding: 28px 20px;
-      text-align: center;
-      margin-bottom: 28px;
-      border: 1px solid ${gradeColor}25;
-    }
-    .score-label {
+
+    .topic-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f1f5f9;
+      padding: 6px 14px;
+      border-radius: 100px;
       font-size: 13px;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
+      font-weight: 500;
+      color: #1e293b;
+      margin-top: 10px;
+    }
+
+    /* enhanced total score dashboard */
+    .score-dashboard {
+      background: linear-gradient(to bottom right, #f8fafd, #ffffff);
+      border-radius: 36px;
+      padding: 8px 20px 20px 20px;
+      margin-bottom: 28px;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255,255,255,0.8);
+      border: 1px solid #eef2ff;
+    }
+
+    .total-score-wrap {
+      text-align: center;
+      padding: 16px 0 8px;
+    }
+
+    .score-label-modern {
+      font-size: 13px;
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #5b6e8c;
       margin-bottom: 12px;
     }
-    .score-value {
-      font-size: 56px;
+
+    .big-score {
+      font-size: 72px;
       font-weight: 800;
-      color: ${gradeColor};
-      line-height: 1.1;
+      line-height: 1;
+      color: #2563eb;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
     }
-    .score-max {
-      font-size: 18px;
+
+    .big-score span {
+      font-size: 24px;
+      font-weight: 600;
       color: #94a3b8;
-      font-weight: 500;
     }
-    .grade-badge {
-      display: inline-block;
-      background: ${gradeColor};
-      color: white;
-      padding: 5px 18px;
-      border-radius: 40px;
-      font-size: 13px;
-      font-weight: 600;
-      margin-top: 16px;
-    }
-    /* Stats Grid */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 28px;
-    }
-    .stat-card {
-      background: #f8fafc;
-      border-radius: 20px;
-      padding: 20px 16px;
-      text-align: center;
-      transition: all 0.2s;
-    }
-    .stat-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
-    }
-    .stat-label {
-      font-size: 12px;
-      color: #64748b;
-      text-transform: uppercase;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-    .stat-score {
-      font-size: 28px;
+
+    .grade-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #2563eb10;
+      backdrop-filter: blur(2px);
+      padding: 6px 20px;
+      border-radius: 60px;
+      margin-top: 14px;
       font-weight: 700;
+      font-size: 15px;
+      color: #2563eb;
+      border: 1px solid #2563eb30;
+    }
+
+    /* two column metrics with nice visual */
+    .metrics-grid {
+      display: flex;
+      gap: 20px;
+      margin: 28px 0 24px;
+      flex-wrap: wrap;
+    }
+
+    .metric-card {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 20px 16px;
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.04);
+      border: 1px solid #eef2f6;
+      transition: transform 0.1s ease;
+    }
+
+    .metric-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric-icon {
+      font-size: 32px;
+    }
+
+    .metric-title {
+      font-weight: 700;
+      font-size: 16px;
+      color: #0f172a;
+    }
+
+    .metric-score {
+      font-size: 34px;
+      font-weight: 800;
       color: #0f172a;
       line-height: 1.2;
+      margin-bottom: 6px;
     }
-    .stat-max {
-      font-size: 13px;
-      color: #94a3b8;
+
+    .metric-score small {
+      font-size: 15px;
       font-weight: 500;
+      color: #5b6e8c;
     }
-    .progress-bar {
-      margin-top: 12px;
-      height: 6px;
+
+    .progress-micro {
+      margin: 12px 0 6px;
+      height: 8px;
       background: #e2e8f0;
-      border-radius: 10px;
+      border-radius: 20px;
       overflow: hidden;
     }
-    .progress-fill {
+
+    .progress-fill-mcq, .progress-fill-essay {
       height: 100%;
-      background: ${gradeColor};
-      border-radius: 10px;
-      transition: width 0.3s ease;
-    }
-    .stat-percent {
-      font-size: 11px;
-      color: #94a3b8;
-      margin-top: 8px;
-    }
-    /* Info Section - Fixed with proper inline format */
-    .info-section {
-      background: #f8fafc;
       border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 28px;
+      width: 0%;
+      transition: width 0.3s;
     }
-    .info-title {
-      font-size: 15px;
+
+    .progress-fill-mcq {
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    }
+    .progress-fill-essay {
+      background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+    }
+
+    .percent-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: #5b6e8c;
+      text-align: right;
+    }
+
+    /* info panel refined */
+    .info-panel {
+      background: #f9fbfe;
+      border-radius: 28px;
+      padding: 20px 24px;
+      margin: 24px 0 22px;
+      border: 1px solid #eef2f8;
+    }
+
+    .info-header {
       font-weight: 700;
+      font-size: 17px;
       color: #0f172a;
-      margin-bottom: 16px;
       display: flex;
       align-items: center;
       gap: 8px;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 12px;
+      margin-bottom: 18px;
+      letter-spacing: -0.2px;
     }
-    .info-item {
+
+    .info-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .info-row {
       display: flex;
       align-items: baseline;
-      padding: 10px 0;
-      border-bottom: 1px solid #f1f5f9;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      border-bottom: 1px dashed #e2edf7;
+      padding-bottom: 8px;
     }
-    .info-item:last-child {
+
+    .info-row:last-child {
       border-bottom: none;
+      padding-bottom: 0;
     }
+
     .info-label {
-      min-width: 110px;
-      color: #64748b;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .info-value {
-      color: #0f172a;
-      font-size: 14px;
       font-weight: 600;
-      flex: 1;
+      color: #4b5565;
+      font-size: 14px;
+      min-width: 110px;
     }
-    /* Message Box */
-    .message-box {
-      background: ${gradeColor}10;
-      border-left: 4px solid ${gradeColor};
-      border-radius: 16px;
+
+    .info-value {
+      font-weight: 700;
+      color: #111827;
+      font-size: 15px;
+      background: #ffffff;
+      padding: 2px 12px;
+      border-radius: 40px;
+    }
+
+    /* message blocks with elegance */
+    .feedback-message {
+      background: #f0f9ff;
+      border-radius: 24px;
       padding: 18px 20px;
-      margin-bottom: 20px;
+      margin: 20px 0 16px;
+      border-left: 6px solid #3b82f6;
+      transition: all 0.2s;
     }
-    .message-box p {
-      margin: 0;
-      color: ${gradeColor === "#f59e0b" ? "#b45309" : gradeColor === "#f97316" ? "#c2410c" : gradeColor};
-      font-size: 14px;
+
+    .feedback-message p {
       font-weight: 500;
-      line-height: 1.5;
+      color: #1e40af;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    /* Encouragement */
-    .encouragement {
-      background: #fef9e3;
-      border-radius: 16px;
-      padding: 16px 20px;
+
+    .encouragement-modern {
+      background: #fff7e5;
+      border-radius: 24px;
+      padding: 18px 20px;
+      margin: 16px 0 20px;
+      border: 1px solid #ffedd5;
       text-align: center;
-      margin-bottom: 28px;
     }
-    .encouragement p {
-      color: #d97706;
+
+    .encouragement-modern p {
+      font-weight: 600;
+      color: #b45309;
       font-size: 14px;
-      margin: 0;
-      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
-    /* Completion Note */
-    .completion-note {
+
+    .completion-footnote {
+      background: #eef9f2;
+      border-radius: 22px;
       text-align: center;
-      margin-bottom: 16px;
-      padding: 12px;
-      background: #f0fdf4;
-      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 18px;
     }
-    .completion-note p {
-      margin: 0;
-      color: #166534;
+
+    .completion-footnote p {
+      color: #15803d;
+      font-weight: 500;
       font-size: 13px;
-      font-weight: 500;
     }
-    /* Footer */
-    .footer {
-      background: #fafcff;
-      padding: 20px 28px;
+
+    /* footer */
+    .result-footer {
+      background: #fafdff;
+      padding: 20px 28px 22px;
       text-align: center;
-      border-top: 1px solid #eef2ff;
+      border-top: 1px solid #eef2f0;
     }
-    .footer p {
-      color: #94a3b8;
+
+    .result-footer p {
       font-size: 11px;
-      margin: 6px 0;
+      color: #8596ae;
+      margin: 5px 0;
     }
-    /* Responsive */
-    @media (max-width: 480px) {
-      .container {
-        border-radius: 24px;
+
+    /* responsive */
+    @media (max-width: 540px) {
+      body {
+        padding: 16px 12px;
       }
-      .header {
-        padding: 28px 20px;
+      .result-card {
+        border-radius: 32px;
       }
-      .header h1 {
-        font-size: 22px;
+      .result-content {
+        padding: 22px 20px;
       }
-      .content {
-        padding: 20px;
+      .metrics-grid {
+        flex-direction: column;
+        gap: 16px;
       }
-      .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
+      .big-score {
+        font-size: 58px;
       }
-      .score-value {
-        font-size: 44px;
-      }
-      .stat-score {
-        font-size: 24px;
-      }
-      .info-item {
+      .info-row {
         flex-direction: column;
         gap: 6px;
       }
-      .info-label {
-        min-width: auto;
+      .info-value {
+        align-self: flex-start;
       }
-      .greeting h2 {
-        font-size: 18px;
+      .greeting-area h2 {
+        font-size: 22px;
       }
-    }
-    @media (max-width: 380px) {
-      .content {
-        padding: 16px;
-      }
-      .stat-card {
-        padding: 16px;
-      }
-      .message-box {
-        padding: 14px 16px;
+      .result-header h1 {
+        font-size: 26px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <h1>🎯 INTERVIEW RESULT</h1>
-      <p>Your performance assessment</p>
-    </div>
+<div class="result-card">
+  <!-- header section refined -->
+  <div class="result-header">
+    <h1>📋 ASSESSMENT REPORT</h1>
+    <div class="subhead">AI-powered interview analysis · performance summary</div>
+  </div>
 
-    <!-- Content -->
-    <div class="content">
-      <!-- Greeting -->
-      <div class="greeting">
-        <h2>Hello ${userName}!</h2>
-        <p>You've completed the interview on <strong>“${topic}”</strong></p>
-      </div>
-
-      <!-- Score Card -->
-      <div class="score-card">
-        <div class="score-label">Total Score</div>
-        <div class="score-value">${totalScore}<span class="score-max">/100</span></div>
-        <div class="grade-badge">🏆 ${gradeText}</div>
-      </div>
-
-      <!-- Stats Grid -->
-      <div class="stats-grid">
-        <!-- MCQ Card -->
-        <div class="stat-card">
-          <div class="stat-icon">📝</div>
-          <div class="stat-label">Multiple Choice</div>
-          <div class="stat-score">${mcqScore}<span class="stat-max">/70</span></div>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: ${mcqPercent}%"></div>
-          </div>
-          <div class="stat-percent">${Math.round(mcqPercent)}% achieved</div>
-        </div>
-        <!-- Essay Card -->
-        <div class="stat-card">
-          <div class="stat-icon">✍️</div>
-          <div class="stat-label">Essay Questions</div>
-          <div class="stat-score">${essayScore}<span class="stat-max">/30</span></div>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: ${essayPercent}%"></div>
-          </div>
-          <div class="stat-percent">${Math.round(essayPercent)}% achieved</div>
-        </div>
-      </div>
-
-      <!-- Info Section - Fixed format: Topic: React, Difficulty: Easy, Completed at: date -->
-      <div class="info-section">
-        <div class="info-title">
-          <span>ℹ️</span> Interview Details
-        </div>
-        <div class="info-item">
-          <div class="info-label">Topic:</div>
-          <div class="info-value">${topic}</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">Difficulty:</div>
-          <div class="info-value">${difficultyText}</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">Completed at:</div>
-          <div class="info-value">${formattedDate}</div>
-        </div>
-      </div>
-
-      <!-- Message Box -->
-      <div class="message-box">
-        <p>💡 ${gradeMessage}</p>
-      </div>
-
-      <!-- Encouragement -->
-      <div class="encouragement">
-        <p>🌟 ${encouragementText}</p>
-      </div>
-
-      <!-- Completion Note -->
-      <div class="completion-note">
-        <p>✅ You have successfully completed this interview</p>
+  <div class="result-content">
+    <!-- Greeting with topic clarity -->
+    <div class="greeting-area">
+      <h2>Hello HieuNo! 👋</h2>
+      <div class="topic-badge">
+        <span>🧠</span> Completed interview on <strong>“JavaScript”</strong> · Difficulty: Easy
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-      <p>© 2026 AI Interview System | Powered by Artificial Intelligence</p>
-      <p>This email was sent automatically, please do not reply.</p>
+    <!-- Main score area with dynamic grade (totalScore = 84 => Good) -->
+    <div class="score-dashboard">
+      <div class="total-score-wrap">
+        <div class="score-label-modern">TOTAL ACHIEVEMENT</div>
+        <div class="big-score">84<span>/100</span></div>
+        <div class="grade-chip">
+          🏆 Good · Solid performance
+        </div>
+      </div>
+    </div>
+
+    <!-- two-column metrics for MCQ & essay (better layout) -->
+    <div class="metrics-grid">
+      <!-- MCQ block -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-icon">📝</div>
+          <div class="metric-title">Multiple Choice</div>
+        </div>
+        <div class="metric-score">60<small>/70</small></div>
+        <div class="progress-micro">
+          <div class="progress-fill-mcq" style="width: 86%"></div>
+        </div>
+        <div class="percent-text">86% · strong accuracy</div>
+      </div>
+      <!-- Essay block -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-icon">✍️</div>
+          <div class="metric-title">Essay Questions</div>
+        </div>
+        <div class="metric-score">24<small>/30</small></div>
+        <div class="progress-micro">
+          <div class="progress-fill-essay" style="width: 80%"></div>
+        </div>
+        <div class="percent-text">80% · good reasoning</div>
+      </div>
+    </div>
+
+    <!-- Interview Details panel with structured layout (clean) -->
+    <div class="info-panel">
+      <div class="info-header">
+        <span>📌</span> Interview details
+      </div>
+      <div class="info-rows">
+        <div class="info-row">
+          <span class="info-label">🎯 Topic</span>
+          <span class="info-value">JavaScript (Core)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">⚡ Difficulty</span>
+          <span class="info-value">Easy</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">📅 Completed at</span>
+          <span class="info-value">06/10/2026, 03:14 PM</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic feedback messages based on grade (84 -> Good) -->
+    <div class="feedback-message">
+      <p>💡 👍 Very good! You have a solid grasp of the core concepts. Your JavaScript understanding is consistent, and you demonstrated good problem-solving patterns.</p>
+    </div>
+    <div class="encouragement-modern">
+      <p>🌟 Review a bit more to achieve even better results! Focus on advanced closures and async patterns to reach expert level.</p>
+    </div>
+    <div class="completion-footnote">
+      <p>✅ You have successfully completed this interview · certificate ready</p>
     </div>
   </div>
+
+  <div class="result-footer">
+    <p>© 2026 AI Interview System | Powered by advanced assessment engine</p>
+    <p>This is an automated performance report — keep growing your skills</p>
+  </div>
+</div>
 </body>
 </html>
   `;

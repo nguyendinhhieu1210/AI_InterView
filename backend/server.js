@@ -26,9 +26,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// ❌ REMOVE THIS (gây lỗi path-to-regexp)
-// app.options("/{*path}", cors(corsOptions));
-
 app.use(express.json());
 
 // ================= ROUTES =================
