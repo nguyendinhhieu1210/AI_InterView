@@ -81,7 +81,6 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authUser, authLoading]);
 
-  // Update profile (giữ nguyên)
   const updateProfileData = async (newFullName, newAvatar, customMsg = "") => {
     setUpdating(true);
     setError("");
