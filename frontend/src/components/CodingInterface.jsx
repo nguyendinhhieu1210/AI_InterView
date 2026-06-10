@@ -174,7 +174,7 @@ export default function CodingInterface({
       const lineNum = extractLineNumberFromQuestion(questionText);
       const codeLines = code.split('\n');
       const maxLine = codeLines.length;
-      
+
       // Kiểm tra hợp lệ
       if (lineNum !== null) {
         if (lineNum < 1 || lineNum > maxLine) {
@@ -190,7 +190,7 @@ export default function CodingInterface({
         } else {
           setInvalidLineError(null);
         }
-        
+
         // Highlight dòng đó
         const decorations = [{
           range: new monaco.Range(lineNum, 1, lineNum, 1),
@@ -501,8 +501,8 @@ export default function CodingInterface({
               {/* Feedback card */}
               {feedback && (
                 <div className={`p-4 rounded-xl border text-sm ${feedback.type === 'error'
-                    ? 'bg-error/10 border-error/30 text-error'
-                    : 'bg-success/10 border-success/30 text-success'
+                  ? 'bg-error/10 border-error/30 text-error'
+                  : 'bg-success/10 border-success/30 text-success'
                   }`}>
                   <div className="font-semibold">{feedback.message}</div>
                   {feedback.type === 'success' && phase === 'explain_pending' && (
@@ -528,8 +528,23 @@ export default function CodingInterface({
                     <span className="text-xs text-muted bg-muted/20 px-2 py-0.5 rounded-full">Explain</span>
                   </div>
                   <p className="text-text text-sm mb-4 leading-relaxed break-words">{explainQuestionText}</p>
-                  <textarea rows={4} value={userAnswer} onChange={(e) => setUserAnswer(e.target.value)} placeholder="Your answer..." className="w-full bg-muted/5 border border-border text-text rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary resize-none" />
-                  <button onClick={handleSubmitAnswer} disabled={loading} className="mt-3 w-full bg-primary hover:brightness-105 disabled:opacity-50 text-white py-2 rounded-lg text-sm font-semibold transition">{loading ? 'Submitting...' : 'Submit Answer'}</button>
+                  <textarea
+                    rows={4}
+                    value={userAnswer}
+                    onChange={(e) => setUserAnswer(e.target.value)}
+                    placeholder="Your answer..."
+                    className={`w-full border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary focus:border-transparent resize-none placeholder:text-muted/50 transition-colors duration-200 ${isDark
+                        ? 'bg-gray-800 text-white'
+                        : 'bg-white text-gray-900'
+                      }`}
+                  />
+                  <button
+                    onClick={handleSubmitAnswer}
+                    disabled={loading}
+                    className="mt-3 w-full bg-primary hover:brightness-105 disabled:opacity-50 text-white py-2 rounded-lg text-sm font-semibold transition"
+                  >
+                    {loading ? 'Submitting...' : 'Submit Answer'}
+                  </button>
                 </div>
               )}
 
@@ -546,16 +561,16 @@ export default function CodingInterface({
         </div>
       </div>
 
-      <EvaluationModal 
-        isOpen={isModalOpen} 
+      <EvaluationModal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onNext={handleNextCode} 
-        evaluation={codeEvaluation} 
-        explainAnswers={explainAnswersList} 
-        problemStatement={submittedProblem} 
-        code={submittedCode} 
-        exampleInput={submittedExampleInput} 
-        exampleOutput={submittedExampleOutput} 
+        onNext={handleNextCode}
+        evaluation={codeEvaluation}
+        explainAnswers={explainAnswersList}
+        problemStatement={submittedProblem}
+        code={submittedCode}
+        exampleInput={submittedExampleInput}
+        exampleOutput={submittedExampleOutput}
       />
 
       {/* Exit Modal */}

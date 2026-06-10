@@ -1,12 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 
-const logFilePath = path.join(__dirname, 'ai.log');
-const tokenLogPath = path.join(__dirname, 'token_usage.log');
+// Log tập trung vào backend/logs/ — không phụ thuộc vào vị trí file aiLogger.js
+const LOG_DIR = path.join(__dirname, '..', 'logs');
+const logFilePath = path.join(LOG_DIR, 'ai.log');
+const tokenLogPath = path.join(LOG_DIR, 'token_usage.log');
+
+// Tạo thư mục logs/ nếu chưa có (chạy 1 lần lúc khởi động)
+if (!fs.existsSync(LOG_DIR)) {
+  fs.mkdirSync(LOG_DIR, { recursive: true });
+}
 
 const getTimestamp = () => new Date().toISOString();
 
-// Ghi log dạng JSON (mỗi dòng 1 object)
 const writeJsonLog = (targetFile, logObject) => {
   const logLine = JSON.stringify(logObject) + '\n';
   fs.appendFile(targetFile, logLine, (err) => {
@@ -14,9 +20,8 @@ const writeJsonLog = (targetFile, logObject) => {
   });
 };
 
-// ========== LOG CHUNG (ai.log) ==========
 const logRequest = (model, requestId, prompt, temperature) => {
-  const entry = {
+  writeJsonLog(logFilePath, {
     timestamp: getTimestamp(),
     level: 'INFO',
     type: 'REQUEST',
@@ -24,25 +29,23 @@ const logRequest = (model, requestId, prompt, temperature) => {
     requestId,
     temperature,
     promptPreview: prompt.substring(0, 200),
-  };
-  writeJsonLog(logFilePath, entry);
+  });
 };
 
 const logResponse = (model, requestId, responseText, durationMs) => {
-  const entry = {
+  writeJsonLog(logFilePath, {
     timestamp: getTimestamp(),
     level: 'INFO',
     type: 'RESPONSE',
     model,
     requestId,
     durationMs,
-    responsePreview: responseText.substring(0, 200),
-  };
-  writeJsonLog(logFilePath, entry);
+    responsePreview: (typeof responseText === 'string' ? responseText : JSON.stringify(responseText)).substring(0, 200),
+  });
 };
 
 const logError = (model, requestId, error, context = '') => {
-  const entry = {
+  writeJsonLog(logFilePath, {
     timestamp: getTimestamp(),
     level: 'ERROR',
     type: 'ERROR',
@@ -53,12 +56,11 @@ const logError = (model, requestId, error, context = '') => {
       message: error.message,
       stack: error.stack,
     },
-  };
-  writeJsonLog(logFilePath, entry);
+  });
 };
 
 const logTimeout = (model, requestId, timeoutMs) => {
-  const entry = {
+  writeJsonLog(logFilePath, {
     timestamp: getTimestamp(),
     level: 'WARN',
     type: 'TIMEOUT',
@@ -66,12 +68,11 @@ const logTimeout = (model, requestId, timeoutMs) => {
     requestId,
     timeoutMs,
     message: `Request exceeded ${timeoutMs}ms without response`,
-  };
-  writeJsonLog(logFilePath, entry);
+  });
 };
 
 const logRateLimit = (model, requestId, retryAfter, error) => {
-  const entry = {
+  writeJsonLog(logFilePath, {
     timestamp: getTimestamp(),
     level: 'WARN',
     type: 'RATE_LIMIT',
@@ -79,13 +80,11 @@ const logRateLimit = (model, requestId, retryAfter, error) => {
     requestId,
     retryAfter: retryAfter || 'unknown',
     errorMessage: error?.message,
-  };
-  writeJsonLog(logFilePath, entry);
+  });
 };
 
-// ========== LOG TOKEN RIÊNG (token_usage.log) ==========
 const logTokenUsage = (model, requestId, inputTokens, outputTokens, totalTokens, feature = 'general') => {
-  const entry = {
+  writeJsonLog(tokenLogPath, {
     timestamp: getTimestamp(),
     level: 'INFO',
     type: 'TOKEN_USAGE',
@@ -95,13 +94,10 @@ const logTokenUsage = (model, requestId, inputTokens, outputTokens, totalTokens,
     inputTokens,
     outputTokens,
     totalTokens,
-  };
-  writeJsonLog(tokenLogPath, entry);
+  });
 };
 
-const generateRequestId = () => {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
-};
+const generateRequestId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
 
 module.exports = {
   logRequest,
@@ -111,5 +107,4 @@ module.exports = {
   logRateLimit,
   logTokenUsage,
   generateRequestId,
-}; 
-//nhưng mà thêm tính năng nào để xem token với chỉnh sao cho dễ nhìn tính năng này vừa log vào file ai.log nhưng có định dạng rõ ràng hơn để dễ dàng phân biệt với các log khác. Dưới đây là phiên bản đã chỉnh sửa:
+};

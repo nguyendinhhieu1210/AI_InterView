@@ -1,7 +1,14 @@
 const mongoose = require('mongoose');
 
 const LiveCodingSessionSchema = new mongoose.Schema({
+
   // Session metadata
+
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   id: {
     type: String,
     required: true,

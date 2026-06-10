@@ -1,5 +1,5 @@
 // backend/controllers/interviewController.js
-const { generateInterviewQuestions, gradeEssay } = require('../services/aiService');
+const { generateInterviewQuestions, gradeEssay } = require('../services/standardinterview/aiService');
 const InterviewResult = require('../models/InterviewResult');
 const saveActivity = require('../utils/saveActivity');
 
