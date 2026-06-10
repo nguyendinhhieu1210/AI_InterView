@@ -11,7 +11,7 @@
 | **EP7-1** | Hỗ trợ đa ngôn ngữ (i18n) | 5 | ✅ Hoàn thành | Sử dụng thư viện `i18next` + `react-i18next` để cấu hình đa ngôn ngữ Tiếng Việt & Tiếng Anh. Dịch toàn bộ giao diện tĩnh của app. |
 | **EP7-2** | Đồng bộ giao diện Dark/Light mode | 3 | ✅ Hoàn thành | Tích hợp Tailwind CSS dark mode class-based kết hợp React Context (`ThemeContext`). Đồng bộ màu sắc cho toàn bộ components (charts, editor, modals). |
 | **EP7-3** | Trang Trợ giúp & FAQ | 2 | ✅ Hoàn thành | Trang `/help` hiển thị hướng dẫn sử dụng chi tiết bằng cách sử dụng các Accordion component giúp người dùng nhanh chóng tìm thấy câu trả lời. |
-| **EP7-4** | Cấu hình cài đặt tài khoản | 3 | ✅ Hoàn thành | Trang `/settings` cho phép chỉnh sửa thông tin, đổi mật khẩu, bật tắt chế độ nhận thông báo qua mail hoặc thông báo hệ thống. |
+| **EP7-4** | Cấu hình cài đặt tài khoản | 3 | ✅ Hoàn thành | Trang `/settings` cho phép chỉnh sửa thông tin, đổi mật khẩu và lưu tùy chọn nhận thông báo (email/browser) trên frontend bằng `localStorage`. |
 | **EP7-5** | Sửa đổi mật khẩu bảo mật | 2 | ✅ Hoàn thành | API `PUT /api/users/change-password`. Xác thực mật khẩu hiện tại trước khi mã hóa mật khẩu mới và lưu vào DB. |
 | **EP7-6** | Tối ưu hóa UI/UX & Fix bugs | 3 | ✅ Hoàn thành | Sửa lỗi vỡ layout trên màn hình di động, cải thiện tốc độ tải trang, tối ưu các hiệu ứng chuyển trang bằng Framer Motion mượt mà. |
 
