@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    User, Mail, Lock, FileText, Brain, ClipboardList, BarChart3, Sparkles,
+    User, Mail, Lock, FileText, Brain, ClipboardList, Sparkles,
     AlertCircle, CheckCircle, ChevronRight, Eye, EyeOff, Shield, Zap, Users, Clock, UserPlus,
-    Code, Cpu, LayoutTemplate, Target, Award, TrendingUp
+    Code, Cpu,Target, Award, TrendingUp
 } from 'lucide-react';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
