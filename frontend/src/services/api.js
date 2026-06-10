@@ -1,35 +1,37 @@
 // api.js
-import axios from 'axios';
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: process.env.REACT_APP_API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
   timeout: 30000,
 });
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.error('❌ Token hết hạn hoặc không hợp lệ');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      console.error("❌ Token hết hạn hoặc không hợp lệ");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
       // 🔥 Broadcast logout đến tất cả tab
-      localStorage.setItem('logout', Date.now().toString());
+      localStorage.setItem("logout", Date.now().toString());
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
