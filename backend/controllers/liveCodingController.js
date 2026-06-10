@@ -50,6 +50,21 @@ function getTopicsForDomain(language, domain) {
   return ['Basic Syntax', 'Control Flow', 'Functions', 'Error Handling'];
 }
 
+// ============== HELPER: Kiểm tra ownership và lấy session ==============
+function getSessionWithOwnershipCheck(sessionId, userId) {
+  const session = sessionStore.getSession(sessionId);
+
+  if (!session) return null;
+
+  if (!session.userId) return null;
+
+  if (String(session.userId) !== String(userId)) {
+    return null;
+  }
+
+  return session;
+}
+
 // ============== HELPER: Loại bỏ ellipsis và không truncate ==============
 function cleanText(text) {
   if (!text) return '';
@@ -100,6 +115,7 @@ exports.startInterview = async (req, res) => {
     const question = await llmProvider.generateCodeQuestion(language, domain, topicName, difficulty);
 
     const sessionData = {
+      userId: req.user.id,
       language,
       domain,
       topic: topicName,
@@ -130,12 +146,12 @@ exports.startInterview = async (req, res) => {
 };
 
 // ===============================
-// LẤY CÂU HỎI HIỆN TẠI
+// LẤY CÂU HỎI HIỆN TẠI (FIXED: thêm ownership check)
 // ===============================
 exports.getCurrentQuestion = async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const session = sessionStore.getSession(sessionId);
+    const session = getSessionWithOwnershipCheck(sessionId, req.user.id);
     if (!session) return res.status(404).json({ error: 'Session not found or expired' });
     res.json({ currentQuestion: session.currentQuestion });
   } catch (error) {
@@ -144,14 +160,14 @@ exports.getCurrentQuestion = async (req, res) => {
 };
 
 // ===============================
-// SUBMIT CODE
+// SUBMIT CODE (FIXED: thêm ownership check)
 // ===============================
 exports.submitCode = async (req, res) => {
   try {
     const { sessionId } = req.params;
     const { code } = req.body;
 
-    const session = sessionStore.getSession(sessionId);
+    const session = getSessionWithOwnershipCheck(sessionId, req.user.id);
     if (!session) return res.status(404).json({ error: 'Session not found or expired' });
     if (session.currentQuestion.type !== 'code') {
       return res.status(400).json({ error: 'Not a code question' });
@@ -210,7 +226,7 @@ exports.submitCode = async (req, res) => {
 };
 
 // ===============================
-// SUBMIT EXPLANATION
+// SUBMIT EXPLANATION (FIXED: thêm ownership check)
 // ===============================
 exports.submitExplanation = async (req, res) => {
   try {
@@ -218,7 +234,7 @@ exports.submitExplanation = async (req, res) => {
     const { answer } = req.body;
     const MAX_EXPLAIN = 3;
 
-    const session = sessionStore.getSession(sessionId);
+    const session = getSessionWithOwnershipCheck(sessionId, req.user.id);
     if (!session) return res.status(404).json({ error: 'Session not found or expired' });
     if (session.currentQuestion.type !== 'explain') {
       return res.status(400).json({ error: 'Not an explanation question' });
@@ -298,29 +314,48 @@ exports.submitExplanation = async (req, res) => {
     }
 
     // LƯU VÀO DATABASE - chỉ những dữ liệu cần thiết
-    const newSessionRecord = new LiveCodingSession({
-      id: sessionId,
-      language: session.language,
-      domain: session.domain,
-      topic: session.topic,
-      difficulty: session.difficulty,
-      codeHistory: [
-        {
-          code: session.currentCodeSubmission.code,
-          problemStatement: session.currentCodeSubmission.problemStatement,
-          submittedAt: session.currentCodeSubmission.submittedAt,
-          explainAnswers: session.explainAnswers,
-          evaluation: {
-            summary: cleanText(finalEvaluation.summary),
-            feedback: cleanText(finalEvaluation.feedback),
-            strengths: (finalEvaluation.strengths || []).map(s => cleanText(s)),
-            weaknesses: (finalEvaluation.weaknesses || []).map(w => cleanText(w)),
-          },
+    const historyEntry = {
+      code: session.currentCodeSubmission.code,
+      problemStatement: session.currentCodeSubmission.problemStatement,
+      submittedAt: session.currentCodeSubmission.submittedAt,
+      explainAnswers: session.explainAnswers,
+      evaluation: {
+        summary: cleanText(finalEvaluation.summary),
+        feedback: cleanText(finalEvaluation.feedback),
+        strengths: (finalEvaluation.strengths || []).map(s => cleanText(s)),
+        weaknesses: (finalEvaluation.weaknesses || []).map(w => cleanText(w)),
+      },
+    };
+
+    await LiveCodingSession.findOneAndUpdate(
+      {
+        id: sessionId,
+        userId: req.user.id,
+      },
+      {
+        $setOnInsert: {
+          userId: req.user.id,
+          id: sessionId,
+          language: session.language,
+          domain: session.domain,
+          topic: session.topic,
+          difficulty: session.difficulty,
+          createdAt: session.createdAt,
         },
-      ],
-      createdAt: session.createdAt,
-    });
-    await newSessionRecord.save();
+
+        $push: {
+          codeHistory: historyEntry,
+        },
+
+        $set: {
+          updatedAt: new Date(),
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+      }
+    );
 
     // RESET session (RAM) để chờ câu code tiếp theo
     session.waitingForNextCode = true;
@@ -350,12 +385,12 @@ exports.submitExplanation = async (req, res) => {
 };
 
 // ===============================
-// NEXT CODE QUESTION
+// NEXT CODE QUESTION (FIXED: thêm ownership check)
 // ===============================
 exports.nextCodeQuestion = async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const session = sessionStore.getSession(sessionId);
+    const session = getSessionWithOwnershipCheck(sessionId, req.user.id);
     if (!session) return res.status(404).json({ error: 'Session not found or expired' });
     if (!session.waitingForNextCode) {
       return res.status(400).json({ error: 'Current round not completed yet' });
@@ -388,12 +423,15 @@ exports.nextCodeQuestion = async (req, res) => {
 };
 
 // ===============================
-// LẤY ĐÁNH GIÁ CUỐI CÙNG (từ DB)
+// LẤY ĐÁNH GIÁ CUỐI CÙNG (FIXED: đã có userId check)
 // ===============================
 exports.getLastEvaluation = async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const session = await LiveCodingSession.findOne({ id: sessionId });
+    const session = await LiveCodingSession.findOne({
+      id: sessionId,
+      userId: req.user.id
+    });
     if (!session) return res.status(404).json({ error: 'Session not found' });
 
     const lastEntry = session.codeHistory[session.codeHistory.length - 1];
@@ -407,12 +445,15 @@ exports.getLastEvaluation = async (req, res) => {
 };
 
 // ===============================
-// LẤY TOÀN BỘ CODE HISTORY (từ DB)
+// LẤY TOÀN BỘ CODE HISTORY (FIXED: đã có userId check)
 // ===============================
 exports.getSessionHistory = async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const session = await LiveCodingSession.findOne({ id: sessionId });
+    const session = await LiveCodingSession.findOne({
+      id: sessionId,
+      userId: req.user.id
+    });
     if (!session) return res.status(404).json({ error: 'Session not found' });
 
     res.json({
@@ -430,15 +471,14 @@ exports.getSessionHistory = async (req, res) => {
   }
 };
 
-
-/**
- * GET /api/sessions
- * Lấy danh sách các live coding sessions (có phân trang, sắp xếp mới nhất trước)
- * Query params: page (default 1), limit (default 10)
- */
+// ===============================
+// GET /api/sessions (FIXED: đã có userId check)
+// ===============================
 exports.getSessionList = async (req, res) => {
   try {
-    const sessions = await LiveCodingSession.find({})
+    const sessions = await LiveCodingSession.find({
+      userId: req.user.id
+    })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -466,15 +506,17 @@ exports.getSessionList = async (req, res) => {
   }
 };
 
-/**
- * GET /api/sessions/:sessionId
- * Lấy chi tiết một session, bao gồm toàn bộ codeHistory
- */
+// ===============================
+// GET /api/sessions/:sessionId (FIXED: đã có userId check)
+// ===============================
 exports.getSessionDetail = async (req, res) => {
   try {
     const { sessionId } = req.params;
 
-    const session = await LiveCodingSession.findOne({ id: sessionId }).lean();
+    const session = await LiveCodingSession.findOne({
+      id: sessionId,
+      userId: req.user.id
+    }).lean();
 
     if (!session) {
       return res.status(404).json({

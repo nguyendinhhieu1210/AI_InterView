@@ -1,9 +1,57 @@
-// backend/services/aiService.js
+// backend/services/standardinterview/aiService.js  (Interview feature)
 const { HumanMessage } = require('@langchain/core/messages');
-const { GroqService } = require('./ai/groqService');
-const { extractJson } = require('../utils/jsonExtractor'); // dùng hàm của bạn
+const { GroqService } = require('../ai/groqService');
+const { extractJson } = require('../../utils/jsonExtractor');
+const {
+  logRequest,
+  logResponse,
+  logError,
+  logRateLimit,
+  logTokenUsage,
+  generateRequestId,
+} = require('../../utils/aiLogger'); // ← dùng logger sẵn có, không cần file mới
 
-// ---------- Giữ nguyên toàn bộ difficultyConfig, buildPrompt, validate... (cũ) ----------
+const MODEL = 'llama-3.3-70b-versatile';
+
+// ─────────────────────────────────────────────
+// Helper nội bộ: gọi Groq + log đầy đủ
+// ─────────────────────────────────────────────
+async function callGroq(groqInstance, messages, feature = 'general', temperature = 0) {
+  const requestId = generateRequestId();
+
+  // Lấy text prompt để log + estimate token
+  const promptText = messages
+    .map(m => m?.lc_kwargs?.content || m?.content || (typeof m === 'string' ? m : ''))
+    .join('\n');
+
+  logRequest(MODEL, requestId, promptText, temperature);
+
+  const startTime = Date.now();
+  try {
+    const responseText = await groqInstance.invokeWithRetry(messages);
+    const durationMs = Date.now() - startTime;
+
+    logResponse(MODEL, requestId, responseText, durationMs);
+
+    // Estimate token (1 token ≈ 4 ký tự) vì Groq wrapper không trả usage
+    const inputTokens  = Math.ceil(promptText.length / 4);
+    const outputTokens = Math.ceil((responseText || '').length / 4);
+    logTokenUsage(MODEL, requestId, inputTokens, outputTokens, inputTokens + outputTokens, feature);
+
+    return responseText;
+  } catch (error) {
+    if (error?.status === 429 || error?.message?.includes('rate limit')) {
+      logRateLimit(MODEL, requestId, error?.headers?.['retry-after'] || null, error);
+    } else {
+      logError(MODEL, requestId, error, feature);
+    }
+    throw error;
+  }
+}
+
+// ─────────────────────────────────────────────
+// Difficulty config (giữ nguyên)
+// ─────────────────────────────────────────────
 const difficultyConfig = {
   easy: {
     levelDescription: `- beginner level\n- junior/intern level\n- focus on fundamentals\n- simple debugging\n- basic syntax\n- easy real-world usage`,
@@ -85,23 +133,37 @@ OUTPUT FORMAT (ONLY VALID JSON, no extra text)
 }`;
 };
 
-const validateMCQ = (mcq = []) => {
-  return mcq.filter(q => q.question && Array.isArray(q.options) && q.options.length === 4 && q.correctAnswer && q.options.includes(q.correctAnswer));
-};
+// ─────────────────────────────────────────────
+// Validation (giữ nguyên)
+// ─────────────────────────────────────────────
+const validateMCQ = (mcq = []) =>
+  mcq.filter(q =>
+    q.question &&
+    Array.isArray(q.options) &&
+    q.options.length === 4 &&
+    q.correctAnswer &&
+    q.options.includes(q.correctAnswer)
+  );
 
-const validateEssay = (text = []) => {
-  return text.filter(q => q.question && Array.isArray(q.idealAnswerKeywords));
-};
+const validateEssay = (text = []) =>
+  text.filter(q => q.question && Array.isArray(q.idealAnswerKeywords));
 
-// ---------- Hàm tạo câu hỏi ----------
+// ─────────────────────────────────────────────
+// generateInterviewQuestions
+// ─────────────────────────────────────────────
 const generateInterviewQuestions = async (topic, difficulty = 'medium') => {
+  const temperature = difficulty === 'easy' ? 0.3 : difficulty === 'medium' ? 0.5 : 0.7;
+  const groqService = new GroqService(process.env.GROQ_API_KEY, MODEL, temperature);
   const prompt = buildPrompt(topic, difficulty);
-  let temperature = difficulty === 'easy' ? 0.3 : (difficulty === 'medium' ? 0.5 : 0.7);
-  const groqService = new GroqService(process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', temperature);
 
   try {
-    const responseText = await groqService.invokeWithRetry([new HumanMessage(prompt)]);
-    // Dùng extractJson thay cho safeParseJSON cũ
+    const responseText = await callGroq(
+      groqService,
+      [new HumanMessage(prompt)],
+      'generateInterviewQuestions',
+      temperature
+    );
+
     const parsed = extractJson(responseText);
     if (!parsed) throw new Error('extractJson returned null');
 
@@ -123,52 +185,48 @@ const generateInterviewQuestions = async (topic, difficulty = 'medium') => {
       return true;
     });
 
-    // Fallback chỉ khi thiếu, nội dung liên quan đến topic, không có "Fallback X"
-    const fallbackMCQBase = () => ({
+    // Fallback nếu thiếu câu
+    const fallbackMCQ = () => ({
       question: `What is an essential concept in ${topic}?`,
       difficulty,
       options: ['Performance', 'Security', 'Scalability', 'Best Practices'],
       correctAnswer: 'Best Practices',
-      explanation: `Understanding best practices in ${topic} is crucial for writing maintainable code.`
+      explanation: `Understanding best practices in ${topic} is crucial for writing maintainable code.`,
     });
-    const fallbackEssayBase = () => ({
+    const fallbackEssay = () => ({
       question: `Describe a common challenge when working with ${topic} and how to overcome it.`,
       difficulty,
       idealAnswerKeywords: [topic.toLowerCase(), 'challenge', 'solution'],
-      sampleAnswer: `One common challenge is managing state; a solution is using appropriate design patterns.`
+      sampleAnswer: `One common challenge is managing state; a solution is using appropriate design patterns.`,
     });
 
-    while (mcq.length < 7) mcq.push(fallbackMCQBase());
-    while (text.length < 3) text.push(fallbackEssayBase());
+    while (mcq.length < 7) mcq.push(fallbackMCQ());
+    while (text.length < 3) text.push(fallbackEssay());
 
-    return { mcq: mcq.slice(0,7), text: text.slice(0,3) };
+    return { mcq: mcq.slice(0, 7), text: text.slice(0, 3) };
   } catch (error) {
     console.error('Generate Interview Error:', error.message);
-    // Fallback an toàn, không có từ "Fallback"
-    const defaultMCQ = [];
-    for (let i=0; i<7; i++) {
-      defaultMCQ.push({
+    return {
+      mcq: Array.from({ length: 7 }, () => ({
         question: `Explain an important concept in ${topic}.`,
         difficulty,
         options: ['Concept A', 'Concept B', 'Concept C', 'All of the above'],
         correctAnswer: 'All of the above',
-        explanation: `This ensures coverage of multiple aspects of ${topic}.`
-      });
-    }
-    const defaultEssay = [];
-    for (let i=0; i<3; i++) {
-      defaultEssay.push({
+        explanation: `This ensures coverage of multiple aspects of ${topic}.`,
+      })),
+      text: Array.from({ length: 3 }, () => ({
         question: `Discuss a best practice for ${topic} development.`,
         difficulty,
         idealAnswerKeywords: [topic.toLowerCase(), 'practice', 'quality'],
-        sampleAnswer: `Following coding standards and testing are key practices.`
-      });
-    }
-    return { mcq: defaultMCQ, text: defaultEssay };
+        sampleAnswer: `Following coding standards and testing are key practices.`,
+      })),
+    };
   }
 };
 
-// ---------- Hàm chấm điểm essay (giữ nguyên, chỉ dùng extractJson) ----------
+// ─────────────────────────────────────────────
+// gradeEssay
+// ─────────────────────────────────────────────
 const gradeEssay = async (question, userAnswer, idealAnswerKeywords) => {
   const prompt = `
 You are a STRICT technical interviewer.
@@ -195,34 +253,38 @@ Return ONLY JSON:
 }
 `;
 
-  const groqService = new GroqService(process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 0.2);
-  const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('AI_TIMEOUT')), 30000));
+  const groqService = new GroqService(process.env.GROQ_API_KEY, MODEL, 0.2);
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('AI_TIMEOUT')), 30000)
+  );
 
   try {
-    const aiCall = groqService.invokeWithRetry([new HumanMessage(prompt)]);
-    const responseText = await Promise.race([aiCall, timeoutPromise]);
+    const responseText = await Promise.race([
+      callGroq(groqService, [new HumanMessage(prompt)], 'gradeEssay', 0.2),
+      timeoutPromise,
+    ]);
+
     const result = extractJson(responseText);
     if (!result || typeof result.score !== 'number') throw new Error('Invalid JSON');
-    let score = Math.min(10, Math.max(0, result.score));
-    score = Math.round(score * 10) / 10;
+
     return {
-      score,
+      score: Math.round(Math.min(10, Math.max(0, result.score)) * 10) / 10,
       explanation: result.explanation || 'No explanation',
-      feedback: result.feedback || 'Try adding more technical details.'
+      feedback: result.feedback || 'Try adding more technical details.',
     };
   } catch (error) {
     console.error('gradeEssay error:', error.message);
-    // Fallback keyword-based
     const answer = (userAnswer || '').toLowerCase();
-    let matched = 0;
-    for (const kw of idealAnswerKeywords || []) {
-      if (answer.includes(kw.toLowerCase())) matched++;
-    }
-    const score = idealAnswerKeywords.length ? (matched / idealAnswerKeywords.length) * 10 : 0;
+    const matched = (idealAnswerKeywords || []).filter(kw =>
+      answer.includes(kw.toLowerCase())
+    ).length;
+    const score = idealAnswerKeywords?.length
+      ? Math.round((matched / idealAnswerKeywords.length) * 100) / 10
+      : 0;
     return {
-      score: Math.round(score * 10) / 10,
+      score,
       explanation: 'Fallback scoring used due to AI error.',
-      feedback: 'Include relevant keywords for better score.'
+      feedback: 'Include relevant keywords for better score.',
     };
   }
 };

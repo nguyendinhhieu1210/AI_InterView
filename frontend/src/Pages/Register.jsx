@@ -1,13 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    User, Mail, Lock, FileText, Brain, Mic, BarChart3, Sparkles,
-    AlertCircle, CheckCircle, ChevronRight, Eye, EyeOff, Shield, Zap, Users, Clock, UserPlus
+    User, Mail, Lock, FileText, Brain, ClipboardList, BarChart3, Sparkles,
+    AlertCircle, CheckCircle, ChevronRight, Eye, EyeOff, Shield, Zap, Users, Clock, UserPlus,
+    Code, Cpu, LayoutTemplate, Target, Award, TrendingUp
 } from 'lucide-react';
 import api from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
 import '../App.css';
 
 export default function Register() {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
+    const navigate = useNavigate();
+
     const [form, setForm] = useState({
         userName: '',
         fullName: '',
@@ -26,7 +32,6 @@ export default function Register() {
     const [generalError, setGeneralError] = useState('');
     const [suggestions, setSuggestions] = useState([]);
     const [successMessage, setSuccessMessage] = useState('');
-    const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -130,61 +135,111 @@ export default function Register() {
         setSuggestions([]);
     };
 
-    const features = [
-        { icon: FileText, label: 'AI-Powered CV Analysis', color: 'text-blue-500' },
-        { icon: Brain, label: 'Smart Question Generation', color: 'text-indigo-500' },
-        { icon: Mic, label: 'Real-time Voice Interview', color: 'text-purple-500' },
-        { icon: BarChart3, label: 'Instant Scoring & Feedback', color: 'text-emerald-500' },
+    const interviewTypes = [
+        { icon: FileText, label: 'CV Analysis Interview', description: 'AI analyzes your CV and asks relevant questions', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+        { icon: Brain, label: 'Adaptive Interview', description: 'Questions adapt to your skill level in real-time', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/30' },
+        { icon: ClipboardList, label: 'Standard Interview', description: 'Traditional Q&A format with AI scoring', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/30' },
+        { icon: Code, label: 'Coding Interview', description: 'Live coding challenges with AI evaluation', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
     ];
+
+    const features = [
+        { icon: Target, label: 'Personalized Questions', color: 'text-rose-500' },
+        { icon: Zap, label: 'Real-time Feedback', color: 'text-amber-500' },
+        { icon: Award, label: 'Skill Assessment', color: 'text-cyan-500' },
+        { icon: TrendingUp, label: 'Progress Tracking', color: 'text-lime-500' },
+    ];
+
     const stats = [
-        { value: '500+', label: 'CVs Analyzed', icon: Users },
-        { value: '95%', label: 'Accuracy Rate', icon: Zap },
+        { value: '1000+', label: 'Interviews Completed', icon: Users },
+        { value: '96%', label: 'Satisfaction Rate', icon: Zap },
         { value: '24/7', label: 'AI Support', icon: Clock },
     ];
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg...')] opacity-30"></div>
-            <div className="absolute top-0 -left-40 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob opacity-40"></div>
-            <div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000 opacity-40"></div>
-            <div className="absolute bottom-0 left-20 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000 opacity-30"></div>
-
-            <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+        <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 px-4 py-8 sm:px-6 lg:px-8 ${
+            isDark
+                ? 'bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900'
+                : 'bg-gradient-to-br from-slate-50 via-white to-blue-50'
+        }`}>
+            <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
                 {/* Left info panel */}
                 <div className="hidden lg:block flex-1">
-                    <div className="relative bg-white/60 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/50">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full blur-2xl opacity-60"></div>
+                    <div className={`relative rounded-3xl p-8 shadow-xl border transition-all duration-300 ${
+                        isDark
+                            ? 'bg-gray-800/60 backdrop-blur-sm border-gray-700'
+                            : 'bg-white/60 backdrop-blur-sm border-white/50'
+                    }`}>
                         <div className="relative">
                             <div className="flex items-center gap-3 mb-8">
                                 <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-2xl shadow-lg">
                                     <Brain className="w-8 h-8 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-800">AI Interview System</h2>
-                                    <p className="text-gray-500 text-sm">Intelligent recruitment platform</p>
+                                    <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                                        AI Interview System
+                                    </h2>
+                                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        Intelligent recruitment platform
+                                    </p>
                                 </div>
                             </div>
-                            <h1 className="text-4xl xl:text-5xl font-bold mb-4 text-gray-800 leading-tight">
+
+                            <h1 className={`text-4xl xl:text-5xl font-bold mb-6 leading-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>
                                 Ready to Ace Your
-                                <span className="block bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">AI Interview?</span>
+                                <span className="block bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
+                                    AI Interview?
+                                </span>
                             </h1>
-                            <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+
+                            <p className={`text-lg mb-8 leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                                 Join thousands of candidates who've improved their interview skills with our AI-driven platform.
                             </p>
-                            <div className="space-y-4 mb-10">
+
+                            {/* Interview Types */}
+                            <div className="mb-8">
+                                <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    <Cpu className="w-4 h-4 text-indigo-500" />
+                                    Interview Modes
+                                </h3>
+                                <div className="space-y-3">
+                                    {interviewTypes.map((type, idx) => {
+                                        const Icon = type.icon;
+                                        return (
+                                            <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl transition-all ${type.bg} hover:scale-[1.02]`}>
+                                                <div className={`p-2 rounded-lg ${type.bg}`}>
+                                                    <Icon className={`w-5 h-5 ${type.color}`} />
+                                                </div>
+                                                <div>
+                                                    <p className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                                                        {type.label}
+                                                    </p>
+                                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                        {type.description}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Features */}
+                            <div className="flex flex-wrap gap-3 mb-8">
                                 {features.map((feature, idx) => {
                                     const Icon = feature.icon;
                                     return (
-                                        <div key={idx} className="flex items-center gap-3 group">
-                                            <div className="p-2 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl group-hover:scale-110 transition-transform">
-                                                <Icon className={`w-5 h-5 ${feature.color}`} />
-                                            </div>
-                                            <span className="text-gray-700 font-medium">{feature.label}</span>
+                                        <div key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                                            <Icon className={`w-4 h-4 ${feature.color}`} />
+                                            <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                {feature.label}
+                                            </span>
                                         </div>
                                     );
                                 })}
                             </div>
-                            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+
+                            {/* Stats */}
+                            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                                 {stats.map((stat, idx) => {
                                     const Icon = stat.icon;
                                     return (
@@ -192,8 +247,12 @@ export default function Register() {
                                             <div className="flex justify-center mb-2">
                                                 <Icon className="w-6 h-6 text-indigo-400" />
                                             </div>
-                                            <div className="text-2xl font-bold text-gray-800">{stat.value}</div>
-                                            <div className="text-xs text-gray-500">{stat.label}</div>
+                                            <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                                                {stat.value}
+                                            </div>
+                                            <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                {stat.label}
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -204,19 +263,29 @@ export default function Register() {
 
                 {/* Register Card */}
                 <div className="flex-1 w-full max-w-md mx-auto lg:mx-0">
-                    <div className="bg-white rounded-3xl shadow-2xl shadow-indigo-100/50 border border-gray-100 overflow-hidden">
-                        <div className="relative pt-8 px-8 pb-6 text-center bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+                    <div className={`rounded-3xl shadow-2xl border overflow-hidden transition-all duration-300 ${
+                        isDark
+                            ? 'bg-gray-800 border-gray-700 shadow-gray-950/50'
+                            : 'bg-white border-gray-100 shadow-indigo-100/50'
+                    }`}>
+                        <div className={`relative pt-8 px-8 pb-6 text-center border-b ${
+                            isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
+                        }`}>
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-500"></div>
                             <div className="inline-flex p-3 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-2xl shadow-md mb-4">
                                 <Sparkles className="w-7 h-7 text-white" />
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-800">Create an account</h2>
-                            <p className="text-gray-500 text-sm mt-1">Start your AI interview journey today</p>
+                            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                                Create an account
+                            </h2>
+                            <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Start your AI interview journey today
+                            </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-8 space-y-5">
                             <div>
-                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                                <label className={`flex items-center gap-2 text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                     <UserPlus className="w-4 h-4 text-indigo-500" />
                                     Full Name
                                 </label>
@@ -226,12 +295,17 @@ export default function Register() {
                                     placeholder="Nguyen Van A"
                                     value={form.fullName}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition"
+                                    className={`w-full px-4 py-3 rounded-xl border outline-none transition ${
+                                        isDark
+                                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+                                            : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100'
+                                    }`}
+                                    required
                                 />
                             </div>
 
                             <div>
-                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                                <label className={`flex items-center gap-2 text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                     <User className="w-4 h-4 text-indigo-500" />
                                     Username
                                 </label>
@@ -243,22 +317,33 @@ export default function Register() {
                                     onChange={handleChange}
                                     onFocus={() => setFocusedField('userName')}
                                     onBlur={() => setFocusedField(null)}
-                                    className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 outline-none text-gray-800 bg-white ${focusedField === 'userName'
-                                        ? 'border-indigo-400 ring-2 ring-indigo-100'
-                                        : 'border-gray-200 hover:border-indigo-300'
-                                        }`}
+                                    className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 outline-none ${
+                                        focusedField === 'userName'
+                                            ? 'border-indigo-400 ring-2 ring-indigo-100 dark:ring-indigo-500/30'
+                                            : `border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500`
+                                    } ${
+                                        isDark
+                                            ? 'bg-gray-700 text-white placeholder-gray-400'
+                                            : 'bg-white text-gray-800'
+                                    }`}
                                     required
                                 />
                                 {suggestions.length > 0 && (
                                     <div className="mt-2 animate-slideDown">
-                                        <p className="text-xs text-gray-500 mb-1">Available suggestions:</p>
+                                        <p className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                            Available suggestions:
+                                        </p>
                                         <div className="flex flex-wrap gap-2">
                                             {suggestions.map((sug, idx) => (
                                                 <button
                                                     key={idx}
                                                     type="button"
                                                     onClick={() => handleSuggestionClick(sug)}
-                                                    className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg hover:bg-indigo-100"
+                                                    className={`text-xs px-2 py-1 rounded-lg transition ${
+                                                        isDark
+                                                            ? 'bg-indigo-950/50 text-indigo-300 hover:bg-indigo-900'
+                                                            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                                                    }`}
                                                 >
                                                     {sug}
                                                 </button>
@@ -269,7 +354,7 @@ export default function Register() {
                             </div>
 
                             <div>
-                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                                <label className={`flex items-center gap-2 text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                     <Mail className="w-4 h-4 text-indigo-500" />
                                     Email Address
                                 </label>
@@ -279,13 +364,17 @@ export default function Register() {
                                     placeholder="hello@example.com"
                                     value={form.email}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition"
+                                    className={`w-full px-4 py-3 rounded-xl border outline-none transition ${
+                                        isDark
+                                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+                                            : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100'
+                                    }`}
                                     required
                                 />
                             </div>
 
                             <div>
-                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                                <label className={`flex items-center gap-2 text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                     <Lock className="w-4 h-4 text-indigo-500" />
                                     Password
                                 </label>
@@ -296,13 +385,19 @@ export default function Register() {
                                         placeholder="••••••••"
                                         value={form.password}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none pr-12"
+                                        className={`w-full px-4 py-3 rounded-xl border outline-none pr-12 ${
+                                            isDark
+                                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+                                                : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100'
+                                        }`}
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500"
+                                        className={`absolute right-4 top-1/2 -translate-y-1/2 transition ${
+                                            isDark ? 'text-gray-400 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-500'
+                                        }`}
                                     >
                                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                     </button>
@@ -310,15 +405,15 @@ export default function Register() {
                                 {form.password && (
                                     <div className="mt-2 space-y-1 animate-slideDown">
                                         <div className="flex justify-between text-xs">
-                                            <span className="text-gray-500">Strength:</span>
+                                            <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Strength:</span>
                                             <span className={`font-medium ${getPasswordStrengthColor().replace('bg-', 'text-')}`}>
                                                 {getPasswordStrengthLabel()}
                                             </span>
                                         </div>
-                                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                        <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
                                             <div className={`h-full ${getPasswordStrengthColor()} transition-all duration-300`} style={{ width: `${passwordStrength}%` }} />
                                         </div>
-                                        <p className="text-xs text-gray-400 flex items-center gap-1">
+                                        <p className={`text-xs flex items-center gap-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                                             <CheckCircle className="w-3 h-3" /> Min. 6 chars, uppercase, number & symbol
                                         </p>
                                     </div>
@@ -326,7 +421,7 @@ export default function Register() {
                             </div>
 
                             <div>
-                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                                <label className={`flex items-center gap-2 text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                     <Lock className="w-4 h-4 text-indigo-500" />
                                     Confirm Password
                                 </label>
@@ -337,16 +432,21 @@ export default function Register() {
                                         placeholder="••••••••"
                                         value={form.confirmPassword}
                                         onChange={handleChange}
-                                        className={`w-full px-4 py-3 rounded-xl border pr-12 ${passwordMatchError
-                                            ? 'border-red-300 ring-2 ring-red-100'
-                                            : 'border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100'
-                                            } outline-none transition`}
+                                        className={`w-full px-4 py-3 rounded-xl border pr-12 outline-none transition ${
+                                            passwordMatchError
+                                                ? 'border-red-300 ring-2 ring-red-100 dark:border-red-700 dark:ring-red-900/30'
+                                                : isDark
+                                                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+                                                    : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100'
+                                        }`}
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500"
+                                        className={`absolute right-4 top-1/2 -translate-y-1/2 transition ${
+                                            isDark ? 'text-gray-400 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-500'
+                                        }`}
                                     >
                                         {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                     </button>
@@ -368,25 +468,25 @@ export default function Register() {
                                         setAcceptedTerms(e.target.checked);
                                         if (termsError) setTermsError('');
                                     }}
-                                    className="mt-1 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-400"
+                                    className="mt-1 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-400 dark:border-gray-600 dark:bg-gray-700"
                                 />
-                                <label htmlFor="terms" className="text-sm text-gray-600">
+                                <label htmlFor="terms" className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                                     I agree to the{' '}
-                                    <span className="text-indigo-600 hover:underline">Terms of Service</span> and{' '}
-                                    <span className="text-indigo-600 hover:underline">Privacy Policy</span>
+                                    <span className="text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">Terms of Service</span> and{' '}
+                                    <span className="text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">Privacy Policy</span>
                                 </label>
                             </div>
                             {termsError && <p className="text-red-500 text-xs -mt-1">{termsError}</p>}
 
                             {generalError && !suggestions.length && (
-                                <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-xl">
+                                <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 dark:bg-red-950/30 p-3 rounded-xl">
                                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                                     <span>{generalError}</span>
                                 </div>
                             )}
 
                             {successMessage && (
-                                <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 p-3 rounded-xl animate-slideDown">
+                                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm bg-green-50 dark:bg-green-950/30 p-3 rounded-xl animate-slideDown">
                                     <CheckCircle className="w-4 h-4 flex-shrink-0" />
                                     <span>{successMessage}</span>
                                 </div>
@@ -412,17 +512,23 @@ export default function Register() {
 
                             <div className="relative my-4">
                                 <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-gray-200"></div>
+                                    <div className={`w-full border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}></div>
                                 </div>
                                 <div className="relative flex justify-center text-xs">
-                                    <span className="px-3 bg-white text-gray-400">Already have an account?</span>
+                                    <span className={`px-3 ${isDark ? 'bg-gray-800 text-gray-500' : 'bg-white text-gray-400'}`}>
+                                        Already have an account?
+                                    </span>
                                 </div>
                             </div>
 
                             <button
                                 type="button"
                                 onClick={() => navigate('/login')}
-                                className="w-full py-3 bg-gray-50 text-gray-700 rounded-xl border border-gray-200 flex items-center justify-center gap-2 hover:bg-gray-100 hover:border-indigo-300 transition"
+                                className={`w-full py-3 rounded-xl border flex items-center justify-center gap-2 transition ${
+                                    isDark
+                                        ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600 hover:border-indigo-500'
+                                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-indigo-300'
+                                }`}
                             >
                                 <Shield className="w-4 h-4 text-indigo-500" />
                                 <span className="font-medium">Sign In Instead</span>
@@ -434,27 +540,18 @@ export default function Register() {
             </div>
 
             <style>{`
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        .animate-blob { animation: blob 7s infinite; }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slideDown { animation: slideDown 0.2s ease-out; }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-4px); }
-          75% { transform: translateX(4px); }
-        }
-        .animate-shake { animation: shake 0.3s ease-in-out; }
-      `}</style>
+                @keyframes slideDown {
+                    from { opacity: 0; transform: translateY(-8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-slideDown { animation: slideDown 0.2s ease-out; }
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-4px); }
+                    75% { transform: translateX(4px); }
+                }
+                .animate-shake { animation: shake 0.3s ease-in-out; }
+            `}</style>
         </div>
     );
 }

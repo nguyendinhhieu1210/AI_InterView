@@ -1,5 +1,13 @@
 const { GroqService } = require('../ai/groqService');
 const { extractJson } = require('../../utils/jsonExtractor');
+const {
+  logRequest,
+  logResponse,
+  logError,
+  logRateLimit,
+  logTokenUsage,
+  generateRequestId,
+} = require('../../utils/aiLogger');
 
 require('dotenv').config();
 
@@ -9,29 +17,38 @@ const groq = new GroqService(
   0.2
 );
 
-// ========== UTILITY: Lấy các dòng code có ý nghĩa (không phải dấu ngoặc/comment/trống) ==========
+// ========== UTILITY: Lấy các dòng code có ý nghĩa ==========
+// FIX: Regex cũ `/^[{}()\[\];,]+$/` lọc cả dòng như `} else {` hoặc `});`
+// → Chỉ bỏ dòng THỰC SỰ không có nội dung logic (chỉ toàn ký tự cấu trúc, không có chữ/số)
 function getMeaningfulLines(code) {
   const lines = code.split('\n');
   const meaningful = [];
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    // Bỏ qua dòng trống, dòng chỉ có {} () [] ; , , comment //
-    if (trimmed === '' || /^[{}()\[\];,]+$/.test(trimmed) || trimmed.startsWith('//') || trimmed.startsWith('#')) {
-      continue;
-    }
+
+    // Bỏ dòng trống
+    if (trimmed === '') continue;
+
+    // Bỏ comment thuần
+    if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+
+    // Bỏ dòng CHỈ có ký tự cấu trúc (không có chữ cái hoặc số)
+    // VD: "}", "{", "});", "})" → bỏ
+    // VD: "for (let i = 0..." → GIỮ vì có chữ
+    if (/^[{}()\[\];,\s]+$/.test(trimmed)) continue;
+
     meaningful.push({ lineNum: i + 1, content: lines[i] });
   }
   return meaningful;
 }
 
-// ========== VALIDATION: Kiểm tra câu hỏi có tham chiếu đến code thật không ==========
+// ========== VALIDATION: Kiểm tra câu hỏi tham chiếu dòng có thực không ==========
 function validateQuestion(question, code) {
   const lines = code.split('\n');
   const maxLine = lines.length;
   const meaningfulLines = getMeaningfulLines(code);
   const meaningfulLineNumbers = meaningfulLines.map(l => l.lineNum);
 
-  // Tìm tất cả số dòng được nhắc đến (dạng "dòng 50", "line 50", "dòng số 50")
   const lineMatches = question.match(/\b(?:dòng|line)\s+(\d+)\b/gi) || [];
   for (const match of lineMatches) {
     const lineNum = parseInt(match.match(/\d+/)[0]);
@@ -40,30 +57,27 @@ function validateQuestion(question, code) {
       return false;
     }
     if (!meaningfulLineNumbers.includes(lineNum)) {
-      console.warn(`⚠️  Line ${lineNum} is not meaningful (only braces/comments/empty)`);
+      console.warn(`⚠️  Line ${lineNum} is not meaningful — not in list: [${meaningfulLineNumbers.join(', ')}]`);
       return false;
     }
   }
 
-  // Kiểm tra hallucination (các từ khóa bịa đặt)
   const hallucinations = [
     'addCargo', 'removeCargo', 'loadCargo', 'unloadCargo',
     'getCapacity', 'setCapacity', 'isFull', 'isEmpty',
     'thread', 'mutex', 'semaphore', 'async', 'await',
     'spawn', 'fork', 'join', 'synchronize'
   ];
-  for (const hallucination of hallucinations) {
-    if (question.toLowerCase().includes(hallucination)) {
-      if (!code.includes(hallucination)) {
-        console.warn(`⚠️  Question mentions hallucinated method: ${hallucination}`);
-        return false;
-      }
+  for (const h of hallucinations) {
+    if (question.toLowerCase().includes(h.toLowerCase()) && !code.includes(h)) {
+      console.warn(`⚠️  Hallucinated term: ${h}`);
+      return false;
     }
   }
   return true;
 }
 
-// ========== GỌI AI (giữ nguyên) ==========
+// ========== GỌI AI + LOG TOKEN ==========
 async function callAI(prompt, systemMessage = `
 You are an AI programming expert.
 
@@ -74,24 +88,52 @@ IMPORTANT RULES:
 4. When writing a model answer, write a COMPLETE, self-contained explanation. Keep it SHORT (2-4 sentences maximum). 
 5. Do NOT use ellipsis ("...") anywhere. Write full sentences.
 6. The model answer should be natural, easy to understand, and not truncated.
-`) {
+`, feature = 'general') {
+  const requestId = generateRequestId();
+  const model = 'llama-3.3-70b-versatile';
+
+  logRequest(model, requestId, prompt, 0.2);
+
   try {
     const messages = [
       { role: 'system', content: systemMessage },
       { role: 'user', content: prompt },
     ];
+
+    const startTime = Date.now();
     const response = await groq.invokeWithRetry(messages);
+    const durationMs = Date.now() - startTime;
+
+    // Log response
+    logResponse(model, requestId, response, durationMs);
+
+    // Log token usage nếu groq trả về usage (tuỳ GroqService expose hay không)
+    // Nếu groq.invokeWithRetry trả về object có .usage thì dùng dòng dưới:
+    // const { text, usage } = response;
+    // logTokenUsage(model, requestId, usage.input_tokens, usage.output_tokens, usage.total_tokens, feature);
+    // Nếu chỉ trả về string thì estimate:
+    const estimatedTokens = Math.ceil((prompt.length + (typeof response === 'string' ? response.length : 0)) / 4);
+    logTokenUsage(model, requestId, Math.ceil(prompt.length / 4), Math.ceil((typeof response === 'string' ? response.length : 0) / 4), estimatedTokens, feature);
+
     console.log('\n================ AI RESPONSE ================');
     console.log(response);
     console.log('=============================================\n');
+
     return response;
   } catch (error) {
+    // Phát hiện rate limit
+    if (error?.status === 429 || error?.message?.includes('rate limit')) {
+      const retryAfter = error?.headers?.['retry-after'] || null;
+      logRateLimit(model, requestId, retryAfter, error);
+    } else {
+      logError(model, requestId, error, feature);
+    }
     console.error('LLM Provider Error:', error);
     return fallbackResponse(prompt);
   }
 }
 
-// ========== FALLBACK (cũ, không thay đổi nhiều) ==========
+// ========== FALLBACK ==========
 function fallbackResponse(prompt) {
   const lowerPrompt = prompt.toLowerCase();
   if (lowerPrompt.includes('coding question') || lowerPrompt.includes('coding problem')) {
@@ -104,73 +146,63 @@ function fallbackResponse(prompt) {
     });
   }
   if (lowerPrompt.includes('explain') || lowerPrompt.includes('explanation')) {
-    return JSON.stringify({
-      type: 'explain',
-      question: 'Explain the purpose of the constructor in your code.'
-    });
+    return JSON.stringify({ type: 'explain', question: 'Explain the purpose of the constructor in your code.' });
   }
   if (lowerPrompt.includes('next explain') || lowerPrompt.includes('next explanation')) {
-    return JSON.stringify({
-      type: 'explain',
-      question: 'How does your code handle edge cases like empty input or single elements?'
-    });
+    return JSON.stringify({ type: 'explain', question: 'How does your code handle edge cases like empty input or single elements?' });
   }
   if (lowerPrompt.includes('evaluate explanation') || lowerPrompt.includes('evaluate answer')) {
-    return JSON.stringify({
-      correct: false,
-      feedback: 'AI is temporarily overloaded. Please try again later.',
-      modelAnswer: 'No model answer available due to system error.'
-    });
+    return JSON.stringify({ correct: false, feedback: 'AI is temporarily overloaded. Please try again later.', modelAnswer: 'No model answer available due to system error.' });
   }
   if (lowerPrompt.includes('evaluate code') || lowerPrompt.includes('overall evaluation')) {
-    return JSON.stringify({
-      summary: 'Unable to evaluate due to system error. Please try again.',
-      feedback: 'AI encountered an issue and cannot analyze the submission.',
-      strengths: [],
-      weaknesses: []
-    });
+    return JSON.stringify({ summary: 'Unable to evaluate due to system error. Please try again.', feedback: 'AI encountered an issue and cannot analyze the submission.', strengths: [], weaknesses: [] });
   }
   return JSON.stringify({ error: 'Fallback response failed' });
 }
 
 // ===============================
-// GENERATE CODE QUESTION (difficulty-aware + kiểm tra độ phức tạp)
+// GENERATE CODE QUESTION
+// FIX: Giảm độ khó intermediate và advanced cho hợp lý hơn
 // ===============================
 async function generateCodeQuestion(language, domain, topic, difficulty) {
-  // Difficulty-based constraints (siết chặt hơn)
   let difficultyConstraints = '';
+
   if (difficulty.toLowerCase() === 'beginner') {
     difficultyConstraints = `
-BEGINNER PROBLEM CONSTRAINTS (MUST FOLLOW):
-- Problem MUST be solvable within 10-15 lines of code (excluding boilerplate).
+BEGINNER CONSTRAINTS (MUST FOLLOW):
+- Solvable in 10-15 lines of code (excluding boilerplate).
 - Only 1 function or 1 simple class with 1-2 methods.
 - No recursion, no nested loops, no complex data structures (only arrays or simple variables).
 - Input size <= 5 elements.
-- Do NOT require handling edge cases (empty, null, etc.) unless explicitly taught.
-- Example must be concrete and simple.
-- Problem description length < 80 words.
-- Do NOT use terms like "optimize", "efficient", "scalable", "concurrent", "thread".
+- Do NOT require handling edge cases (empty, null) unless explicitly needed.
+- Problem description < 80 words.
 - Focus on basic syntax: loops, conditionals, simple arithmetic.
+- Do NOT use terms like "optimize", "efficient", "scalable", "concurrent".
 `;
   } else if (difficulty.toLowerCase() === 'intermediate') {
+    // FIX: Giảm độ khó — trước đây quá nặng (2-3 class, recursion, nested loop)
     difficultyConstraints = `
-INTERMEDIODE CONSTRAINTS:
-- 20-30 lines of code.
-- May involve 2-3 related classes or multiple methods.
-- May require basic error handling (e.g., check for empty input).
-- May ask for simple recursion or one nested loop.
-- Do NOT require multi-threading, advanced design patterns, or heavy optimization.
-- Problem should be challenging but doable in 20 minutes.
+INTERMEDIATE CONSTRAINTS (MUST FOLLOW):
+- Solvable in 15-25 lines of code.
+- 1 class with 2-3 straightforward methods, OR 2-3 related functions.
+- May use ONE simple loop (no nested loops unless simple).
+- May require basic input validation (e.g., check if array is empty).
+- NO recursion, NO complex algorithms, NO design patterns.
+- Problem should be doable by someone who knows basic OOP and loops.
+- Example: implement a simple stack with push/pop, or a basic calculator class.
+- Do NOT require multi-threading, sorting algorithms, or graph/tree structures.
 `;
   } else {
+    // FIX: Advanced giảm từ "graph BFS, backtracking" → chỉ cần thuật toán quen thuộc
     difficultyConstraints = `
-ADVANCED CONSTRAINTS:
-- 30+ lines of code.
-- May involve multiple classes, inheritance, interfaces.
-- May require recursion, backtracking, or moderate algorithm (e.g., binary tree traversal, graph BFS).
-- May ask for error handling and edge cases.
-- Avoid overkill: no need for complex design patterns unless topic demands it.
-- Problem should be solvable in 30-40 minutes.
+ADVANCED CONSTRAINTS (MUST FOLLOW):
+- Solvable in 25-40 lines of code.
+- May involve 1-2 classes with inheritance OR multiple cooperating functions.
+- May require ONE level of recursion (e.g., factorial, simple tree traversal) or one well-known algorithm (binary search, basic sorting).
+- May ask for basic error handling and edge cases.
+- Do NOT require backtracking, graph algorithms, dynamic programming, or complex design patterns.
+- Problem should be doable by someone with solid OOP knowledge and algorithm basics.
+- Example: implement a linked list with insert/delete, or binary search on a sorted array.
 `;
   }
 
@@ -183,7 +215,7 @@ ${difficultyConstraints}
 Requirements:
 - The problem must be relevant to the domain and topic.
 - Provide a detailed problem statement.
-- Include example input and output that match the difficulty level.
+- Include example input and output matching the difficulty level.
 - Specify test criteria/constraints appropriate for the difficulty.
 
 Return ONLY valid JSON, no markdown:
@@ -196,154 +228,168 @@ Return ONLY valid JSON, no markdown:
   "description": "Short summary"
 }`;
 
-  let result = await callAI(prompt);
+  let result = await callAI(prompt, undefined, 'generateCodeQuestion');
   let parsed = extractJson(result);
-  
-  // Kiểm tra lại độ phức tạp (nếu quá khó so với level, sinh lại)
+
   if (parsed && parsed.problemStatement) {
     const isTooHard = await isProblemTooComplex(parsed.problemStatement, difficulty);
     if (isTooHard) {
-      console.warn(`⚠️ Generated problem too hard for ${difficulty}, regenerating...`);
-      const retryPrompt = `The previous problem was too complex for ${difficulty} level. Make it SIMPLER. ${prompt}`;
-      result = await callAI(retryPrompt);
+      console.warn(`⚠️ Problem too hard for ${difficulty}, regenerating...`);
+      const retryPrompt = `The previous problem was too complex for ${difficulty} level. Make it SIMPLER.\n\n${prompt}`;
+      result = await callAI(retryPrompt, undefined, 'generateCodeQuestion_retry');
       parsed = extractJson(result);
     }
   }
-  
+
   if (parsed && typeof parsed === 'object') {
-    if (!parsed.problemStatement) parsed.problemStatement = parsed.content || parsed.description || "Problem statement not provided";
+    if (!parsed.problemStatement) parsed.problemStatement = parsed.content || parsed.description || 'Problem statement not provided';
     return parsed;
   }
   return extractJson(fallbackResponse(prompt));
 }
 
-// Helper: kiểm tra sơ bộ xem bài toán có quá khó không
+// Helper: kiểm tra bài toán có quá khó không
 async function isProblemTooComplex(problemStatement, difficulty) {
   const wordCount = problemStatement.split(/\s+/).length;
   if (difficulty === 'beginner' && wordCount > 80) return true;
-  const hardKeywords = /\b(?:recurs|backtrack|dynamic|graph|tree|thread|mutex|async|await|synchronized|volatile|concurrent|parallel|optimize|scalable|heap|stack|pointer|deque|priority queue|red.?black|avl|b-?tree)\b/i;
+  if (difficulty === 'intermediate' && wordCount > 120) return true;
+
+  const hardKeywords = /\b(?:backtrack|dynamic programming|graph|BFS|DFS|heap|red.?black|avl|b-?tree|thread|mutex|semaphore|concurrent|parallel|volatile|synchronized)\b/i;
   if (hardKeywords.test(problemStatement)) return true;
+
+  // intermediate không nên có recursion hoặc nested loop
+  if (difficulty === 'intermediate') {
+    const intermediateHardKeywords = /\b(?:recurs|nested loop|multi.?level)\b/i;
+    if (intermediateHardKeywords.test(problemStatement)) return true;
+  }
+
   return false;
 }
 
 // ===============================
-// GENERATE EXPLANATION QUESTION (cải tiến: chỉ hỏi dòng có nghĩa)
+// GENERATE EXPLANATION QUESTION
+// FIX: Gửi đúng nội dung dòng vào prompt để AI quote chính xác, không bị chỉ vào ngoặc
 // ===============================
 async function generateExplanationQuestion(language, userCode, originalQuestion, difficulty = 'beginner') {
   const meaningfulLines = getMeaningfulLines(userCode);
-  const lineNumbersStr = meaningfulLines.map(l => l.lineNum).join(', ');
   const totalLines = userCode.split('\n').length;
-  
+
+  // FIX: Gửi cả nội dung dòng (không chỉ số dòng) để AI biết đang hỏi gì
+  const lineList = meaningfulLines.map(l => `  Line ${l.lineNum}: ${l.content.trim()}`).join('\n');
+
   let difficultyRules = '';
   if (difficulty.toLowerCase() === 'beginner') {
-    difficultyRules = `Hỏi về chức năng cơ bản của một dòng code cụ thể. Ví dụ: "Dòng X làm gì?" hoặc "Biến Y dùng để làm gì?". Không hỏi về tối ưu hay design pattern.`;
+    difficultyRules = `Ask about the basic function of ONE specific line. E.g., "On line X, what does '...' do?" Do not ask about optimization or design patterns.`;
   } else if (difficulty.toLowerCase() === 'intermediate') {
-    difficultyRules = `Hỏi về logic hoặc cách dữ liệu biến đổi qua các dòng. Có thể hỏi về lý do chọn cách viết này.`;
+    difficultyRules = `Ask about the logic or how data changes across a few lines. May ask why this approach was chosen.`;
   } else {
-    difficultyRules = `Hỏi về thuật toán, độ phức tạp, hoặc cách cải tiến. Có thể hỏi về trade-off thiết kế.`;
+    difficultyRules = `Ask about algorithm choice, time complexity, or possible improvements.`;
   }
 
   const prompt = `Language: ${language}
 Difficulty: ${difficulty}
+Total lines in code: ${totalLines}
 
-SOURCE CODE (dòng 1 đến ${totalLines}):
+SOURCE CODE:
 \`\`\`${language}
 ${userCode}
 \`\`\`
 
-CÁC DÒNG CÓ NỘI DUNG Ý NGHĨA (có thể hỏi): ${lineNumbersStr}
+MEANINGFUL LINES (only these can be referenced in your question):
+${lineList}
 
-QUAN TRỌNG:
-- Chỉ được hỏi về một dòng nằm trong danh sách ${lineNumbersStr}.
-- Không hỏi dòng quá ${totalLines} (không tồn tại).
-- Không hỏi về dòng chỉ có dấu ngoặc, comment, hoặc dòng trống.
-- Câu hỏi phải rõ ràng, nên ghi rõ "Trên dòng X, đoạn code ... làm gì?".
+RULES:
+- You MUST pick ONE line from the MEANINGFUL LINES list above.
+- In your question, quote the EXACT code snippet from that line so the student knows which part you mean.
+- Format: "On line X, the code '[exact snippet]' does what?" — be specific.
+- Do NOT reference line numbers that are NOT in the meaningful lines list.
+- Do NOT ask about lines that only contain braces, brackets, or semicolons.
 
 ${difficultyRules}
 
-TASK: Hỏi MỘT câu hỏi giải thích cụ thể về code trên.
-
-RETURN JSON:
+Return JSON:
 {
   "type": "explain",
-  "question": "Câu hỏi bằng tiếng Việt hoặc tiếng Anh (nhưng phải rõ ràng)"
+  "question": "Your question referencing a specific line and its exact code"
 }`;
 
-  const result = await callAI(prompt);
+  const result = await callAI(prompt, undefined, 'generateExplanationQuestion');
   const parsed = extractJson(result);
-  
+
   if (parsed && parsed.type === 'explain' && parsed.question && validateQuestion(parsed.question, userCode)) {
     return { type: 'explain', question: parsed.question };
   }
-  
-  console.warn('⚠️  Question validation failed, using fallback with meaningful line...');
-  // Fallback thông minh: chọn ngẫu nhiên một dòng có nghĩa
+
+  // Fallback: chọn random dòng có nghĩa và tạo câu hỏi rõ ràng với nội dung dòng đó
+  console.warn('⚠️  Question validation failed, using smart fallback...');
   if (meaningfulLines.length > 0) {
     const random = meaningfulLines[Math.floor(Math.random() * meaningfulLines.length)];
-    const fallbackQuestion = `Trên dòng ${random.lineNum}: "${random.content.trim()}". Hãy giải thích đoạn code này làm gì và tại sao lại cần nó.`;
-    return { type: 'explain', question: fallbackQuestion };
+    return {
+      type: 'explain',
+      question: `On line ${random.lineNum}, the code is: \`${random.content.trim()}\`. What does this line do, and why is it needed?`
+    };
   }
-  return { type: 'explain', question: "Hãy giải thích mục đích chính của đoạn code trên." };
+  return { type: 'explain', question: 'Explain the main purpose of the code above.' };
 }
 
 // ===============================
-// GENERATE NEXT EXPLANATION QUESTION (tương tự)
+// GENERATE NEXT EXPLANATION QUESTION
+// FIX: tương tự — gửi nội dung dòng đầy đủ
 // ===============================
 async function generateNextExplanationQuestion(language, userCode, userAnswer, currentQuestion, explainCount, difficulty = 'beginner') {
   const meaningfulLines = getMeaningfulLines(userCode);
-  const lineNumbersStr = meaningfulLines.map(l => l.lineNum).join(', ');
   const totalLines = userCode.split('\n').length;
-  
+  const lineList = meaningfulLines.map(l => `  Line ${l.lineNum}: ${l.content.trim()}`).join('\n');
+
   const prompt = `Language: ${language}
 Difficulty: ${difficulty}
 Question Number: ${explainCount + 1}/3
+Total lines in code: ${totalLines}
 
-SOURCE CODE (dòng 1 đến ${totalLines}):
+SOURCE CODE:
 \`\`\`${language}
 ${userCode}
 \`\`\`
 
-Các dòng có thể hỏi: ${lineNumbersStr}
+MEANINGFUL LINES (only these can be referenced):
+${lineList}
 
-PREVIOUS QUESTION:
-${currentQuestion.question}
+PREVIOUS QUESTION: ${currentQuestion.question}
+STUDENT'S ANSWER: ${userAnswer}
 
-STUDENT'S ANSWER TO PREVIOUS QUESTION:
-${userAnswer}
+RULES:
+- Pick a DIFFERENT aspect or line than the previous question.
+- Quote the EXACT code snippet from the chosen line in your question.
+- Do NOT reference any line NOT in the meaningful lines list above.
+- Difficulty: ${difficulty}.
 
-QUAN TRỌNG:
-- Chỉ được hỏi về một dòng trong danh sách ${lineNumbersStr}.
-- Không hỏi dòng ngoài khoảng 1-${totalLines}.
-- Câu hỏi tiếp theo phải khác khía cạnh so với câu trước.
-- Độ khó ${difficulty}.
-
-TASK: Hỏi MỘT câu hỏi giải thích tiếp theo.
-
-RETURN JSON:
+Return JSON:
 {
-  "type":"explain",
-  "question":"Câu hỏi (có thể kèm số dòng cụ thể)"
+  "type": "explain",
+  "question": "Your follow-up question with exact code quoted"
 }`;
 
-  const result = await callAI(prompt);
+  const result = await callAI(prompt, undefined, 'generateNextExplanationQuestion');
   const parsed = extractJson(result);
-  
+
   if (parsed && parsed.type === 'explain' && parsed.question && validateQuestion(parsed.question, userCode)) {
     return { type: 'explain', question: parsed.question };
   }
 
-  // Fallback thông minh: chọn dòng khác với dòng đã hỏi trước đó (nếu có)
-  const previousLineMatch = currentQuestion.question.match(/\b(?:dòng|line)\s+(\d+)\b/i);
-  let previousLineNum = previousLineMatch ? parseInt(previousLineMatch[1]) : null;
+  // Fallback: chọn dòng khác với dòng đã hỏi
+  const previousLineMatch = currentQuestion.question.match(/\b(?:line)\s+(\d+)\b/i);
+  const previousLineNum = previousLineMatch ? parseInt(previousLineMatch[1]) : null;
   let available = meaningfulLines.filter(l => l.lineNum !== previousLineNum);
   if (available.length === 0) available = meaningfulLines;
   const random = available[Math.floor(Math.random() * available.length)];
-  const fallbackQuestion = `Trên dòng ${random.lineNum}: "${random.content.trim()}". Giải thích tại sao dòng này cần thiết cho chương trình.`;
-  return { type: 'explain', question: fallbackQuestion };
+  return {
+    type: 'explain',
+    question: `On line ${random.lineNum}, the code is: \`${random.content.trim()}\`. Why is this line necessary for the program to work correctly?`
+  };
 }
 
 // ===============================
-// EVALUATE EXPLANATION (giữ nguyên, đã ok)
+// EVALUATE EXPLANATION
 // ===============================
 async function evaluateExplanation(language, answer, currentQuestion) {
   const prompt = `Language: ${language}
@@ -352,43 +398,33 @@ Student's answer: ${answer}
 
 EVALUATION RULES:
 1. The answer is CORRECT if it captures the MAIN IDEA, even if missing minor details.
-2. The answer is INCORRECT only if it is completely wrong, irrelevant, or has a critical error.
-3. Your feedback must be SHORT (one sentence) and natural: start with "Correct" or "Incorrect", then brief reason.
-4. The modelAnswer must be a COMPLETE explanation, but SHORT (2-4 sentences). 
-5. NEVER use ellipsis ("..."). Write full sentences.
+2. The answer is INCORRECT only if completely wrong, irrelevant, or critically mistaken.
+3. Feedback must be SHORT (one sentence): start with "Correct" or "Incorrect", then brief reason.
+4. modelAnswer must be COMPLETE but SHORT (2-4 sentences). NEVER use ellipsis ("...").
 
 Return JSON:
 {
   "correct": true/false,
-  "feedback": "Short feedback, e.g., 'Correct, good job.' or 'Incorrect, the loop runs while the stack is not empty.'",
-  "modelAnswer": "A concise, complete answer (2-4 sentences). No ellipsis."
+  "feedback": "Short feedback sentence.",
+  "modelAnswer": "Complete concise answer (2-4 sentences)."
 }`;
 
-  let result;
   try {
-    result = await callAI(prompt);
+    const result = await callAI(prompt, undefined, 'evaluateExplanation');
     const parsed = extractJson(result);
     if (parsed && typeof parsed.correct === 'boolean' && typeof parsed.feedback === 'string') {
-      let modelAnswer = parsed.modelAnswer || "No model answer provided.";
-      modelAnswer = modelAnswer.replace(/\.\.\./g, '.').replace(/\.{3,}/g, '.');
-      if (modelAnswer.endsWith('...')) modelAnswer = modelAnswer.slice(0, -3) + '.';
-      if (!modelAnswer.endsWith('.') && !modelAnswer.endsWith('!') && !modelAnswer.endsWith('?')) {
-        modelAnswer += '.';
-      }
+      let modelAnswer = (parsed.modelAnswer || 'No model answer provided.').replace(/\.\.\./g, '.').replace(/\.{3,}/g, '.');
+      if (!modelAnswer.match(/[.!?]$/)) modelAnswer += '.';
       return {
         correct: parsed.correct,
         feedback: parsed.feedback.replace(/\.\.\./g, '.'),
-        modelAnswer: modelAnswer
+        modelAnswer
       };
     }
     throw new Error('Invalid response');
   } catch (e) {
     console.error('evaluateExplanation error:', e);
-    return {
-      correct: false,
-      feedback: "AI is overloaded. Please try again.",
-      modelAnswer: "No model answer due to system error."
-    };
+    return { correct: false, feedback: 'AI is overloaded. Please try again.', modelAnswer: 'No model answer due to system error.' };
   }
 }
 
@@ -404,16 +440,16 @@ ${code}
 \`\`\`
 Explanation answers:
 ${JSON.stringify(explainAnswers, null, 2)}
-Provide an overall evaluation, without giving a numeric score. Return JSON:
+Provide an overall evaluation without a numeric score. Return JSON:
 {
   "summary": "Summary of observations",
   "feedback": "Detailed advice or comments",
   "strengths": ["strength 1", "strength 2"],
   "weaknesses": ["weakness 1", "weakness 2"]
 }`;
-  let result;
+
   try {
-    result = await callAI(prompt);
+    const result = await callAI(prompt, undefined, 'evaluateCodeAndExplanations');
     const parsed = extractJson(result);
     if (parsed && typeof parsed.summary === 'string') {
       const clean = (str) => (str || '').replace(/\.\.\./g, '.');
@@ -428,17 +464,12 @@ Provide an overall evaluation, without giving a numeric score. Return JSON:
     throw new Error('Invalid response');
   } catch (e) {
     console.error('evaluateCodeAndExplanations error:', e);
-    return {
-      summary: "Unable to evaluate due to system error. Please try again later.",
-      feedback: "AI encountered an issue and cannot analyze the submission.",
-      strengths: [],
-      weaknesses: []
-    };
+    return { summary: 'Unable to evaluate due to system error.', feedback: 'AI encountered an issue.', strengths: [], weaknesses: [] };
   }
 }
 
 // ===============================
-// EVALUATE CODE SUBMISSION (with syntax & logic check)
+// EVALUATE CODE SUBMISSION
 // ===============================
 async function evaluateCodeSubmission(language, code, problemStatement, expectedOutput = '') {
   const prompt = `Language: ${language}
@@ -451,40 +482,33 @@ ${code}
 \`\`\`
 
 INSTRUCTIONS:
-1. First, check if the code has any SYNTAX ERRORS or COMPILATION ERRORS. 
-   - For compiled languages (Java, C++, Go, etc.), simulate compilation.
-   - For interpreted languages (Python, JavaScript, etc.), check for syntax mistakes.
-2. If there are syntax errors, set "correct": false and explain the error clearly in "feedback".
-3. If syntax is correct, then determine whether the code correctly solves the problem logically (assuming it runs). 
-4. Provide a short feedback (one sentence). 
-5. Model answer: If incorrect, give a corrected version or explanation of the bug.
+1. Check for SYNTAX ERRORS or COMPILATION ERRORS first.
+2. If syntax errors exist, set "correct": false and explain clearly.
+3. If syntax is OK, check if the logic correctly solves the problem.
+4. Provide short feedback (one sentence).
+5. If incorrect, give a corrected version or explain the bug.
 
 Return JSON:
 {
   "correct": boolean,
-  "feedback": "Short feedback, e.g., 'Syntax error: missing closing brace on line 5.' or 'Logic error: pop on empty stack.'",
+  "feedback": "Short feedback sentence.",
   "modelAnswer": "Fixed code or explanation (2-3 sentences)."
 }`;
 
   try {
-    const result = await callAI(prompt);
+    const result = await callAI(prompt, undefined, 'evaluateCodeSubmission');
     const parsed = extractJson(result);
     if (parsed && typeof parsed.correct === 'boolean') {
-      let modelAnswer = (parsed.modelAnswer || "").replace(/\.\.\./g, '.');
       return {
         correct: parsed.correct,
-        feedback: (parsed.feedback || (parsed.correct ? "Code is correct." : "Code has issues.")).replace(/\.\.\./g, '.'),
-        modelAnswer: modelAnswer
+        feedback: (parsed.feedback || (parsed.correct ? 'Code is correct.' : 'Code has issues.')).replace(/\.\.\./g, '.'),
+        modelAnswer: (parsed.modelAnswer || '').replace(/\.\.\./g, '.')
       };
     }
-    throw new Error("Invalid AI response");
+    throw new Error('Invalid AI response');
   } catch (e) {
-    console.error("evaluateCodeSubmission error:", e);
-    return {
-      correct: false,
-      feedback: "Unable to evaluate code due to AI error.",
-      modelAnswer: ""
-    };
+    console.error('evaluateCodeSubmission error:', e);
+    return { correct: false, feedback: 'Unable to evaluate code due to AI error.', modelAnswer: '' };
   }
 }
 
@@ -497,5 +521,5 @@ module.exports = {
   evaluateCodeAndExplanations,
   evaluateCodeSubmission,
   validateQuestion,
-  getMeaningfulLines, // export để frontend có thể dùng nếu cần
+  getMeaningfulLines,
 };
