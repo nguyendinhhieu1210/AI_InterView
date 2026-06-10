@@ -5,9 +5,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const { connectDatabase } = require("./database");
+// Routes
 const healthRoutes = require("./routes/healthRoutes");
-
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const interviewRoutes = require("./routes/interviewRoutes");
@@ -16,71 +15,73 @@ const cvRoutes = require("./routes/cv");
 const adaptiveRoutes = require("./routes/adaptiveInterviewRoutes");
 const liveCodingRoutes = require("./routes/liveCodingRoutes");
 
+// Database
+const { connectDatabase } = require("./database");
+
+// =======================
+// 1. INIT APP (PHẢI ĐẦU TIÊN)
+// =======================
+const app = express();
+
+// =======================
+// 2. MIDDLEWARE
+// =======================
+
+app.use(express.json());
+
+// CORS (CHỈ 1 LẦN DUY NHẤT)
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      process.env.FRONTEND_URL, // Vercel URL
-    ].filter(Boolean),
+    origin: ["http://localhost:3000", process.env.FRONTEND_URL].filter(Boolean),
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
-app.options("*", cors()); // đặt sau config cors
+app.options("*", cors());
 
-const app = express();
-
-// Middleware
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-
-    credentials: true,
-  }),
-);
-
-app.use(express.json());
+// =======================
+// 3. ROUTES
+// =======================
 
 app.use("/", healthRoutes);
-// Routes
+
 app.use("/api/auth", authRoutes);
-
 app.use("/api/users", userRoutes);
-
 app.use("/api/interview", interviewRoutes);
-
 app.use("/api/cv", cvRoutes);
-
 app.use("/api/weakness", weaknessRoutes);
-
 app.use("/api/activity", require("./routes/activityRoutes"));
-
 app.use("/api/adaptive", adaptiveRoutes);
-
 app.use("/api/live-coding", liveCodingRoutes);
 
-// Health check
+// =======================
+// 4. HEALTH CHECK
+// =======================
+
 app.get("/health", (req, res) => {
   res.json({
     status: "OK",
-    timestamp: new Date(),
+    timestamp: new Date().toISOString(),
   });
 });
 
-// Database
-connectDatabase()
-  .then(() => console.log("✅ Database connected successfully"))
-  .catch((err) => {
-    console.error("❌ Database connection failed:", err);
+// =======================
+// 5. DATABASE + START SERVER
+// =======================
 
-    process.exit(1);
-  });
-
-// Start server
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+connectDatabase()
+  .then(() => {
+    console.log("✅ Database connected successfully");
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ Database connection failed:", err);
+    process.exit(1);
+  });
