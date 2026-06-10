@@ -1,32 +1,55 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
-import toast from 'react-hot-toast';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
+import toast from "react-hot-toast";
+import { useAuth } from "../contexts/AuthContext";
 import {
-  Sparkles, Edit2, Code2, FolderTree, BookOpen, Target, ArrowLeft,
-  CheckCircle, ChevronRight, Zap
-} from 'lucide-react';
+  Sparkles,
+  Edit2,
+  Code2,
+  FolderTree,
+  BookOpen,
+  Target,
+  ArrowLeft,
+  CheckCircle,
+  ChevronRight,
+  Zap,
+} from "lucide-react";
 
 const DIFFICULTY_CONFIG = {
-  beginner: { label: 'Beginner', color: 'from-success to-teal-500', border: 'border-success/30', icon: '🌱' },
-  intermediate: { label: 'Intermediate', color: 'from-warning to-orange-500', border: 'border-warning/30', icon: '⚡' },
-  advanced: { label: 'Advanced', color: 'from-error to-pink-500', border: 'border-error/30', icon: '🔥' },
+  beginner: {
+    label: "Beginner",
+    color: "from-success to-teal-500",
+    border: "border-success/30",
+    icon: "🌱",
+  },
+  intermediate: {
+    label: "Intermediate",
+    color: "from-warning to-orange-500",
+    border: "border-warning/30",
+    icon: "⚡",
+  },
+  advanced: {
+    label: "Advanced",
+    color: "from-error to-pink-500",
+    border: "border-error/30",
+    icon: "🔥",
+  },
 };
 
 export default function TopicSelection({ onSessionStart }) {
   const { token } = useAuth();
   const navigate = useNavigate();
 
-  const [language, setLanguage] = useState('');
+  const [language, setLanguage] = useState("");
   const [domains, setDomains] = useState([]);
-  const [selectedDomain, setSelectedDomain] = useState('');
+  const [selectedDomain, setSelectedDomain] = useState("");
   const [topics, setTopics] = useState([]);
-  const [selectedTopic, setSelectedTopic] = useState('');
-  const [difficulty, setDifficulty] = useState('beginner');
+  const [selectedTopic, setSelectedTopic] = useState("");
+  const [difficulty, setDifficulty] = useState("beginner");
 
   const [loadingDomains, setLoadingDomains] = useState(false);
-  const [loadingTopics, setLoadingTopics] = useState(false);
+  const [, setLoadingTopics] = useState(false);
   const [startingInterview, setStartingInterview] = useState(false);
 
   const [showDomainList, setShowDomainList] = useState(true);
@@ -34,36 +57,37 @@ export default function TopicSelection({ onSessionStart }) {
 
   const resetState = () => {
     setDomains([]);
-    setSelectedDomain('');
+    setSelectedDomain("");
     setTopics([]);
-    setSelectedTopic('');
-    setDifficulty('beginner');
+    setSelectedTopic("");
+    setDifficulty("beginner");
     setShowDomainList(true);
     setShowTopicList(false);
   };
 
   const loadDomains = async () => {
-    if (!token) return toast.error('Please log in');
-    if (!language.trim()) return toast.error('Please enter a programming language');
+    if (!token) return toast.error("Please log in");
+    if (!language.trim())
+      return toast.error("Please enter a programming language");
 
     try {
       setLoadingDomains(true);
-      const res = await api.get('/live-coding/domains', {
+      const res = await api.get("/live-coding/domains", {
         params: { language: language.trim().toLowerCase() },
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const domainList = res.data?.domains || [];
       setDomains(domainList);
-      setSelectedDomain('');
+      setSelectedDomain("");
       setTopics([]);
-      setSelectedTopic('');
+      setSelectedTopic("");
       setShowDomainList(true);
       setShowTopicList(false);
-      toast.success('Domains loaded successfully 🚀');
+      toast.success("Domains loaded successfully 🚀");
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.error || 'Failed to load domains');
+      toast.error(err.response?.data?.error || "Failed to load domains");
     } finally {
       setLoadingDomains(false);
     }
@@ -74,21 +98,21 @@ export default function TopicSelection({ onSessionStart }) {
       setLoadingTopics(true);
       setSelectedDomain(domain);
       setTopics([]);
-      setSelectedTopic('');
+      setSelectedTopic("");
       setShowDomainList(false);
       setShowTopicList(true);
 
-      const res = await api.get('/live-coding/topics', {
+      const res = await api.get("/live-coding/topics", {
         params: { language: language.trim().toLowerCase(), domain },
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const topicList = res.data?.topics || [];
       setTopics(topicList);
-      toast.success('Topics loaded');
+      toast.success("Topics loaded");
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.error || 'Failed to load topics');
+      toast.error(err.response?.data?.error || "Failed to load topics");
     } finally {
       setLoadingTopics(false);
     }
@@ -101,34 +125,34 @@ export default function TopicSelection({ onSessionStart }) {
 
   const handleEditDomain = () => {
     setShowDomainList(true);
-    setSelectedDomain('');
+    setSelectedDomain("");
     setTopics([]);
-    setSelectedTopic('');
+    setSelectedTopic("");
     setShowTopicList(false);
   };
 
   const handleEditTopic = () => {
     setShowTopicList(true);
-    setSelectedTopic('');
+    setSelectedTopic("");
   };
 
   const handleStartInterview = async () => {
-    if (!selectedTopic) return toast.error('Please select a topic');
+    if (!selectedTopic) return toast.error("Please select a topic");
     try {
       setStartingInterview(true);
       const res = await api.post(
-        '/live-coding/start',
+        "/live-coding/start",
         {
           language: language.trim().toLowerCase(),
           domain: selectedDomain,
           topicName: selectedTopic,
           difficulty,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       const { sessionId, question } = res.data;
-      if (!question?.problemStatement) throw new Error('Invalid question data');
+      if (!question?.problemStatement) throw new Error("Invalid question data");
 
       onSessionStart({
         sessionId,
@@ -137,14 +161,14 @@ export default function TopicSelection({ onSessionStart }) {
         topic: selectedTopic,
         difficulty,
         problemStatement: question.problemStatement,
-        testCriteria: question.testCriteria || '',
-        exampleInput: question.exampleInput || '',
-        exampleOutput: question.exampleOutput || '',
+        testCriteria: question.testCriteria || "",
+        exampleInput: question.exampleInput || "",
+        exampleOutput: question.exampleOutput || "",
       });
-      toast.success('Interview started! 🚀');
+      toast.success("Interview started! 🚀");
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.error || 'Failed to create question');
+      toast.error(err.response?.data?.error || "Failed to create question");
     } finally {
       setStartingInterview(false);
     }
@@ -154,23 +178,37 @@ export default function TopicSelection({ onSessionStart }) {
     <div className="relative flex-1">
       <div className="flex flex-col items-center sm:flex-row sm:items-start gap-2">
         <div className="relative flex items-center justify-center">
-          <div className={`
+          <div
+            className={`
             w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 z-10
-            ${isCompleted ? 'bg-success text-white shadow-md' :
-              isActive ? 'bg-primary text-white shadow-md ring-2 ring-primary/30' :
-                'bg-muted/20 text-muted'}
-          `}>
+            ${
+              isCompleted
+                ? "bg-success text-white shadow-md"
+                : isActive
+                  ? "bg-primary text-white shadow-md ring-2 ring-primary/30"
+                  : "bg-muted/20 text-muted"
+            }
+          `}
+          >
             {isCompleted ? <CheckCircle className="w-4 h-4" /> : number}
           </div>
           {!isLast && (
             <div className="hidden sm:block absolute left-full w-full h-0.5 bg-gradient-to-r from-muted/30 to-muted/10 -translate-y-1/2 top-1/2">
-              <div className={`h-full transition-all duration-500 ${isCompleted ? 'bg-success w-full' : 'w-0'}`} />
+              <div
+                className={`h-full transition-all duration-500 ${isCompleted ? "bg-success w-full" : "w-0"}`}
+              />
             </div>
           )}
         </div>
         <div className="text-center sm:text-left mt-0.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Step {number}</p>
-          <p className={`text-sm font-semibold ${isActive ? 'text-text' : 'text-muted'}`}>{title}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+            Step {number}
+          </p>
+          <p
+            className={`text-sm font-semibold ${isActive ? "text-text" : "text-muted"}`}
+          >
+            {title}
+          </p>
         </div>
       </div>
     </div>
@@ -188,7 +226,7 @@ export default function TopicSelection({ onSessionStart }) {
       <div className="sticky top-0 z-20 backdrop-blur-xl bg-card/80 border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <button
-            onClick={() => navigate('/welcome')}
+            onClick={() => navigate("/welcome")}
             className="group flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-muted hover:text-primary hover:bg-primary/10 transition-all duration-200 text-sm font-medium"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
@@ -212,17 +250,42 @@ export default function TopicSelection({ onSessionStart }) {
             AI Live Coding Interview
           </h1>
           <p className="text-muted mt-2 text-sm max-w-xl mx-auto">
-            Select your tech stack, domain, and difficulty — AI generates a tailored coding problem.
+            Select your tech stack, domain, and difficulty — AI generates a
+            tailored coding problem.
           </p>
         </div>
 
         {/* Step Progress Bar */}
         <div className="mb-8 px-1">
           <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-1">
-            <Step number={1} title="Language" isActive={!stepsCompleted[1]} isCompleted={stepsCompleted[1]} isLast={false} />
-            <Step number={2} title="Domain" isActive={stepsCompleted[1] && !stepsCompleted[2]} isCompleted={stepsCompleted[2]} isLast={false} />
-            <Step number={3} title="Topic" isActive={stepsCompleted[2] && !stepsCompleted[3]} isCompleted={stepsCompleted[3]} isLast={false} />
-            <Step number={4} title="Difficulty" isActive={stepsCompleted[3] && !difficulty} isCompleted={!!difficulty && stepsCompleted[3]} isLast={true} />
+            <Step
+              number={1}
+              title="Language"
+              isActive={!stepsCompleted[1]}
+              isCompleted={stepsCompleted[1]}
+              isLast={false}
+            />
+            <Step
+              number={2}
+              title="Domain"
+              isActive={stepsCompleted[1] && !stepsCompleted[2]}
+              isCompleted={stepsCompleted[2]}
+              isLast={false}
+            />
+            <Step
+              number={3}
+              title="Topic"
+              isActive={stepsCompleted[2] && !stepsCompleted[3]}
+              isCompleted={stepsCompleted[3]}
+              isLast={false}
+            />
+            <Step
+              number={4}
+              title="Difficulty"
+              isActive={stepsCompleted[3] && !difficulty}
+              isCompleted={!!difficulty && stepsCompleted[3]}
+              isLast={true}
+            />
           </div>
         </div>
 
@@ -233,7 +296,9 @@ export default function TopicSelection({ onSessionStart }) {
               <Code2 className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-text">1. Choose Language</h2>
+              <h2 className="text-base font-bold text-text">
+                1. Choose Language
+              </h2>
               <p className="text-xs text-muted">Pick your preferred language</p>
             </div>
           </div>
@@ -245,7 +310,7 @@ export default function TopicSelection({ onSessionStart }) {
                   setLanguage(e.target.value);
                   resetState();
                 }}
-                onKeyDown={(e) => e.key === 'Enter' && loadDomains()}
+                onKeyDown={(e) => e.key === "Enter" && loadDomains()}
                 placeholder="e.g., python, javascript, java, go, rust..."
                 className="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-gray-800 border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
               />
@@ -278,7 +343,9 @@ export default function TopicSelection({ onSessionStart }) {
                 <FolderTree className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-text">2. Select Domain</h2>
+                <h2 className="text-base font-bold text-text">
+                  2. Select Domain
+                </h2>
                 <p className="text-xs text-muted">Focus area</p>
               </div>
             </div>
@@ -287,7 +354,9 @@ export default function TopicSelection({ onSessionStart }) {
               <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
                 <div className="flex items-center gap-2">
                   <FolderTree className="w-4 h-4 text-primary" />
-                  <span className="font-medium text-sm text-text">{selectedDomain}</span>
+                  <span className="font-medium text-sm text-text">
+                    {selectedDomain}
+                  </span>
                 </div>
                 <button
                   onClick={handleEditDomain}
@@ -325,7 +394,9 @@ export default function TopicSelection({ onSessionStart }) {
                 <BookOpen className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-text">3. Pick a Topic</h2>
+                <h2 className="text-base font-bold text-text">
+                  3. Pick a Topic
+                </h2>
                 <p className="text-xs text-muted">Choose a specific topic</p>
               </div>
             </div>
@@ -334,7 +405,9 @@ export default function TopicSelection({ onSessionStart }) {
               <div className="flex items-center justify-between p-3 bg-success/5 rounded-lg border border-success/20">
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-success" />
-                  <span className="font-medium text-sm text-text">{selectedTopic}</span>
+                  <span className="font-medium text-sm text-text">
+                    {selectedTopic}
+                  </span>
                 </div>
                 <button
                   onClick={handleEditTopic}
@@ -372,34 +445,41 @@ export default function TopicSelection({ onSessionStart }) {
                 <Target className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-text">4. Set Difficulty</h2>
+                <h2 className="text-base font-bold text-text">
+                  4. Set Difficulty
+                </h2>
                 <p className="text-xs text-muted">Challenge intensity</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {Object.entries(DIFFICULTY_CONFIG).map(([key, { label, color, border, icon }]) => (
-                <button
-                  key={key}
-                  onClick={() => setDifficulty(key)}
-                  className={`
+              {Object.entries(DIFFICULTY_CONFIG).map(
+                ([key, { label, color, border, icon }]) => (
+                  <button
+                    key={key}
+                    onClick={() => setDifficulty(key)}
+                    className={`
                     relative overflow-hidden group p-3 rounded-lg border transition-all duration-200
-                    ${difficulty === key
-                      ? `bg-gradient-to-r ${color} text-white border-transparent shadow-md scale-[1.01]`
-                      : `bg-card ${border} text-text hover:scale-[1.01] hover:shadow-sm`
+                    ${
+                      difficulty === key
+                        ? `bg-gradient-to-r ${color} text-white border-transparent shadow-md scale-[1.01]`
+                        : `bg-card ${border} text-text hover:scale-[1.01] hover:shadow-sm`
                     }
                   `}
-                >
-                  <div className="flex flex-col items-center text-center gap-1">
-                    <span className="text-xl">{icon}</span>
-                    <span className="font-bold text-sm">{label}</span>
-                    <p className={`text-[10px] ${difficulty === key ? 'text-white/80' : 'text-muted'}`}>
-                      {key === 'beginner' && 'Starter friendly'}
-                      {key === 'intermediate' && 'Needs practice'}
-                      {key === 'advanced' && 'Expert level'}
-                    </p>
-                  </div>
-                </button>
-              ))}
+                  >
+                    <div className="flex flex-col items-center text-center gap-1">
+                      <span className="text-xl">{icon}</span>
+                      <span className="font-bold text-sm">{label}</span>
+                      <p
+                        className={`text-[10px] ${difficulty === key ? "text-white/80" : "text-muted"}`}
+                      >
+                        {key === "beginner" && "Starter friendly"}
+                        {key === "intermediate" && "Needs practice"}
+                        {key === "advanced" && "Expert level"}
+                      </p>
+                    </div>
+                  </button>
+                ),
+              )}
             </div>
           </div>
         )}
@@ -419,7 +499,10 @@ export default function TopicSelection({ onSessionStart }) {
                   Crafting challenge...
                 </span>
               ) : (
-                <span>Start Interview <ChevronRight className="inline w-4 h-4 ml-0.5 group-hover:translate-x-0.5 transition-transform" /></span>
+                <span>
+                  Start Interview{" "}
+                  <ChevronRight className="inline w-4 h-4 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
+                </span>
               )}
             </button>
           </div>
@@ -439,21 +522,29 @@ export default function TopicSelection({ onSessionStart }) {
           width: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(0,0,0,0.05);
+          background: rgba(0, 0, 0, 0.05);
           border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(99,102,241,0.3);
+          background: rgba(99, 102, 241, 0.3);
           border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(99,102,241,0.5);
+          background: rgba(99, 102, 241, 0.5);
         }
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
+        .fade-in {
+          animation: fadeIn 0.3s ease-out;
+        }
       `}</style>
     </div>
   );

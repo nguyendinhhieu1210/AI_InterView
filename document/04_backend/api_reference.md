@@ -16,7 +16,8 @@
   "userName": "nguyenvana",
   "fullName": "Nguyễn Văn A",
   "email": "a@example.com",
-  "password": "Password123!"
+  "password": "Password123!",
+  "confirmPassword": "Password123!"
 }
 ```
 
@@ -24,14 +25,23 @@
 ```json
 {
   "success": true,
-  "message": "Đăng ký thành công, vui lòng kiểm tra email để xác thực OTP"
+  "message": "Registration successful! Please check your email to verify your account.",
+  "email": "a@example.com",
+  "user": {
+    "userName": "nguyenvana",
+    "fullName": "Nguyễn Văn A",
+    "email": "a@example.com",
+    "role": "user",
+    "isVerified": false,
+    "_id": "..."
+  }
 }
 ```
 
 ---
 
-### POST `/api/auth/verify-otp`
-Xác thực OTP gửi về email.
+### POST `/api/auth/verify-email`
+Xác thực OTP gửi về email sau khi đăng ký thành công để kích hoạt tài khoản.
 
 **Request Body:**
 ```json
@@ -45,20 +55,48 @@ Xác thực OTP gửi về email.
 ```json
 {
   "success": true,
-  "message": "Xác thực email thành công"
+  "message": "Email verified successfully",
+  "token": "eyJhbGci...",
+  "user": {
+    "id": "...",
+    "userName": "nguyenvana",
+    "fullName": "Nguyễn Văn A",
+    "email": "a@example.com",
+    "role": "user"
+  }
+}
+```
+
+---
+
+### POST `/api/auth/resend-verify-email`
+Gửi lại mã OTP kích hoạt tài khoản về email.
+
+**Request Body:**
+```json
+{
+  "email": "a@example.com"
+}
+```
+
+**Response 200:**
+```json
+{
+  "message": "OTP resent successfully"
 }
 ```
 
 ---
 
 ### POST `/api/auth/login`
-Đăng nhập. Trả về JWT token.
+Đăng nhập tài khoản. Trả về JWT token. Chỉ cho phép các tài khoản đã xác thực email.
 
 **Request Body:**
 ```json
 {
   "email": "a@example.com",
-  "password": "Password123!"
+  "password": "Password123!",
+  "rememberMe": false
 }
 ```
 
@@ -68,11 +106,10 @@ Xác thực OTP gửi về email.
   "success": true,
   "token": "eyJhbGci...",
   "user": {
-    "_id": "...",
+    "id": "...",
     "userName": "nguyenvana",
     "fullName": "Nguyễn Văn A",
     "email": "a@example.com",
-    "avatar": "",
     "role": "user"
   }
 }
@@ -81,17 +118,27 @@ Xác thực OTP gửi về email.
 ---
 
 ### POST `/api/auth/forgot-password`
-Gửi OTP reset mật khẩu về email.
+Gửi mã OTP reset mật khẩu về email.
 
 **Request Body:**
 ```json
-{ "email": "a@example.com" }
+{ 
+  "email": "a@example.com" 
+}
+```
+
+**Response 200:**
+```json
+{
+  "message": "OTP has been sent to your email",
+  "email": "a@example.com"
+}
 ```
 
 ---
 
-### POST `/api/auth/verify-reset-otp`
-Xác thực OTP reset mật khẩu.
+### POST `/api/auth/verify-otp`
+Xác thực mã OTP reset mật khẩu.
 
 **Request Body:**
 ```json
@@ -101,17 +148,45 @@ Xác thực OTP reset mật khẩu.
 }
 ```
 
+**Response 200:**
+```json
+{
+  "verified": true,
+  "message": "OTP is valid"
+}
+```
+
 ---
 
 ### POST `/api/auth/reset-password`
-Đặt mật khẩu mới.
+Đặt lại mật khẩu mới sử dụng mã OTP đã xác nhận.
 
 **Request Body:**
 ```json
 {
   "email": "a@example.com",
   "otp": "654321",
-  "newPassword": "NewPass456!"
+  "newPassword": "NewPass456!",
+  "confirmPassword": "NewPass456!"
+}
+```
+
+**Response 200:**
+```json
+{
+  "message": "Password has been reset successfully"
+}
+```
+
+---
+
+### POST `/api/auth/logout`
+Đăng xuất tài khoản.
+
+**Response 200:**
+```json
+{
+  "message": "Logged out successfully"
 }
 ```
 
@@ -119,10 +194,10 @@ Xác thực OTP reset mật khẩu.
 
 ## 2. User – `/api/users` 🔒
 
-> Tất cả routes cần JWT.
+> Tất cả các routes yêu cầu Header `Authorization: Bearer <JWT_TOKEN>`.
 
 ### GET `/api/users/profile`
-Lấy thông tin hồ sơ người dùng hiện tại.
+Lấy thông tin hồ sơ người dùng hiện tại từ token.
 
 **Response 200:**
 ```json
@@ -143,7 +218,7 @@ Lấy thông tin hồ sơ người dùng hiện tại.
 ---
 
 ### PUT `/api/users/profile`
-Cập nhật thông tin hồ sơ.
+Cập nhật thông tin hồ sơ của người dùng hiện tại.
 
 **Request Body:**
 ```json
@@ -153,16 +228,39 @@ Cập nhật thông tin hồ sơ.
 }
 ```
 
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Profile updated successfully",
+  "user": {
+    "_id": "...",
+    "userName": "nguyenvana",
+    "fullName": "Nguyễn Văn B",
+    "email": "a@example.com",
+    "avatar": "https://new-avatar-url.com/img.jpg"
+  }
+}
+```
+
 ---
 
-### PUT `/api/users/change-password` 🔒
-Đổi mật khẩu.
+### PUT `/api/users/change-password`
+Đổi mật khẩu tài khoản trực tiếp từ màn hình Settings.
 
 **Request Body:**
 ```json
 {
   "currentPassword": "OldPass123!",
   "newPassword": "NewPass456!"
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Thay đổi mật khẩu thành công"
 }
 ```
 
@@ -207,19 +305,33 @@ Sinh bộ câu hỏi phỏng vấn tiêu chuẩn bằng AI.
 ---
 
 ### POST `/api/interview/submit`
-Nộp bài và nhận kết quả chấm điểm từ AI.
+Nộp bài phỏng vấn tiêu chuẩn và nhận kết quả chấm điểm từ AI.
 
 **Request Body:**
 ```json
 {
   "topic": "JavaScript",
   "difficulty": "medium",
-  "mcqAnswers": [
-    { "questionIndex": 0, "userAnswer": "B" }
-  ],
-  "textAnswers": [
-    { "questionIndex": 0, "userAnswer": "Event loop là cơ chế..." }
-  ]
+  "questions": {
+    "mcq": [
+      {
+        "question": "Closure trong JavaScript là gì?",
+        "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+        "correctAnswer": "B"
+      }
+    ],
+    "text": [
+      {
+        "question": "Giải thích Event Loop trong Node.js",
+        "idealAnswerKeywords": ["call stack", "callback queue", "event loop"],
+        "sampleAnswer": "..."
+      }
+    ]
+  },
+  "answers": {
+    "mcq_0": "B",
+    "text_0": "Event loop là cơ chế giúp Node.js thực thi bất đồng bộ..."
+  }
 }
 ```
 
@@ -227,11 +339,30 @@ Nộp bài và nhận kết quả chấm điểm từ AI.
 ```json
 {
   "success": true,
-  "result": {
-    "_id": "...",
+  "results": {
     "totalScore": 75,
-    "mcqResults": [ ... ],
-    "textResults": [ ... ]
+    "mcq": [
+      {
+        "question": "Closure trong JavaScript là gì?",
+        "options": [ ... ],
+        "userAnswer": "B",
+        "correctAnswer": "B",
+        "isCorrect": true,
+        "score": 10,
+        "explanation": "..."
+      }
+    ],
+    "text": [
+      {
+        "question": "Giải thích Event Loop trong Node.js",
+        "idealAnswerKeywords": [ ... ],
+        "sampleAnswer": "...",
+        "userAnswer": "Event loop là cơ chế...",
+        "score": 5,
+        "explanation": "...",
+        "feedback": "..."
+      }
+    ]
   }
 }
 ```
@@ -239,7 +370,7 @@ Nộp bài và nhận kết quả chấm điểm từ AI.
 ---
 
 ### GET `/api/interview/history`
-Lấy danh sách lịch sử phỏng vấn của user hiện tại.
+Lấy danh sách lịch sử phỏng vấn tiêu chuẩn của user hiện tại.
 
 **Response 200:**
 ```json
@@ -260,7 +391,7 @@ Lấy danh sách lịch sử phỏng vấn của user hiện tại.
 ---
 
 ### GET `/api/interview/history/:id`
-Lấy chi tiết một bài phỏng vấn cụ thể.
+Lấy chi tiết một bài phỏng vấn tiêu chuẩn cụ thể.
 
 **Response 200:**
 ```json
@@ -268,29 +399,27 @@ Lấy chi tiết một bài phỏng vấn cụ thể.
   "success": true,
   "history": {
     "_id": "...",
+    "userId": "...",
     "topic": "JavaScript",
     "difficulty": "medium",
-    "questions": [...],
-    "answers": [...],
-    "results": [...]
+    "mcqResults": [...],
+    "textResults": [...],
+    "totalScore": 75,
+    "completedAt": "..."
   }
 }
 ```
 
 ---
 
-## 4. CV Interview – `/api/cv`
+## 4. CV Interview – `/api/cv` 🔒
 
-### POST `/api/cv/upload` 🔒
-Upload file CV (PDF) để trích xuất thông tin.
+### POST `/api/cv/upload`
+Tải lên file CV (PDF) để trích xuất thông tin.
 
-- Yêu cầu authentication.
+- Yêu cầu Header `Authorization: Bearer <JWT_TOKEN>`.
 - Sử dụng `multipart/form-data` với field `cv`.
-- Server chỉ lưu tệp tạm thời để trích xuất rồi xoá ngay.
-
-**Request:**
-- Header: `Authorization: Bearer <JWT_TOKEN>`
-- Body: `FormData` với `cv` file PDF
+- Server trích xuất nội dung và trả về danh sách kỹ năng gợi ý.
 
 **Response 200:**
 ```json
@@ -298,10 +427,10 @@ Upload file CV (PDF) để trích xuất thông tin.
   "success": true,
   "fullName": "Nguyễn Đình Hiếu",
   "skills": {
-    "frontend": [...],
-    "backend": [...],
-    "theory": [...],
-    "devops": [...]
+    "frontend": ["React", "HTML", "CSS"],
+    "backend": ["Node.js", "Express"],
+    "theory": ["OOP", "Data Structures"],
+    "devops": ["Docker", "Git"]
   },
   "rawText": "...",
   "fileName": "CV_NguyenDinhHieu.pdf"
@@ -311,11 +440,7 @@ Upload file CV (PDF) để trích xuất thông tin.
 ---
 
 ### POST `/api/cv/analyze-text`
-Phân tích nội dung CV đã trích xuất sẵn.
-
-- Không yêu cầu upload file.
-- Nhận payload JSON chứa `cvText`.
-- Trả về `fullName` và `skills`.
+Phân tích nội dung văn bản CV đã trích xuất (không yêu cầu upload lại file).
 
 **Request Body:**
 ```json
@@ -329,24 +454,26 @@ Phân tích nội dung CV đã trích xuất sẵn.
 {
   "success": true,
   "fullName": "Nguyễn Đình Hiếu",
-  "skills": { "frontend": [...], "backend": [...], "theory": [...], "devops": [...] }
+  "skills": { 
+    "frontend": ["React", "HTML"], 
+    "backend": ["Node.js"], 
+    "theory": ["OOP"], 
+    "devops": ["Docker"] 
+  }
 }
 ```
 
 ---
 
 ### POST `/api/cv/generate-questions`
-Sinh bộ câu hỏi phỏng vấn dựa trên nội dung CV và kỹ năng đã chọn.
-
-- Không yêu cầu JWT.
-- Nhận payload JSON chứa `cvText` và `selectedSkills`.
+Sinh bộ câu hỏi phỏng vấn dựa trên nội dung CV và kỹ năng được chọn.
 
 **Request Body:**
 ```json
 {
   "cvText": "...",
   "selectedSkills": {
-    "frontend": ["React", "HTML"],
+    "frontend": ["React"],
     "backend": ["Node.js"],
     "theory": ["OOP"],
     "devops": ["Docker"]
@@ -359,26 +486,39 @@ Sinh bộ câu hỏi phỏng vấn dựa trên nội dung CV và kỹ năng đã
 {
   "success": true,
   "questions": {
-    "mcq": [...],
-    "text": [...]
+    "mcq": [
+      {
+        "question": "...",
+        "options": [...],
+        "correctAnswer": "A"
+      }
+    ],
+    "text": [
+      {
+        "question": "..."
+      }
+    ]
   }
 }
 ```
 
 ---
 
-### POST `/api/cv/submit-answers` 🔒
-Nộp câu trả lời cho bài phỏng vấn CV và lưu lịch sử.
-
-- Yêu cầu authentication.
-- Nhận `questions`, `answers`, `selectedSkills`, và `cvName`.
+### POST `/api/cv/submit-answers`
+Nộp câu trả lời cho bài phỏng vấn CV và lưu kết quả.
 
 **Request Body:**
 ```json
 {
-  "questions": { ... },
-  "answers": { ... },
-  "selectedSkills": { ... },
+  "questions": {
+    "mcq": [...],
+    "text": [...]
+  },
+  "answers": {
+    "mcq_0": "A",
+    "text_0": "..."
+  },
+  "selectedSkills": ["React", "Node.js", "OOP", "Docker"],
   "cvName": "CV_NguyenDinhHieu.pdf"
 }
 ```
@@ -391,34 +531,58 @@ Nộp câu trả lời cho bài phỏng vấn CV và lưu lịch sử.
     "mcq": [...],
     "text": [...],
     "totalScore": 88,
-    "summary": "..."
+    "summary": {
+      "overall": "...",
+      "strengths": ["..."],
+      "weaknesses": ["..."],
+      "suggestions": ["..."]
+    }
   }
 }
 ```
 
 ---
 
-### GET `/api/cv/history` 🔒
-Lấy danh sách lịch sử phỏng vấn CV của user.
+### GET `/api/cv/history`
+Lấy danh sách lịch sử phỏng vấn CV của user hiện tại.
 
 **Response 200:**
 ```json
 {
   "success": true,
-  "history": [ ... ]
+  "history": [
+    {
+      "_id": "...",
+      "cvName": "CV_NguyenDinhHieu.pdf",
+      "topic": ["React", "Node.js"],
+      "totalScore": 88,
+      "createdAt": "..."
+    }
+  ]
 }
 ```
 
 ---
 
-### GET `/api/cv/history/:id` 🔒
-Lấy chi tiết session CV cụ thể.
+### GET `/api/cv/history/:id`
+Lấy chi tiết bài phỏng vấn CV theo ID.
 
 **Response 200:**
 ```json
 {
   "success": true,
-  "history": { ... }
+  "history": {
+    "_id": "...",
+    "userId": "...",
+    "cvName": "CV_NguyenDinhHieu.pdf",
+    "topic": [...],
+    "questions": {...},
+    "answers": {...},
+    "results": {...},
+    "totalScore": 88,
+    "summary": {...},
+    "createdAt": "..."
+  }
 }
 ```
 
@@ -426,14 +590,16 @@ Lấy chi tiết session CV cụ thể.
 
 ## 5. Adaptive Interview – `/api/adaptive` 🔒
 
+> Yêu cầu Header `Authorization: Bearer <JWT_TOKEN>`.
+
 ### POST `/api/adaptive/start`
-Bắt đầu session phỏng vấn thích ứng.
+Bắt đầu session phỏng vấn thích ứng mới.
 
 **Request Body:**
 ```json
 {
   "topic": "React",
-  "initialDifficulty": "easy"
+  "difficulty": "medium"
 }
 ```
 
@@ -445,7 +611,7 @@ Bắt đầu session phỏng vấn thích ứng.
   "question": {
     "content": "React Hook là gì?",
     "type": "text",
-    "difficulty": "easy"
+    "difficulty": "medium"
   }
 }
 ```
@@ -453,7 +619,7 @@ Bắt đầu session phỏng vấn thích ứng.
 ---
 
 ### POST `/api/adaptive/answer`
-Gửi câu trả lời và nhận câu hỏi tiếp theo (độ khó đã điều chỉnh).
+Gửi câu trả lời tự luận hiện tại, nhận đánh giá tức thì và câu hỏi tiếp theo với độ khó được tự động điều chỉnh. Khi đạt giới hạn số câu hỏi, hệ thống trả về báo cáo tổng kết và lộ trình học tập.
 
 **Request Body:**
 ```json
@@ -463,7 +629,7 @@ Gửi câu trả lời và nhận câu hỏi tiếp theo (độ khó đã điề
 }
 ```
 
-**Response 200:**
+**Response 200 (Nếu chưa hoàn thành):**
 ```json
 {
   "success": true,
@@ -473,38 +639,86 @@ Gửi câu trả lời và nhận câu hỏi tiếp theo (độ khó đã điề
   },
   "nextQuestion": {
     "content": "Giải thích useCallback vs useMemo",
-    "difficulty": "medium"
+    "difficulty": "hard",
+    "type": "text"
   },
   "sessionComplete": false
 }
 ```
 
----
-
-### POST `/api/adaptive/complete`
-Kết thúc session và lưu tổng kết.
-
-**Request Body:**
+**Response 200 (Nếu đã kết thúc session):**
 ```json
-{ "sessionId": "..." }
+{
+  "success": true,
+  "evaluation": {
+    "score": 9,
+    "feedback": "..."
+  },
+  "sessionComplete": true,
+  "finalScore": 8.5,
+  "summary": {
+    "overall": "...",
+    "strengths": ["..."],
+    "weaknesses": ["..."]
+  },
+  "detailedReport": { ... },
+  "roadmap": {
+    "structured": { ... },
+    "flattened": [...]
+  }
+}
 ```
 
 ---
 
 ### GET `/api/adaptive/history`
-Danh sách lịch sử Adaptive sessions.
+Danh sách lịch sử Adaptive sessions của user.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "history": [
+    {
+      "_id": "...",
+      "topic": "React",
+      "difficulty": "medium",
+      "status": "completed",
+      "finalScore": 8.5,
+      "createdAt": "..."
+    }
+  ]
+}
+```
 
 ---
 
-### GET `/api/adaptive/history/:sessionId`
-Chi tiết một Adaptive session.
+### GET `/api/adaptive/session/:sessionId`
+Lấy thông tin chi tiết của một Adaptive session theo Session ID.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "session": {
+    "_id": "...",
+    "topic": "React",
+    "status": "completed",
+    "conversation": [...],
+    "finalScore": 8.5,
+    "summary": {...},
+    "roadmapStructured": {...},
+    "roadmapFlattened": [...]
+  }
+}
+```
 
 ---
 
 ## 6. Weakness Analysis – `/api/weakness` 🔒
 
-### GET `/api/weakness/analyze`
-Phân tích điểm yếu của user dựa trên lịch sử phỏng vấn.
+### GET `/api/weakness/me`
+Phân tích điểm mạnh, điểm yếu và đưa ra gợi ý ôn luyện dựa trên lịch sử phỏng vấn của user.
 
 **Response 200:**
 ```json
@@ -527,10 +741,10 @@ Phân tích điểm yếu của user dựa trên lịch sử phỏng vấn.
 
 ## 7. Live Coding – `/api/live-coding` 🔒
 
-> Tất cả các route Live Coding yêu cầu JWT token hợp lệ.
+> Tất cả các route Live Coding yêu cầu Header `Authorization: Bearer <JWT_TOKEN>`.
 
 ### GET `/api/live-coding/domains`
-Lấy danh sách domain theo ngôn ngữ.
+Lấy danh sách domain lập trình theo ngôn ngữ.
 
 **Query:**
 - `language` (string) – ví dụ `javascript`, `python`, `java`
@@ -545,7 +759,7 @@ Lấy danh sách domain theo ngôn ngữ.
 ---
 
 ### GET `/api/live-coding/topics`
-Lấy danh sách topics theo ngôn ngữ và domain.
+Lấy danh sách các topics dựa trên ngôn ngữ và domain lập trình.
 
 **Query:**
 - `language` (string)
@@ -590,7 +804,7 @@ Bắt đầu session Live Coding mới.
 ---
 
 ### GET `/api/live-coding/session/:sessionId/current-question`
-Lấy câu hỏi hiện tại của session.
+Lấy câu hỏi code/giải thích hiện tại của session.
 
 **Response 200:**
 ```json
@@ -606,7 +820,7 @@ Lấy câu hỏi hiện tại của session.
 ---
 
 ### POST `/api/live-coding/session/:sessionId/submit`
-Gửi code để AI đánh giá.
+Gửi mã nguồn lập trình để AI biên dịch và đánh giá thuật toán.
 
 **Request Body:**
 ```json
@@ -630,7 +844,7 @@ Gửi code để AI đánh giá.
 ---
 
 ### POST `/api/live-coding/session/:sessionId/explain`
-Gửi câu trả lời giải thích sau khi code đúng.
+Gửi câu trả lời giải thích (Q&A) sau khi giải đúng bài code.
 
 **Request Body:**
 ```json
@@ -654,7 +868,7 @@ Gửi câu trả lời giải thích sau khi code đúng.
 ---
 
 ### POST `/api/live-coding/session/:sessionId/next-code`
-Yêu cầu câu hỏi code mới sau khi hoàn thành chu kỳ giải thích.
+Yêu cầu sinh câu hỏi coding mới sau khi đã hoàn tất toàn bộ câu hỏi giải thích.
 
 **Response 200:**
 ```json
@@ -670,7 +884,7 @@ Yêu cầu câu hỏi code mới sau khi hoàn thành chu kỳ giải thích.
 ---
 
 ### GET `/api/live-coding/session/:sessionId/last-evaluation`
-Lấy đánh giá cuối cùng của session từ DB.
+Lấy báo cáo đánh giá cuối cùng của session từ database.
 
 **Response 200:**
 ```json
@@ -687,7 +901,7 @@ Lấy đánh giá cuối cùng của session từ DB.
 ---
 
 ### GET `/api/live-coding/history`
-Lấy danh sách session Live Coding đã lưu trong DB.
+Lấy danh sách các session Live Coding đã thực hiện của user.
 
 **Response 200:**
 ```json
@@ -711,7 +925,7 @@ Lấy danh sách session Live Coding đã lưu trong DB.
 ---
 
 ### GET `/api/live-coding/sessions/:sessionId`
-Lấy chi tiết session Live Coding, bao gồm `codeHistory`.
+Lấy chi tiết lịch sử một session Live Coding cụ thể (bao gồm danh sách toàn bộ code đã nộp).
 
 **Response 200:**
 ```json
@@ -725,7 +939,15 @@ Lấy chi tiết session Live Coding, bao gồm `codeHistory`.
     "difficulty": "intermediate",
     "createdAt": "...",
     "updatedAt": "...",
-    "codeHistory": [ ... ]
+    "codeHistory": [
+      {
+        "code": "...",
+        "problemStatement": "...",
+        "submittedAt": "...",
+        "explainAnswers": [...],
+        "evaluation": {...}
+      }
+    ]
   }
 }
 ```
@@ -735,15 +957,15 @@ Lấy chi tiết session Live Coding, bao gồm `codeHistory`.
 ## 8. Activity – `/api/activity` 🔒
 
 ### GET `/api/activity`
-Lấy dữ liệu hoạt động hàng ngày (cho ActivityCalendar).
+Lấy danh sách dữ liệu hoạt động luyện tập hàng ngày của người dùng (phục vụ vẽ ActivityCalendar heatmap).
 
 **Response 200:**
 ```json
 {
   "success": true,
   "activities": [
-    { "date": "2024-01-15", "count": 3 },
-    { "date": "2024-01-16", "count": 1 }
+    { "date": "2024-01-15T00:00:00.000Z", "type": "interview" },
+    { "date": "2024-01-16T00:00:00.000Z", "type": "adaptiveinterview" }
   ]
 }
 ```
@@ -753,7 +975,7 @@ Lấy dữ liệu hoạt động hàng ngày (cho ActivityCalendar).
 ## 9. Health Check
 
 ### GET `/health`
-Kiểm tra server đang hoạt động.
+Kiểm tra tình trạng hoạt động của máy chủ backend.
 
 **Response 200:**
 ```json
@@ -769,10 +991,10 @@ Kiểm tra server đang hoạt động.
 
 | Code | Ý Nghĩa |
 |---|---|
-| 200 | Thành công |
-| 201 | Tạo mới thành công |
-| 400 | Bad Request (dữ liệu không hợp lệ) |
-| 401 | Unauthorized (chưa đăng nhập / token hết hạn) |
-| 403 | Forbidden (không có quyền) |
-| 404 | Not Found |
-| 500 | Internal Server Error |
+| 200 | Thành công (Success) |
+| 201 | Tạo mới thành công (Created) |
+| 400 | Dữ liệu đầu vào không hợp lệ (Bad Request) |
+| 401 | Chưa xác thực / JWT Token hết hạn (Unauthorized) |
+| 403 | Không có quyền truy cập (Forbidden) |
+| 404 | Không tìm thấy tài nguyên (Not Found) |
+| 500 | Lỗi hệ thống server (Internal Server Error) |

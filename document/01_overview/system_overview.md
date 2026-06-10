@@ -7,7 +7,7 @@
 - Tham gia phỏng vấn mô phỏng với câu hỏi do AI sinh ra theo chủ đề
 - Luyện tập phỏng vấn theo CV (CV-based interview)
 - Luyện tập phỏng vấn thích ứng (Adaptive Interview) – câu hỏi tự động điều chỉnh theo trình độ
-- Thực hành Live Coding
+- Thực hành Live Coding với AI đánh giá code và hỏi giải thích
 - Xem lịch sử phỏng vấn, phân tích điểm yếu, và biểu đồ tiến độ
 
 ---
@@ -29,10 +29,11 @@
 │  │  OTP/Reset) │  │  LiveCode)   │  │                       │   │
 │  └─────────────┘  └──────────────┘  └───────────────────────┘   │
 │                                                                   │
-│  Contexts: Auth | Theme | Language | Interview                    │
-│  Services: api.js | analyze-cv.js | interviewAPI.js               │
+│  Contexts: Auth | Theme | Interview | History                     │
+│  Services: api.js | analyze-cv.js | generate-questions.js         │
+│            interviewAPI.js                                        │
 └──────────────────────────┬──────────────────────────────────────┘
-                           │  axios (proxy → localhost:5000)
+                           │  axios (baseURL: http://localhost:5000/api)
 ┌──────────────────────────▼──────────────────────────────────────┐
 │                BACKEND (Node.js + Express 5)                     │
 │                                                                   │
@@ -47,13 +48,16 @@
 │                            │                                      │
 │  ┌─────────────────────────▼───────────────────────────────────┐  │
 │  │              Services Layer (Business Logic)                  │  │
-│  │  aiService | groqService | adaptiveInterviewService          │  │
-│  │  cvService (extractPdf, analyzeSkills) | weaknessService     │  │
+│  │  aiService | adaptiveInterviewService | weaknessService      │  │
+│  │  cv/ (analyzeSkills, extractPdf, skillUtils, textUtils)      │  │
+│  │  interview/ (generateQuestions, gradingService)               │  │
+│  │  liveCoding/ (llmProvider, codeEvaluationService,            │  │
+│  │              sessionStore, sessionService)                    │  │
 │  └─────────────────────────┬───────────────────────────────────┘  │
 │                            │                                      │
 │  ┌─────────────────────────▼───────────────────────────────────┐  │
 │  │              AI Engine                                        │  │
-│  │  Groq API (LLaMA 3) | Google Generative AI                   │  │
+│  │  Groq SDK (LLaMA) | Google Generative AI (Gemini)            │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 └──────────────────────────┬──────────────────────────────────────┘
                            │  Mongoose ODM
@@ -61,7 +65,7 @@
 │                      MongoDB Database                            │
 │                                                                   │
 │  Collections: users | interviewresults | adaptivesessions        │
-│               cvinterviewsessions | livecodingsessions           │
+│               interviewsessions (CV) | livecodingsessions        │
 │               activities | assessments                           │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -72,13 +76,13 @@
 
 | Module | Mô Tả |
 |---|---|
-| **Authentication** | Đăng ký, đăng nhập, xác thực email bằng OTP, reset mật khẩu |
-| **Standard Interview** | Phỏng vấn theo chủ đề chọn sẵn (MCQ + câu hỏi tự luận), AI chấm điểm |
-| **CV Interview** | Upload CV → AI phân tích kỹ năng → sinh câu hỏi dựa trên CV |
-| **Adaptive Interview** | Phỏng vấn thích ứng: AI điều chỉnh độ khó theo hiệu suất người dùng |
-| **Live Coding** | Luyện tập code trực tiếp trong trình soạn thảo Monaco Editor |
-| **History & Analytics** | Xem lịch sử phỏng vấn, biểu đồ xu hướng, phân tích điểm yếu |
-| **Profile & Settings** | Quản lý hồ sơ cá nhân, theme sáng/tối, đa ngôn ngữ (i18n) |
+| **Authentication** | Đăng ký, đăng nhập, xác thực email bằng OTP, reset mật khẩu, Remember Me |
+| **Standard Interview** | Phỏng vấn theo chủ đề chọn sẵn (7 MCQ + 3 tự luận), AI chấm điểm, tổng 100 điểm |
+| **CV Interview** | Upload CV (PDF/DOCX) → AI phân tích kỹ năng → sinh câu hỏi dựa trên CV |
+| **Adaptive Interview** | Phỏng vấn thích ứng: AI điều chỉnh độ khó theo hiệu suất, tối đa 8 câu hỏi follow-up |
+| **Live Coding** | Luyện tập code → AI đánh giá → 3 câu hỏi giải thích → đánh giá tổng hợp |
+| **History & Analytics** | Xem lịch sử phỏng vấn (4 loại), biểu đồ xu hướng, phân tích điểm yếu |
+| **Profile & Settings** | Quản lý hồ sơ cá nhân, theme sáng/tối, đổi mật khẩu |
 
 ---
 
@@ -92,25 +96,28 @@
 | TailwindCSS 3 | Utility-first CSS |
 | Framer Motion | Animations |
 | Chart.js / Recharts | Biểu đồ thống kê |
-| Monaco Editor | Trình soạn thảo code |
-| i18next | Đa ngôn ngữ |
+| Monaco Editor | Trình soạn thảo code (Live Coding) |
 | react-hot-toast | Thông báo toast |
-| lucide-react | Icon library |
+| lucide-react / react-icons | Icon library |
 | axios | HTTP client |
+| canvas-confetti | Hiệu ứng chúc mừng |
 
 ### Backend
 | Thư Viện | Mục Đích |
 |---|---|
 | Express 5 | Web framework |
 | Mongoose 9 | MongoDB ODM |
-| JWT | Xác thực token |
+| JWT (jsonwebtoken) | Xác thực token |
 | bcryptjs | Mã hóa mật khẩu |
 | Multer | Upload file |
 | pdf-parse | Đọc file PDF |
+| mammoth | Đọc file DOCX |
 | Nodemailer | Gửi email OTP |
 | Groq SDK | Gọi AI Groq (LLaMA) |
-| Google Generative AI | Gọi AI Gemini |
+| @google/generative-ai, @google/genai | Gọi AI Google Gemini |
+| node-cache | Cache dữ liệu |
 | dotenv | Quản lý biến môi trường |
+| uuid (v4) | Tạo session ID cho Live Coding |
 
 ---
 
@@ -119,5 +126,5 @@
 | Service | Port | Ghi chú |
 |---|---|---|
 | Frontend (React) | 3000 | `npm start` trong `/frontend` |
-| Backend (Express) | 5000 | `npm start` trong `/backend` |
+| Backend (Express) | 5000 | `npx nodemon server.js` trong `/backend` |
 | MongoDB | 27017 | Local hoặc MongoDB Atlas |

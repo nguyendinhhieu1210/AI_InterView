@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 
 const { connectDatabase } = require('./database');
+const healthRoutes = require('./routes/healthRoutes');
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -28,6 +29,7 @@ app.use(cors({
 
 app.use(express.json());
 
+app.use('/', healthRoutes);
 // Routes
 app.use('/api/auth', authRoutes);
 

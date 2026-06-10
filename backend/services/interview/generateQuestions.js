@@ -3,7 +3,7 @@ const { safeParseJson, repairTruncatedJson } = require('../ai/parsers/jsonParser
 const { HumanMessage } = require('@langchain/core/messages');
 const {
   logRequest, logResponse, logError, logTimeout, logTokenUsage, generateRequestId
-} = require('../../logs/aiLogger');
+} = require('../../utils/aiLogger');
 
 // Tăng lên 4096 để đủ cho 7 MCQ + 3 essay + explanation dài
 const GENERATE_QUESTIONS_MAX_TOKENS = 4096;

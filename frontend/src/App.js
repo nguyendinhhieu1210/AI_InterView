@@ -18,11 +18,10 @@ import SettingsPage from './Pages/SettingsPage';
 import HelpSupportPage from './Pages/HelpSupportPage';
 import InterviewPage from './Pages/InterviewPage';
 import HistoryPage from './Pages/HistoryPage';
-import InterviewDetailPag from './Pages/InterviewDetailPage';
+import InterviewDetailPage from './Pages/InterviewDetailPage';
 import InterviewCVPage from './Pages/InterviewCVPage';
 import { CVInfoModal } from './components/CVInfoModal';
 import CVHistoryDetailPage from './Pages/CVHistoryDetailPage';
-import InterviewDetailPage from './Pages/InterviewDetailPage';
 import AdaptiveInterviewPage from './Pages/AdaptiveInterviewPage';
 import AdaptiveHistoryPage from './Pages/AdaptiveHistoryPage';
 import InterviewHistoryPage from './Pages/InterviewHistoryPage';
@@ -56,7 +55,7 @@ function App() {
                 <Route path="/help" element={<ProtectedRoute><HelpSupportPage /></ProtectedRoute>} />
                 <Route path="/interview" element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-                <Route path="/history/:id" element={<ProtectedRoute><InterviewDetailPag /></ProtectedRoute>} />
+                <Route path="/history/:id" element={<ProtectedRoute><InterviewDetailPage /></ProtectedRoute>} />
                 <Route path="/cvinfo" element={<ProtectedRoute><CVInfoModal /></ProtectedRoute>} />
                 <Route path="/cvinterview" element={<ProtectedRoute><InterviewCVPage /></ProtectedRoute>} />
                 <Route path="/cv-history/:id" element={<ProtectedRoute><CVHistoryDetailPage /></ProtectedRoute>} />

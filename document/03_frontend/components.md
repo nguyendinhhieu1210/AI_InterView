@@ -62,12 +62,14 @@ CodingInterface là giao diện chính của Live Coding:
 ---
 
 ### 📊 EvaluationModal
-**File:** `components/EvaluationModal.jsx` (~8KB)
+**File:** `components/EvaluationModal.jsx` (~13KB)
 
-Modal hiển thị kết quả đánh giá ngay sau khi hoàn thành bài phỏng vấn:
-- Tổng điểm
-- Điểm từng câu
-- Đáp án đúng và giải thích
+Modal hiển thị báo cáo đánh giá chi tiết sau khi hoàn thành bài thi Live Coding:
+- Nhận xét và đánh giá tổng hợp từ AI về giải pháp của người dùng
+- Hiển thị đề bài toán lập trình và code người dùng đã nộp (hỗ trợ sao chép nhanh)
+- Thống kê tỷ lệ chính xác của các câu trả lời giải thích phụ (Explanation Q&A)
+- Liệt kê chi tiết từng câu hỏi giải thích, câu trả lời của user, phản hồi chi tiết từ AI và đáp án mẫu (Expected Answer)
+- Hiển thị danh sách điểm mạnh (Strengths) và các điểm cần cải thiện (Weaknesses) của giải pháp code
 
 ---
 

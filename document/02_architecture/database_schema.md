@@ -9,7 +9,7 @@ MongoDB Database: ai_interview (hoặc theo MONGO_URI)
 ├── users
 ├── interviewresults
 ├── adaptivesessions
-├── cvinterviewsessions
+├── cvinterviewsessions (Model: InterviewSession)
 ├── livecodingsessions
 ├── activities
 └── assessments
@@ -50,8 +50,8 @@ MongoDB Database: ai_interview (hoặc theo MONGO_URI)
 | `userId` | ObjectId | ref: User, required | ID người dùng |
 | `topic` | String | - | Chủ đề phỏng vấn |
 | `difficulty` | String | - | Độ khó |
-| `mcqResults` | Array | - | Kết quả câu hỏi MCQ |
-| `textResults` | Array | - | Kết quả câu hỏi tự luận |
+| `mcqResults` | Array | - | Kết quả câu hỏi MCQ (xem sub-schema) |
+| `textResults` | Array | - | Kết quả câu hỏi tự luận (xem sub-schema) |
 | `totalScore` | Number | required | Tổng điểm (0-100) |
 | `completedAt` | Date | default: Date.now | Thời điểm hoàn thành |
 
@@ -89,41 +89,56 @@ MongoDB Database: ai_interview (hoặc theo MONGO_URI)
 | `_id` | ObjectId | auto | Primary key |
 | `userId` | ObjectId | ref: User, required | ID người dùng |
 | `topic` | String | required | Chủ đề phỏng vấn |
-| `status` | String | enum: ['active','completed'] | Trạng thái session |
-| `currentDifficulty` | String | enum: ['easy','medium','hard'] | Độ khó hiện tại |
-| `totalScore` | Number | default: 0 | Tổng điểm |
-| `questionHistory` | Array | - | Lịch sử câu hỏi & đáp án (xem sub-schema bên dưới) |
-| `createdAt` | Date | auto (timestamps) | Ngày tạo |
-| `updatedAt` | Date | auto (timestamps) | Ngày cập nhật |
+| `difficulty` | String | enum: ['easy','medium','hard'] | Độ khó ban đầu |
+| `status` | String | enum: ['active','completed','abandoned'] | Trạng thái session |
+| `conversation` | Array | - | Danh sách tin nhắn trao đổi (xem messageSchema) |
+| `finalScore` | Number | min: 0, max: 10 | Điểm trung bình (thang 10) |
+| `summary` | Mixed | default: {} | Tóm tắt kết quả |
+| `detailedReport` | Mixed | - | Báo cáo chi tiết |
+| `startedAt` | Date | default: Date.now | Thời điểm bắt đầu |
+| `endedAt` | Date | - | Thời điểm kết thúc |
+| `maxFollowUps` | Number | default: 8 | Số câu hỏi tối đa |
+| `coveredTopics` | [String] | - | Các subtopic đã hỏi |
+| `currentSubtopic` | String | - | Subtopic hiện tại |
+| `subtopicDepth` | Number | default: 0 | Độ sâu của subtopic |
+| `lastAnswerSharp` | Boolean | default: false | Câu trả lời trước sắc bén không? |
+| `lastAnswerSubtopic`| String | - | Subtopic của câu trả lời trước |
+| `askedQuestions` | [String] | - | Các câu hỏi đã hỏi |
+| `questionTypeHistory`| [String] | - | Lịch sử loại câu hỏi |
+| `roadmapStructured` | Mixed | - | Sơ đồ lộ trình học tập cấu trúc |
+| `roadmapFlattened` | [String] | - | Lộ trình học tập dạng danh sách phẳng |
 
-**Sub-schema `questionHistory`:**
+**Sub-schema `conversation` (messageSchema):**
 
-| Field | Type | Mô Tả |
-|---|---|---|
-| `question` | String | Nội dung câu hỏi |
-| `difficulty` | String | Độ khó câu hỏi này |
-| `userAnswer` | String | Câu trả lời của user |
-| `score` | Number | Điểm (0–10) |
-| `feedback` | String | Feedback từ AI |
+| Field | Type | Constraints | Mô Tả |
+|---|---|---|---|
+| `role` | String | enum: ['assistant', 'user'] | Vai trò (AI hoặc Người dùng) |
+| `content` | String | required | Nội dung hội thoại |
+| `type` | String | enum: ['question', 'answer', 'system'] | Loại tin nhắn |
+| `subtopic` | String | - | Chủ đề phụ đang nói tới |
+| `score` | Number | min: 0, max: 10 | Điểm chấm cho câu trả lời |
+| `strengths` | [String] | - | Điểm mạnh của câu trả lời |
+| `weaknesses` | [String] | - | Điểm yếu / Thiếu sót |
+| `missingConcepts` | [String] | - | Khái niệm bị bỏ sót |
 
 ---
 
 ### 📌 Collection: `cvinterviewsessions`
-**File:** `backend/models/CVInterviewSession.js`
+**File:** `backend/models/CVInterviewSession.js` (Lưu dưới model name: `InterviewSession`)
 
 | Field | Type | Constraints | Mô Tả |
 |---|---|---|---|
 | `_id` | ObjectId | auto | Primary key |
 | `userId` | ObjectId | ref: User, required | ID người dùng |
-| `cvData` | Object | - | Dữ liệu CV đã phân tích (name, skills) |
-| `cvData.name` | String | - | Tên ứng viên trích xuất từ CV |
-| `cvData.skills.frontend` | [String] | - | Kỹ năng Frontend |
-| `cvData.skills.backend` | [String] | - | Kỹ năng Backend |
-| `cvData.skills.theory` | [String] | - | Kiến thức lý thuyết |
-| `questions` | Array | - | Câu hỏi được AI sinh từ CV |
-| `answers` | Array | - | Đáp án của người dùng |
-| `totalScore` | Number | - | Tổng điểm |
-| `completedAt` | Date | default: Date.now | Thời điểm hoàn thành |
+| `cvId` | ObjectId | ref: CV, default null | ID CV tham chiếu |
+| `cvName` | String | default: '' | Tên tệp hoặc tên ứng viên trên CV |
+| `topic` | [String] | - | Các kỹ năng (skills) được chọn phỏng vấn |
+| `questions` | Mixed | required | Danh sách câu hỏi AI sinh từ CV |
+| `answers` | Mixed | required | Câu trả lời của người dùng |
+| `results` | Mixed | required | Kết quả chấm điểm chi tiết |
+| `totalScore` | Number | required | Tổng điểm (0-100) |
+| `summary` | Object | - | Báo cáo tóm tắt (overall, strengths, weaknesses, suggestions) |
+| `createdAt` | Date | default: Date.now | Thời điểm tạo |
 
 ---
 
@@ -133,16 +148,24 @@ MongoDB Database: ai_interview (hoặc theo MONGO_URI)
 | Field | Type | Constraints | Mô Tả |
 |---|---|---|---|
 | `_id` | ObjectId | auto | Primary key |
-| `userId` | ObjectId | ref: User, required | ID người dùng |
-| `problem` | Object | - | Bài toán được AI sinh |
-| `problem.title` | String | - | Tiêu đề bài toán |
-| `problem.description` | String | - | Mô tả yêu cầu |
-| `problem.difficulty` | String | - | Độ khó |
-| `problem.language` | String | - | Ngôn ngữ lập trình |
-| `userCode` | String | - | Code của người dùng |
-| `score` | Number | - | Điểm (0–100) |
-| `feedback` | String | - | Feedback từ AI |
-| `completedAt` | Date | default: Date.now | Thời điểm hoàn thành |
+| `id` | String | required, unique, index | Session ID (uuidv4) |
+| `language` | String | required | Ngôn ngữ lập trình (javascript, python, v.v.) |
+| `domain` | String | required | Nhóm kiến thức (Async, OOP, v.v.) |
+| `topic` | String | required | Chủ đề thuật toán cụ thể |
+| `difficulty` | String | enum: ['beginner', 'intermediate', 'advanced'] | Độ khó |
+| `codeHistory` | Array | - | Lịch sử nộp code & đánh giá (xem sub-schema) |
+| `createdAt` | Date | default: Date.now, index | Ngày tạo |
+| `updatedAt` | Date | default: Date.now | Ngày cập nhật gần nhất |
+
+**Sub-schema `codeHistoryEntry`:**
+
+| Field | Type | Mô Tả |
+|---|---|---|
+| `code` | String | Mã nguồn người dùng đã nộp |
+| `problemStatement` | String | Đề bài coding AI sinh ra |
+| `submittedAt` | Date | Thời điểm nộp bài |
+| `explainAnswers` | Array | Các câu trả lời giải thích phụ (question, answer, isCorrect, feedback, modelAnswer) |
+| `evaluation` | Object | Đánh giá tổng hợp cho mã nguồn (summary, feedback, strengths, weaknesses) |
 
 ---
 
@@ -153,12 +176,12 @@ MongoDB Database: ai_interview (hoặc theo MONGO_URI)
 |---|---|---|---|
 | `_id` | ObjectId | auto | Primary key |
 | `userId` | ObjectId | ref: User, required | ID người dùng |
-| `date` | String | required | Ngày (format: YYYY-MM-DD) |
-| `count` | Number | default: 0 | Số lần practice trong ngày |
-| `type` | String | - | Loại hoạt động (standard/cv/adaptive/livecoding) |
+| `date` | Date | required, index | Ngày ghi nhận hoạt động (đã được quy về 00:00 UTC) |
+| `type` | String | enum: ['interview', 'cvinterview', 'adaptiveinterview'] | Loại hoạt động |
 | `createdAt` | Date | auto (timestamps) | Ngày tạo |
 
-> Dùng để render **ActivityCalendar** (heatmap tương tự GitHub contribution graph).
+> [!NOTE]
+> Collection này có unique index kép `{ userId: 1, date: 1 }` để đảm bảo mỗi người dùng chỉ ghi nhận tối đa 1 hoạt động mỗi ngày cho từng loại, dùng để vẽ GitHub-like contribution heatmap.
 
 ---
 
@@ -168,15 +191,32 @@ MongoDB Database: ai_interview (hoặc theo MONGO_URI)
 | Field | Type | Constraints | Mô Tả |
 |---|---|---|---|
 | `_id` | ObjectId | auto | Primary key |
-| `userId` | ObjectId | ref: User, required | ID người dùng |
-| `topic` | String | required | Chủ đề được đánh giá |
-| `averageScore` | Number | - | Điểm trung bình theo chủ đề |
-| `totalAttempts` | Number | default: 0 | Số lần luyện tập chủ đề này |
-| `weakPoints` | [String] | - | Các điểm yếu cụ thể |
-| `recommendation` | String | - | Gợi ý cải thiện từ AI |
-| `updatedAt` | Date | auto (timestamps) | Lần cập nhật gần nhất |
+| `userId` | String | required, index | ID người dùng |
+| `cvId` | String | - | ID CV tham chiếu |
+| `cvName` | String | - | Tên tệp CV |
+| `topic` | [String] | default: [] | Các chủ đề kỹ năng được đánh giá |
+| `difficulty` | String | default: 'medium' | Độ khó |
+| `answers` | Array | - | Kết quả chi tiết từng câu trả lời (xem sub-schema) |
+| `totalScore` | Number | default: 0 | Tổng điểm của bài thi |
+| `averageScore` | Number | default: 0 | Điểm trung bình |
+| `summary` | Object | - | Tóm tắt từ AI (strengths, weaknesses, recommendation) |
+| `completedAt` | Date | - | Thời điểm hoàn thành |
 
-> Dùng cho tính năng **WeaknessAnalysis** – phân tích điểm yếu theo từng chủ đề.
+**Sub-schema `answers` (answerSchema):**
+
+| Field | Type | Mô Tả |
+|---|---|---|
+| `questionId` | String | ID câu hỏi |
+| `type` | String (enum: ['mcq', 'text']) | Loại câu hỏi |
+| `topic` | String | Chủ đề của câu hỏi này |
+| `question` | String | Nội dung câu hỏi |
+| `correctAnswer` | Mixed | Đáp án đúng |
+| `userAnswer` | Mixed | Câu trả lời của người dùng |
+| `isCorrect` | Boolean | Có chính xác không |
+| `score` | Number | Điểm số đạt được |
+| `aiFeedback` | String | Phản hồi chi tiết của AI |
+| `weaknessTags` | [String] | Gắn thẻ điểm yếu |
+| `difficulty` | String | Độ khó câu hỏi |
 
 ---
 
@@ -191,18 +231,16 @@ users (1)
   │
   ├──── (n) cvinterviewsessions    [userId → users._id]
   │
-  ├──── (n) livecodingsessions     [userId → users._id]
-  │
   ├──── (n) activities             [userId → users._id]
   │
   └──── (n) assessments            [userId → users._id]
 ```
 
-> **Mô hình quan hệ:** One-to-Many (1 user → nhiều kết quả/session)
+> **Lưu ý:** `livecodingsessions` hiện tại lưu trữ độc lập theo mã `id` (Session ID dạng UUIDv4) và được truy vấn không qua liên kết trực tiếp khóa ngoại Mongoose ref, phục vụ mục đích phỏng vấn ẩn danh hoặc qua chia sẻ link.
 
 ---
 
-## 4. Indexes Nên Tạo (Performance)
+## 4. Indexes Quan Trọng (Performance)
 
 ```javascript
 // users
@@ -216,17 +254,8 @@ db.interviewresults.createIndex({ userId: 1, completedAt: -1 });
 db.adaptivesessions.createIndex({ userId: 1, createdAt: -1 });
 
 // activities
-db.activities.createIndex({ userId: 1, date: -1 });
-```
+db.activities.createIndex({ userId: 1, date: 1 }, { unique: true });
 
----
-
-## 5. Kết Nối Database
-
-**File:** `backend/database/mongodb.js`
-
-```
-MONGO_URI=mongodb://localhost:27017/ai_interview
-// hoặc MongoDB Atlas:
-MONGO_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/ai_interview
+// assessments
+db.assessments.createIndex({ userId: 1 });
 ```
