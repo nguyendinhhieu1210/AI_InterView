@@ -37,7 +37,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ✅ fix preflight cho tất cả routes
+app.options("/*", cors(corsOptions));
 
 app.use(express.json());
 
