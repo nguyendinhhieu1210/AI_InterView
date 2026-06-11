@@ -17,7 +17,6 @@ const liveCodingRoutes = require("./routes/liveCodingRoutes");
 const app = express();
 
 // ================= CORS =================
-// ================= CORS =================
 const corsOptions = {
   origin: ["http://localhost:3000", process.env.FRONTEND_URL].filter(Boolean),
   credentials: true,
