@@ -1,4 +1,4 @@
-// cvInterviewTemplate.js - Simplified version
+// cvInterviewTemplate.js - Fully responsive version
 const getCvInterviewTemplate = (userName, interviewData) => {
   const { cvName, topic, totalScore, results } = interviewData;
 
@@ -84,7 +84,7 @@ const getCvInterviewTemplate = (userName, interviewData) => {
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>CV Interview Result - ${cvName}</title>
   <style>
     * {
@@ -95,131 +95,156 @@ const getCvInterviewTemplate = (userName, interviewData) => {
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: #f0f2f5;
+      background: #f1f5f9;
       margin: 0;
-      padding: 24px 16px;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+    
     .container {
-      max-width: 560px;
+      max-width: 600px;
+      width: 100%;
       margin: 0 auto;
       background: #ffffff;
       border-radius: 32px;
       overflow: hidden;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.15);
     }
+    
     /* Header */
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 36px 28px;
+      background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+      padding: 32px 24px;
       text-align: center;
       color: white;
     }
+    
     .header h1 {
       font-size: 26px;
       font-weight: 700;
       margin-bottom: 8px;
       letter-spacing: -0.3px;
     }
+    
     .header p {
-      opacity: 0.85;
+      opacity: 0.92;
       font-size: 14px;
     }
+    
     /* Content */
     .content {
       padding: 28px;
     }
+    
     /* Greeting */
     .greeting {
-      margin-bottom: 28px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #eef2ff;
     }
+    
     .greeting h2 {
-      color: #1e293b;
-      font-size: 20px;
-      font-weight: 600;
+      color: #0f172a;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
     }
+    
     .greeting p {
       color: #64748b;
       margin-top: 6px;
       font-size: 14px;
     }
+    
     /* CV Info */
     .cv-info {
       background: #f8fafc;
       border-radius: 20px;
       padding: 20px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
+    
     .cv-row {
       display: flex;
-      align-items: baseline;
+      align-items: flex-start;
       margin-bottom: 16px;
       padding-bottom: 12px;
       border-bottom: 1px solid #e2e8f0;
     }
+    
     .cv-row:last-child {
       border-bottom: none;
       margin-bottom: 0;
       padding-bottom: 0;
     }
+    
     .cv-label {
-      min-width: 80px;
+      min-width: 70px;
       font-size: 14px;
       font-weight: 600;
       color: #64748b;
     }
+    
     .cv-value {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       color: #0f172a;
       flex: 1;
+      word-break: break-word;
     }
+    
     .skills-list {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-top: 4px;
     }
+    
     .skill-tag {
       background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
       color: #5b46b9;
-      padding: 6px 14px;
+      padding: 5px 12px;
       border-radius: 20px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      transition: all 0.2s ease;
+      white-space: nowrap;
     }
-    .skill-tag:hover {
-      transform: translateY(-1px);
-      background: linear-gradient(135deg, #667eea25 0%, #764ba225 100%);
-    }
+    
     /* Score Card */
     .score-card {
       background: linear-gradient(135deg, ${gradeColor}10 0%, ${gradeColor}05 100%);
       border-radius: 24px;
       padding: 28px 20px;
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
       border: 1px solid ${gradeColor}25;
     }
+    
     .score-label {
-      font-size: 13px;
+      font-size: 12px;
       color: #64748b;
       text-transform: uppercase;
       letter-spacing: 1.5px;
       font-weight: 600;
       margin-bottom: 12px;
     }
+    
     .score-value {
-      font-size: 56px;
+      font-size: 60px;
       font-weight: 800;
       color: ${gradeColor};
-      line-height: 1.1;
+      line-height: 1;
+      margin-bottom: 8px;
     }
+    
     .score-max {
       font-size: 18px;
       color: #94a3b8;
       font-weight: 500;
     }
+    
     .grade-badge {
       display: inline-block;
       background: ${gradeColor};
@@ -228,28 +253,33 @@ const getCvInterviewTemplate = (userName, interviewData) => {
       border-radius: 40px;
       font-size: 13px;
       font-weight: 600;
-      margin-top: 16px;
+      margin-top: 12px;
     }
+    
     /* Stats Grid */
     .stats-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 16px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
+    
     .stats-grid.two-cols {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, 1fr);
     }
+    
     .stat-card {
       background: #f8fafc;
       border-radius: 20px;
       padding: 20px 16px;
       text-align: center;
     }
+    
     .stat-icon {
       font-size: 32px;
       margin-bottom: 8px;
     }
+    
     .stat-label {
       font-size: 12px;
       color: #64748b;
@@ -258,17 +288,20 @@ const getCvInterviewTemplate = (userName, interviewData) => {
       letter-spacing: 0.5px;
       margin-bottom: 8px;
     }
+    
     .stat-score {
       font-size: 28px;
       font-weight: 700;
       color: #0f172a;
       line-height: 1.2;
     }
+    
     .stat-max {
       font-size: 13px;
       color: #94a3b8;
       font-weight: 500;
     }
+    
     .progress-bar {
       margin-top: 12px;
       height: 6px;
@@ -276,87 +309,241 @@ const getCvInterviewTemplate = (userName, interviewData) => {
       border-radius: 10px;
       overflow: hidden;
     }
+    
     .progress-fill {
       height: 100%;
       background: ${gradeColor};
       border-radius: 10px;
     }
+    
     .stat-percent {
       font-size: 11px;
       color: #94a3b8;
       margin-top: 8px;
     }
+    
     /* Message Box */
     .message-box {
       background: ${gradeColor}10;
       border-left: 4px solid ${gradeColor};
       border-radius: 16px;
-      padding: 18px 20px;
+      padding: 16px 20px;
       margin-bottom: 20px;
     }
+    
     .message-box p {
       margin: 0;
-      color: ${gradeColor === "#f59e0b" ? "#b45309" : gradeColor};
+      color: ${gradeColor === "#f59e0b" ? "#b45309" : gradeColor === "#f97316" ? "#c2410c" : gradeColor};
       font-size: 14px;
       font-weight: 500;
       line-height: 1.5;
     }
+    
     /* Completion Note */
     .completion-note {
       text-align: center;
-      margin-bottom: 16px;
       padding: 12px;
       background: #f0fdf4;
       border-radius: 12px;
     }
+    
     .completion-note p {
       margin: 0;
       color: #166534;
       font-size: 13px;
       font-weight: 500;
     }
+    
     /* Footer */
     .footer {
       background: #fafcff;
-      padding: 20px 28px;
+      padding: 20px 24px;
       text-align: center;
       border-top: 1px solid #eef2ff;
     }
+    
     .footer p {
       color: #94a3b8;
       font-size: 11px;
-      margin: 6px 0;
+      margin: 4px 0;
     }
-    /* Responsive */
-    @media (max-width: 480px) {
+    
+    /* ========== RESPONSIVE BREAKPOINTS ========== */
+    
+    /* Tablet & Mobile Large (max-width: 550px) */
+    @media (max-width: 550px) {
+      body {
+        padding: 12px;
+      }
+      
       .container {
         border-radius: 24px;
       }
+      
       .header {
         padding: 28px 20px;
       }
+      
       .header h1 {
         font-size: 22px;
       }
+      
       .content {
         padding: 20px;
       }
+      
+      .greeting h2 {
+        font-size: 20px;
+      }
+      
+      .score-value {
+        font-size: 52px;
+      }
+      
+      .score-max {
+        font-size: 16px;
+      }
+    }
+    
+    /* Mobile Medium (max-width: 480px) */
+    @media (max-width: 480px) {
       .stats-grid.two-cols {
         grid-template-columns: 1fr;
         gap: 12px;
       }
-      .score-value {
-        font-size: 44px;
-      }
-      .stat-score {
-        font-size: 24px;
-      }
+      
       .cv-row {
         flex-direction: column;
         gap: 6px;
       }
+      
       .cv-label {
         min-width: auto;
+      }
+      
+      .skill-tag {
+        white-space: normal;
+        word-break: keep-all;
+      }
+      
+      .score-value {
+        font-size: 48px;
+      }
+      
+      .stat-score {
+        font-size: 24px;
+      }
+    }
+    
+    /* Mobile Small (max-width: 400px) */
+    @media (max-width: 400px) {
+      body {
+        padding: 8px;
+      }
+      
+      .content {
+        padding: 16px;
+      }
+      
+      .header {
+        padding: 24px 16px;
+      }
+      
+      .header h1 {
+        font-size: 20px;
+      }
+      
+      .header p {
+        font-size: 12px;
+      }
+      
+      .greeting h2 {
+        font-size: 18px;
+      }
+      
+      .greeting p {
+        font-size: 12px;
+      }
+      
+      .cv-info {
+        padding: 16px;
+      }
+      
+      .score-card {
+        padding: 20px 16px;
+      }
+      
+      .score-value {
+        font-size: 42px;
+      }
+      
+      .score-max {
+        font-size: 14px;
+      }
+      
+      .grade-badge {
+        font-size: 12px;
+        padding: 4px 16px;
+      }
+      
+      .stat-card {
+        padding: 16px 12px;
+      }
+      
+      .stat-score {
+        font-size: 22px;
+      }
+      
+      .message-box {
+        padding: 14px 16px;
+      }
+      
+      .message-box p {
+        font-size: 13px;
+      }
+      
+      .footer {
+        padding: 16px;
+      }
+    }
+    
+    /* Ultra Small (max-width: 350px) */
+    @media (max-width: 350px) {
+      .score-value {
+        font-size: 36px;
+      }
+      
+      .stat-icon {
+        font-size: 28px;
+      }
+      
+      .stat-score {
+        font-size: 20px;
+      }
+      
+      .skill-tag {
+        font-size: 11px;
+        padding: 4px 10px;
+      }
+    }
+    
+    /* Landscape mode for mobile */
+    @media (max-height: 500px) and (orientation: landscape) {
+      body {
+        padding: 8px;
+      }
+      
+      .content {
+        padding: 16px;
+      }
+      
+      .cv-info,
+      .score-card {
+        margin-bottom: 16px;
+      }
+      
+      .greeting {
+        margin-bottom: 16px;
       }
     }
   </style>
