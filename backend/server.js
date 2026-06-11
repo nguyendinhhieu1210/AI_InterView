@@ -37,7 +37,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("/*", cors(corsOptions));
+app.options(/.*/, cors(corsOptions)); // ✅ fix Express 5
 
 app.use(express.json());
 
@@ -48,7 +48,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/interview", interviewRoutes);
 app.use("/api/cv", cvRoutes);
 app.use("/api/weakness", weaknessRoutes);
-app.use("/api/activity", require("./routes/activityRoutes"));
+app.use("/api/activity", require("./routes/activityRoutes")); // ✅ chứa /calendar rồi
 app.use("/api/adaptive", adaptiveRoutes);
 app.use("/api/live-coding", liveCodingRoutes);
 
