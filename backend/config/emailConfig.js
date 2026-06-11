@@ -1,63 +1,38 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-/**
- * Tạo transporter Gmail SMTP
- */
 const createTransporter = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.error(
-      "❌ Missing EMAIL_USER or EMAIL_PASS in environment variables",
-    );
+  if (!process.env.RESEND_API_KEY) {
+    console.error("❌ Missing RESEND_API_KEY in environment variables");
     return null;
   }
 
-  console.log("📧 Creating email transporter for:", process.env.EMAIL_USER);
+  const client = new Resend(process.env.RESEND_API_KEY);
+  console.log("📧 Email transporter ready (Resend)");
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+  // Giữ interface giống nodemailer để emailService.js không cần sửa
+  return {
+    sendMail: async ({ from, to, subject, html, text }) => {
+      const { data, error } = await client.emails.send({
+        from: from || `AI Interview <onboarding@resend.dev>`,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html,
+        ...(text && { text }),
+      });
+      if (error) throw new Error(error.message);
+      return { messageId: data.id };
     },
-    // Tăng timeout cho môi trường production (Render)
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 30000,
-  });
-
-  return transporter;
+    verify: async () => true,
+  };
 };
 
-/**
- * Verify SMTP connection (optional, có thể bỏ qua nếu bị timeout)
- */
 const verifyConnection = async (transporter) => {
   if (!transporter) {
     console.warn("⚠️ No transporter to verify");
     return false;
   }
-
-  try {
-    // Chỉ verify nếu cần, có thể bỏ qua để tránh timeout
-    if (process.env.NODE_ENV === "production") {
-      console.log("⏭️ Skipping SMTP verification in production");
-      return true;
-    }
-
-    await transporter.verify();
-    console.log("✅ SMTP connection verified");
-    return true;
-  } catch (error) {
-    console.warn(
-      "⚠️ SMTP verification failed (continuing anyway):",
-      error.message,
-    );
-    // Vẫn return true để không block, email sẽ tự retry khi gửi
-    return true;
-  }
+  console.log("✅ Email service ready (Resend)");
+  return true;
 };
 
-module.exports = {
-  createTransporter,
-  verifyConnection,
-};
+module.exports = { createTransporter, verifyConnection };
