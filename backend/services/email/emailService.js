@@ -4,83 +4,109 @@ const {
   verifyConnection,
 } = require("../../config/emailConfig");
 
+// Import tất cả templates
 const { getInterviewTemplate } = require("./templates/interviewTemplate");
 const { getCvInterviewTemplate } = require("./templates/cvInterviewTemplate");
+// Import các template khác khi cần
 // const { getAdaptInterviewTemplate } = require('./templates/adaptInterviewTemplate');
 // const { getCodingInterviewTemplate } = require('./templates/codingInterviewTemplate');
 
 let transporter = null;
-let initPromise = null; // 🔒 Lock tránh race condition
 
-// ─────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────
-
-const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-const maskEmail = (email) => email.replace(/(?<=.).(?=[^@]*@)/g, "*");
-
-// ─────────────────────────────────────────────
-// Init
-// ─────────────────────────────────────────────
-
+/**
+ * Khởi tạo email service
+ */
 const initEmailService = async () => {
   try {
-    transporter = createTransporter();
-    if (transporter) {
-      const isVerified = await verifyConnection(transporter);
-      if (isVerified) {
-        console.log("✅ Email service initialized successfully");
-      } else {
-        console.warn("⚠️ Email service initialized but connection failed");
-      }
-    } else {
-      console.warn("⚠️ Email service not initialized (missing config)");
+    // createTransporter giờ là sync, không cần await
+    const newTransporter = createTransporter();
+
+    if (!newTransporter) {
+      console.error("❌ Cannot initialize email transporter");
+      return null;
     }
+
+    transporter = newTransporter;
+
+    // Skip verify trên production để tránh timeout
+    if (process.env.NODE_ENV !== "production") {
+      await verifyConnection(transporter);
+    } else {
+      console.log("✅ Email service initialized (production mode)");
+    }
+
     return transporter;
   } catch (error) {
     console.error("❌ Failed to initialize email service:", error.message);
     return null;
   }
 };
-
 /**
- * Lấy transporter an toàn — tránh race condition khi nhiều request cùng lúc
+ * Gửi email với retry mechanism
  */
-const getTransporter = async () => {
-  if (transporter) return transporter;
-  if (!initPromise) {
-    initPromise = initEmailService().finally(() => {
-      initPromise = null;
-    });
+const sendEmailWithRetry = async (mailOptions, maxRetries = 2) => {
+  if (!transporter) {
+    console.log("🔄 Initializing email service before sending...");
+    transporter = await initEmailService();
+    if (!transporter) {
+      return {
+        success: false,
+        error: new Error("No email transporter available"),
+      };
+    }
   }
-  return await initPromise;
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      return { success: true, info };
+    } catch (error) {
+      console.log(
+        `📧 Email attempt ${i + 1}/${maxRetries} failed:`,
+        error.message,
+      );
+
+      if (
+        error.message.includes("ECONNECTION") ||
+        error.message.includes("timeout")
+      ) {
+        console.log("🔄 Connection issue, recreating transporter...");
+        transporter = await initEmailService();
+      }
+
+      if (i === maxRetries - 1) {
+        return { success: false, error };
+      }
+
+      // Chờ trước khi retry
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
+  return { success: false, error: new Error("All retries failed") };
 };
 
-// ─────────────────────────────────────────────
-// Template helpers
-// ─────────────────────────────────────────────
-
+/**
+ * Chọn template HTML dựa trên loại phỏng vấn
+ */
 const getTemplateByType = (type, userName, data) => {
   switch (type) {
     case "standard":
       return getInterviewTemplate(userName, data);
     case "cv":
       return getCvInterviewTemplate(userName, data);
-    case "adapt":
-      // TODO: uncomment import khi có template
-      console.warn("⚠️ adapt template not implemented yet, using standard");
-      return getInterviewTemplate(userName, data);
-    case "coding":
-      // TODO: uncomment import khi có template
-      console.warn("⚠️ coding template not implemented yet, using standard");
-      return getInterviewTemplate(userName, data);
+    // case "adapt":
+    //   return getAdaptInterviewTemplate(userName, data);
+    // case "coding":
+    //   return getCodingInterviewTemplate(userName, data);
     default:
       console.warn(`Unknown interview type: ${type}, using standard template`);
       return getInterviewTemplate(userName, data);
   }
 };
 
+/**
+ * Chọn subject email
+ */
 const getSubjectByType = (type, data) => {
   switch (type) {
     case "standard":
@@ -96,29 +122,26 @@ const getSubjectByType = (type, data) => {
   }
 };
 
-// ─────────────────────────────────────────────
-// Send functions
-// ─────────────────────────────────────────────
-
+/**
+ * Gửi email kết quả phỏng vấn
+ */
 const sendInterviewResultEmail = async (
   userId,
   interviewType,
   interviewData,
 ) => {
   try {
-    if (!userId) {
-      console.error("❌ Missing userId");
-      return false;
-    }
-    if (!interviewType) {
-      console.error("❌ Missing interviewType");
-      return false;
-    }
-    if (!interviewData) {
-      console.error("❌ Missing interviewData");
+    // Kiểm tra params
+    if (!userId || !interviewType || !interviewData) {
+      console.error("❌ Missing required parameters:", {
+        userId,
+        interviewType,
+        interviewData: !!interviewData,
+      });
       return false;
     }
 
+    // Lấy user info
     const user = await User.findById(userId).select(
       "userName email emailPreferences",
     );
@@ -127,20 +150,13 @@ const sendInterviewResultEmail = async (
       return false;
     }
 
+    // Kiểm tra preferences
     if (user.emailPreferences?.interviewResults === false) {
-      console.log(
-        `⏭️ User ${maskEmail(user.email)} đã tắt nhận email kết quả phỏng vấn`,
-      );
+      console.log(`⏭️ User ${user.email} disabled interview result emails`);
       return true;
     }
 
-    // Fix Bug 2: dùng getTransporter thay vì check thủ công
-    const t = await getTransporter();
-    if (!t) {
-      console.error("❌ Cannot initialize email transporter");
-      return false;
-    }
-
+    // Tạo nội dung email
     const htmlContent = getTemplateByType(
       interviewType,
       user.userName,
@@ -151,7 +167,7 @@ const sendInterviewResultEmail = async (
     const mailOptions = {
       from: `"Interview System" <${process.env.EMAIL_USER}>`,
       to: user.email,
-      subject,
+      subject: subject,
       html: htmlContent,
       text: `
 ${subject}
@@ -167,36 +183,36 @@ Email tự động từ hệ thống phỏng vấn. Vui lòng không trả lời
       `,
     };
 
-    const info = await t.sendMail(mailOptions);
-    console.log(
-      `✅ Email sent to ${maskEmail(user.email)} - Type: ${interviewType} - MessageID: ${info.messageId}`,
-    );
-    return true;
+    // Gửi email với retry
+    const result = await sendEmailWithRetry(mailOptions);
+
+    if (result.success) {
+      console.log(
+        `✅ Interview result email sent to ${user.email} (${interviewType})`,
+      );
+      return true;
+    } else {
+      console.error(
+        `❌ Failed to send email to ${user.email}:`,
+        result.error.message,
+      );
+      return false;
+    }
   } catch (error) {
-    console.error(
-      `❌ Error sending ${interviewType} interview email:`,
-      error.message,
-    );
+    console.error(`❌ Error in sendInterviewResultEmail:`, error.message);
     return false;
   }
 };
 
+/**
+ * Gửi email OTP
+ */
 const sendOtpEmail = async (email, userName, otp, type = "verification") => {
   try {
-    // Fix Bug 3: validate email trước khi gửi
-    if (!email || !isValidEmail(email)) {
-      console.error(`❌ Invalid email: ${email}`);
-      return false;
+    if (!transporter) {
+      transporter = await initEmailService();
+      if (!transporter) return false;
     }
-
-    if (!otp) {
-      console.error("❌ Missing OTP");
-      return false;
-    }
-
-    // Fix Bug 2: dùng getTransporter
-    const t = await getTransporter();
-    if (!t) return false;
 
     const subject =
       type === "verification"
@@ -219,7 +235,7 @@ const sendOtpEmail = async (email, userName, otp, type = "verification") => {
         <div class="container">
           <h2>${subject}</h2>
           <p>Xin chào <strong>${userName}</strong>,</p>
-          <p>Vui lòng sử dụng mã OTP sau để ${type === "verification" ? "xác thực email" : "đặt lại mật khẩu"} của bạn:</p>
+          <p>Vui lòng sử dụng mã OTP sau để ${type === "verification" ? "xác thực email" : "đặt lại mật khẩu"}:</p>
           <div class="otp-code">${otp}</div>
           <p>Mã này có hiệu lực trong <strong>10 phút</strong>.</p>
           <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
@@ -232,22 +248,27 @@ const sendOtpEmail = async (email, userName, otp, type = "verification") => {
     const mailOptions = {
       from: `"Interview System" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject,
+      subject: subject,
       html: htmlContent,
     };
 
-    await t.sendMail(mailOptions);
-    // Fix Bug 4: mask email trong log, KHÔNG log OTP
-    console.log(`✅ OTP email sent to ${maskEmail(email)} - Type: ${type}`);
-    return true;
+    const result = await sendEmailWithRetry(mailOptions);
+
+    if (result.success) {
+      console.log(`✅ OTP email sent to ${email} (${type})`);
+      return true;
+    } else {
+      console.error(`❌ Failed to send OTP to ${email}:`, result.error.message);
+      return false;
+    }
   } catch (error) {
-    console.error(
-      `❌ Error sending OTP email to ${maskEmail(email)}:`,
-      error.message,
-    );
+    console.error(`❌ Error in sendOtpEmail:`, error.message);
     return false;
   }
 };
+
+// Khởi tạo email service khi module được load
+initEmailService().catch(console.error);
 
 module.exports = {
   initEmailService,
