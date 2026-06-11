@@ -1,9 +1,9 @@
 const nodemailer = require("nodemailer");
 
 const createTransporter = () => {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.error(
-      "❌ Missing GMAIL_USER or GMAIL_APP_PASSWORD in environment variables",
+      "❌ Missing EMAIL_USER or EMAIL_PASS in environment variables",
     );
     return null;
   }
@@ -11,8 +11,8 @@ const createTransporter = () => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   });
 

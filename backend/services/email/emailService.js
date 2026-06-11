@@ -80,8 +80,8 @@ const getSubjectByType = (type, data) => {
   }
 };
 
-const FROM_EMAIL = process.env.GMAIL_USER
-  ? `AI Interview <${process.env.GMAIL_USER}>`
+const FROM_EMAIL = process.env.EMAIL_USER
+  ? `AI Interview <${process.env.EMAIL_USER}>`
   : "AI Interview <onboarding@resend.dev>";
 
 const sendInterviewResultEmail = async (
