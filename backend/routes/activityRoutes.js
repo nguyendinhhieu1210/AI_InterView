@@ -1,17 +1,11 @@
-const express = require('express');
+const express = require("express");
 
 const router = express.Router();
 
-const auth = require('../middleware/auth');
+const auth = require("../middleware/auth");
 
-const {
-  getCalendarActivity
-} = require('../controllers/activityController');
+const { getCalendarActivity } = require("../controllers/activityController");
 
-router.get(
-  '/calendar',
-  auth,
-  getCalendarActivity
-);
+router.get("/calendar", auth, getCalendarActivity);
 
 module.exports = router;

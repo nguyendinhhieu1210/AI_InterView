@@ -184,7 +184,7 @@ exports.submitCVAnswers = async (req, res) => {
       await session.save();
       await saveActivity(req.user.id, "cv_interview");
 
-      // gửi email background
+      // gửi email
       sendInterviewResultEmail(req.user.id, "cv", {
         cvName: cvName || "",
         topic: selectedSkills || [],

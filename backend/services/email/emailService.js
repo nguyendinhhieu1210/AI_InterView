@@ -4,18 +4,26 @@ const {
   verifyConnection,
 } = require("../../config/emailConfig");
 
-// Import tất cả templates
 const { getInterviewTemplate } = require("./templates/interviewTemplate");
 const { getCvInterviewTemplate } = require("./templates/cvInterviewTemplate");
 // const { getAdaptInterviewTemplate } = require('./templates/adaptInterviewTemplate');
 // const { getCodingInterviewTemplate } = require('./templates/codingInterviewTemplate');
 
 let transporter = null;
+let initPromise = null; // 🔒 Lock tránh race condition
 
-/**
- * Khởi tạo email service
- * Gọi function này khi server start
- */
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const maskEmail = (email) => email.replace(/(?<=.).(?=[^@]*@)/g, "*");
+
+// ─────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────
+
 const initEmailService = async () => {
   try {
     transporter = createTransporter();
@@ -37,8 +45,22 @@ const initEmailService = async () => {
 };
 
 /**
- * Chọn template HTML dựa trên loại phỏng vấn
+ * Lấy transporter an toàn — tránh race condition khi nhiều request cùng lúc
  */
+const getTransporter = async () => {
+  if (transporter) return transporter;
+  if (!initPromise) {
+    initPromise = initEmailService().finally(() => {
+      initPromise = null;
+    });
+  }
+  return await initPromise;
+};
+
+// ─────────────────────────────────────────────
+// Template helpers
+// ─────────────────────────────────────────────
+
 const getTemplateByType = (type, userName, data) => {
   switch (type) {
     case "standard":
@@ -46,18 +68,19 @@ const getTemplateByType = (type, userName, data) => {
     case "cv":
       return getCvInterviewTemplate(userName, data);
     case "adapt":
-      return getAdaptInterviewTemplate(userName, data);
+      // TODO: uncomment import khi có template
+      console.warn("⚠️ adapt template not implemented yet, using standard");
+      return getInterviewTemplate(userName, data);
     case "coding":
-      return getCodingInterviewTemplate(userName, data);
+      // TODO: uncomment import khi có template
+      console.warn("⚠️ coding template not implemented yet, using standard");
+      return getInterviewTemplate(userName, data);
     default:
       console.warn(`Unknown interview type: ${type}, using standard template`);
       return getInterviewTemplate(userName, data);
   }
 };
 
-/**
- * Chọn subject email dựa trên loại phỏng vấn
- */
 const getSubjectByType = (type, data) => {
   switch (type) {
     case "standard":
@@ -73,65 +96,51 @@ const getSubjectByType = (type, data) => {
   }
 };
 
-/**
- * Gửi email kết quả phỏng vấn (hỗ trợ tất cả các loại)
- *
- * @param {string} userId - ID của người dùng
- * @param {string} interviewType - Loại phỏng vấn: 'standard', 'cv', 'adapt', 'coding'
- * @param {object} interviewData - Dữ liệu kết quả phỏng vấn
- * @returns {Promise<boolean>} - true nếu gửi thành công, false nếu thất bại
- */
+// ─────────────────────────────────────────────
+// Send functions
+// ─────────────────────────────────────────────
+
 const sendInterviewResultEmail = async (
   userId,
   interviewType,
   interviewData,
 ) => {
   try {
-    // 1. Kiểm tra tham số đầu vào
     if (!userId) {
       console.error("❌ Missing userId");
       return false;
     }
-
     if (!interviewType) {
       console.error("❌ Missing interviewType");
       return false;
     }
-
     if (!interviewData) {
       console.error("❌ Missing interviewData");
       return false;
     }
 
-    // 2. Lấy thông tin user từ database
     const user = await User.findById(userId).select(
       "userName email emailPreferences",
     );
-
     if (!user) {
       console.error(`❌ User not found: ${userId}`);
       return false;
     }
 
-    // 3. Kiểm tra cài đặt nhận email của user
-    if (
-      user.emailPreferences &&
-      user.emailPreferences.interviewResults === false
-    ) {
-      console.log(`⏭️ User ${user.email} đã tắt nhận email kết quả phỏng vấn`);
-      return true; // Không gửi nhưng coi như thành công
+    if (user.emailPreferences?.interviewResults === false) {
+      console.log(
+        `⏭️ User ${maskEmail(user.email)} đã tắt nhận email kết quả phỏng vấn`,
+      );
+      return true;
     }
 
-    // 4. Khởi tạo transporter nếu chưa có
-    if (!transporter) {
-      transporter = await initEmailService();
-      if (!transporter) {
-        console.error("❌ Cannot initialize email transporter");
-        return false;
-      }
+    // Fix Bug 2: dùng getTransporter thay vì check thủ công
+    const t = await getTransporter();
+    if (!t) {
+      console.error("❌ Cannot initialize email transporter");
+      return false;
     }
 
-    // 5. Tạo nội dung email
     const htmlContent = getTemplateByType(
       interviewType,
       user.userName,
@@ -139,13 +148,11 @@ const sendInterviewResultEmail = async (
     );
     const subject = getSubjectByType(interviewType, interviewData);
 
-    // 6. Cấu hình email options
     const mailOptions = {
       from: `"Interview System" <${process.env.EMAIL_USER}>`,
       to: user.email,
-      subject: subject,
+      subject,
       html: htmlContent,
-      // Text thuần (phòng trường hợp email client không hiển thị HTML)
       text: `
 ${subject}
 
@@ -160,10 +167,9 @@ Email tự động từ hệ thống phỏng vấn. Vui lòng không trả lời
       `,
     };
 
-    // 7. Gửi email
-    const info = await transporter.sendMail(mailOptions);
+    const info = await t.sendMail(mailOptions);
     console.log(
-      `✅ Email sent to ${user.email} - Type: ${interviewType} - MessageID: ${info.messageId}`,
+      `✅ Email sent to ${maskEmail(user.email)} - Type: ${interviewType} - MessageID: ${info.messageId}`,
     );
     return true;
   } catch (error) {
@@ -171,25 +177,26 @@ Email tự động từ hệ thống phỏng vấn. Vui lòng không trả lời
       `❌ Error sending ${interviewType} interview email:`,
       error.message,
     );
-    // Không throw lỗi để không làm gián đoạn luồng chính của ứng dụng
     return false;
   }
 };
 
-/**
- * Gửi email OTP xác thực (dùng cho đăng ký/ quên mật khẩu)
- *
- * @param {string} email - Email người nhận
- * @param {string} userName - Tên người dùng
- * @param {string} otp - Mã OTP
- * @param {string} type - Loại: 'verification' hoặc 'reset-password'
- */
 const sendOtpEmail = async (email, userName, otp, type = "verification") => {
   try {
-    if (!transporter) {
-      transporter = await initEmailService();
-      if (!transporter) return false;
+    // Fix Bug 3: validate email trước khi gửi
+    if (!email || !isValidEmail(email)) {
+      console.error(`❌ Invalid email: ${email}`);
+      return false;
     }
+
+    if (!otp) {
+      console.error("❌ Missing OTP");
+      return false;
+    }
+
+    // Fix Bug 2: dùng getTransporter
+    const t = await getTransporter();
+    if (!t) return false;
 
     const subject =
       type === "verification"
@@ -225,15 +232,19 @@ const sendOtpEmail = async (email, userName, otp, type = "verification") => {
     const mailOptions = {
       from: `"Interview System" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: subject,
+      subject,
       html: htmlContent,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ OTP email sent to ${email} - Type: ${type}`);
+    await t.sendMail(mailOptions);
+    // Fix Bug 4: mask email trong log, KHÔNG log OTP
+    console.log(`✅ OTP email sent to ${maskEmail(email)} - Type: ${type}`);
     return true;
   } catch (error) {
-    console.error(`❌ Error sending OTP email to ${email}:`, error.message);
+    console.error(
+      `❌ Error sending OTP email to ${maskEmail(email)}:`,
+      error.message,
+    );
     return false;
   }
 };
