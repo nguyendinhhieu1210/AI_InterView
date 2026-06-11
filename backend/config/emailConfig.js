@@ -1,54 +1,58 @@
 const nodemailer = require("nodemailer");
 
 /**
- * Tạo transporter để gửi email
+ * Tạo transporter Gmail SMTP (ổn định cho Render)
  */
 const createTransporter = () => {
-  // Kiểm tra biến môi trường
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.error("❌ Thiếu EMAIL_USER hoặc EMAIL_PASS trong file .env");
-    console.error("   Vui lòng thêm vào .env:");
-    console.error("   EMAIL_USER=your-email@gmail.com");
-    console.error("   EMAIL_PASS=your-app-password");
+    console.error("❌ Missing EMAIL_USER or EMAIL_PASS");
     return null;
   }
 
-  // Cấu hình cho Gmail
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    // Tùy chọn thêm để tránh lỗi
-    tls: {
-      rejectUnauthorized: false,
-    },
-    // Thời gian timeout
-    timeout: 30000,
-  });
+  const createTransporter = () => {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error("❌ Missing EMAIL_USER or EMAIL_PASS");
+      return null;
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587, // đổi từ 465 → 587
+      secure: false, // false = STARTTLS
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false, // tránh lỗi cert trên một số môi trường
+      },
+      connectionTimeout: 15000,
+      socketTimeout: 20000,
+    });
+
+    return transporter;
+  };
 
   return transporter;
 };
 
 /**
- * Kiểm tra kết nối email
+ * Verify SMTP connection (NON-BLOCKING)
  */
 const verifyConnection = async (transporter) => {
+  if (!transporter) return false;
+
   try {
     await transporter.verify();
-    console.log("✅ Email service ready - Đã sẵn sàng gửi mail");
+    console.log("✅ Email SMTP ready");
     return true;
   } catch (error) {
-    console.error("❌ Email service error:", error.message);
-    if (error.message.includes("Invalid login")) {
-      console.error("   → Sai EMAIL_USER hoặc EMAIL_PASS");
-      console.error(
-        '   → Với Gmail, phải dùng "Mật khẩu ứng dụng" (App Password), không phải mật khẩu đăng nhập',
-      );
-    }
+    console.warn("⚠️ Email SMTP not reachable:", error.message);
+    console.warn("👉 Server will still run (email disabled if needed)");
     return false;
   }
 };
-
-module.exports = { createTransporter, verifyConnection };
+module.exports = {
+  createTransporter,
+  verifyConnection,
+};
