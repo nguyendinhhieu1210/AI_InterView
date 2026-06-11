@@ -80,9 +80,9 @@ const getSubjectByType = (type, data) => {
   }
 };
 
-// ✅ from dùng RESEND_FROM, fallback về domain mặc định của Resend
-const FROM_EMAIL =
-  process.env.RESEND_FROM || "AI Interview <onboarding@resend.dev>";
+const FROM_EMAIL = process.env.GMAIL_USER
+  ? `AI Interview <${process.env.GMAIL_USER}>`
+  : "AI Interview <onboarding@resend.dev>";
 
 const sendInterviewResultEmail = async (
   userId,
