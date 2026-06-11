@@ -17,16 +17,27 @@ const liveCodingRoutes = require("./routes/liveCodingRoutes");
 const app = express();
 
 // ================= CORS =================
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 const corsOptions = {
-  origin: ["http://localhost:3000", process.env.FRONTEND_URL].filter(Boolean),
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked: ${origin}`));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
-// app.options("*", cors(corsOptions));
-app.options("/{*any}", cors(corsOptions));
+app.options("*", cors(corsOptions)); // ✅ fix preflight cho tất cả routes
 
 app.use(express.json());
 
