@@ -1,22 +1,41 @@
-const express = require('express');
+// backend/routes/interviewRoutes.js
+const express = require("express");
 const router = express.Router();
-const auth = require('../middleware/auth');
-const { 
-    generateQuestions, 
-    submitAnswers, 
-    getHistory,       // ← thêm dòng này
-    deleteHistory,    // ← thêm dòng này
-    getHistoryById    // ← thêm dòng này
-    
-} = require('../controllers/interviewController');
+const auth = require("../middleware/auth");
+const adminMiddleware = require("../middleware/admin");
+const {
+  generateQuestions,
+  submitAnswers,
+  getHistory,
+  deleteHistory,
+  getHistoryById,
+  getAllInterviews,
+  getInterviewStats,
+  getInterviewByIdForAdmin,
+  deleteInterviewById,
+} = require("../controllers/interviewController");
 
-// Tất cả routes đều cần xác thực
-router.use(auth);
+// ============== USER ROUTES ==============
+router.post("/generate", auth, generateQuestions);
+router.post("/submit", auth, submitAnswers);
+router.get("/history", auth, getHistory);
+router.delete("/history/:id", auth, deleteHistory);
+router.get("/history/:id", auth, getHistoryById);
 
-router.post('/generate', generateQuestions);
-router.post('/submit', submitAnswers);
-router.get('/history', getHistory);           // ← thêm route GET
-router.delete('/history/:id', deleteHistory); // ← thêm route DELETE
-router.get('/history/:id', getHistoryById); // ← thêm route GET chi tiết
+// ============== ADMIN ROUTES ==============
+router.get("/admin/interviews", auth, adminMiddleware, getAllInterviews);
+router.get("/admin/interviews/stats", auth, adminMiddleware, getInterviewStats);
+router.get(
+  "/admin/interviews/:id",
+  auth,
+  adminMiddleware,
+  getInterviewByIdForAdmin,
+);
+router.delete(
+  "/admin/interviews/:id",
+  auth,
+  adminMiddleware,
+  deleteInterviewById,
+);
 
 module.exports = router;

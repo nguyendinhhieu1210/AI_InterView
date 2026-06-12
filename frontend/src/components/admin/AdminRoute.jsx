@@ -1,60 +1,43 @@
-// src/components/admin/AdminRoute.jsx
-import { Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 const AdminRoute = ({ children }) => {
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    
-    console.log('Token exists:', !!token);
-    console.log('User string from storage:', userStr);
-    
-    if (!token) {
-      setIsAdmin(false);
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+
+    if (!token || !userStr) {
       setChecking(false);
       return;
     }
-    
+
+    setHasToken(true);
+
     try {
       const user = JSON.parse(userStr);
-      console.log('Parsed user:', user);
-      console.log('User role type:', typeof user.role);
-      console.log('User role value:', user.role);
-      
-      // Kiểm tra cả 'admin' và 'ADMIN'
-      const isUserAdmin = user.role === 'admin' || user.role === 'ADMIN';
-      console.log('Is admin check result:', isUserAdmin);
-      
+      const isUserAdmin = user.role === "admin" || user.role === "ADMIN";
       setIsAdmin(isUserAdmin);
-    } catch (error) {
-      console.error('Error parsing user:', error);
+    } catch {
       setIsAdmin(false);
     }
-    
+
     setChecking(false);
   }, []);
 
   if (checking) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500" />
       </div>
     );
   }
 
-  const token = localStorage.getItem('token');
-  
-  if (!token) {
-    return <Navigate to="/login" />;
-  }
-
-  if (!isAdmin) {
-    return <Navigate to="/welcome" />;
-  }
+  if (!hasToken) return <Navigate to="/login" />;
+  if (!isAdmin) return <Navigate to="/welcome" />;
 
   return children;
 };
