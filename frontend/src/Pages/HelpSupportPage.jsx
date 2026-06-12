@@ -95,7 +95,7 @@ export default function HelpSupportPage() {
         "Step 2: Choose difficulty (Easy / Medium / Hard)",
         "Step 3: AI asks a question – you answer via voice or text",
         "Step 4: Based on your answer, AI decides next question (harder / easier / deeper)",
-        "Step 5: After 8 questions, AI provides final score, evaluation, and learning roadmap",
+        "Step 5: After 5 questions, AI provides final score",
       ],
     },
     {

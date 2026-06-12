@@ -21,10 +21,8 @@ const createTransporter = () => {
 };
 
 const verifyConnection = async (transporter) => {
-  if (!transporter) {
-    console.warn("⚠️ No transporter to verify");
-    return false;
-  }
+  if (!transporter) return false;
+
   try {
     await transporter.verify();
     console.log("✅ Email service ready (Gmail SMTP)");
