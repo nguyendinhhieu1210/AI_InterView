@@ -23,7 +23,7 @@ import InterviewReportModal from "../components/InterviewReportModal";
 import { useAuth } from "../contexts/AuthContext";
 import confetti from "canvas-confetti";
 
-const TOTAL_QUESTIONS = 8;
+const TOTAL_QUESTIONS = 5; // Đã sửa từ 8 xuống 5
 
 export default function AdaptiveInterviewPage() {
   const location = useLocation();
@@ -325,8 +325,8 @@ export default function AdaptiveInterviewPage() {
                     <li className="flex items-start gap-2">
                       <CheckCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
                       <span>
-                        After 8 questions, you'll receive a detailed score and
-                        analysis
+                        After {TOTAL_QUESTIONS} questions, you'll receive a
+                        detailed score and analysis
                       </span>
                     </li>
                   </ul>

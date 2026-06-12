@@ -1,4 +1,4 @@
-const adaptiveService = require("../services/adaptiveInterviewService");
+const adaptiveService = require("../services/adaptive/adaptiveSession");
 const AdaptiveSession = require("../models/AdaptiveSession");
 const Activity = require("../models/Activity");
 const saveActivity = require("../utils/saveActivity");
