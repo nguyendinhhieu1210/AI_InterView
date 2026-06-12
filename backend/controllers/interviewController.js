@@ -6,6 +6,7 @@ const {
 const InterviewResult = require("../models/InterviewResult");
 const saveActivity = require("../utils/saveActivity");
 const { sendInterviewResultEmail } = require("../services/email/emailService");
+const User = require("../models/User");
 
 // Sinh câu hỏi (giữ nguyên)
 const generateQuestions = async (req, res) => {
@@ -232,12 +233,183 @@ const getHistoryById = async (req, res) => {
       totalQuestions: mcqCount + essayCount,
       createdAt: record.completedAt,
       mcqResults: mcqResultsArray || [],
-      textResults: textResultsArray || [],
+      textResults: (textResultsArray || []).map((e) => ({
+        question: e.question,
+        userAnswer: e.userAnswer,
+        score: e.score,
+        feedback: e.feedback,
+        sampleAnswer: e.sampleAnswer, // 👈 thêm
+        idealKeywords: e.idealKeywords, // 👈 thêm
+        gradingExplanation: e.gradingExplanation, // 👈 thêm
+      })),
     };
     res.json({ success: true, interview: formatted });
   } catch (error) {
     console.error("Get history by id error:", error);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+//ADMIN Từ bên dưới đổ xuống là của ADMIN
+
+// Get all interviews (admin)
+const getAllInterviews = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const { search, difficulty, topic, fromDate, toDate } = req.query;
+
+    let query = {};
+
+    // Search by user name or email
+    if (search) {
+      const users = await User.find({
+        $or: [
+          { fullName: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { userName: { $regex: search, $options: "i" } },
+        ],
+      }).select("_id");
+
+      query.$or = [
+        { userId: { $in: users.map((u) => u._id) } },
+        { topic: { $regex: search, $options: "i" } },
+      ];
+    }
+    if (difficulty) query.difficulty = difficulty;
+    if (topic) query.topic = { $regex: topic, $options: "i" };
+    if (fromDate || toDate) {
+      query.completedAt = {};
+      if (fromDate) query.completedAt.$gte = new Date(fromDate);
+      if (toDate) query.completedAt.$lte = new Date(toDate + "T23:59:59");
+    }
+
+    const total = await InterviewResult.countDocuments(query);
+    const interviews = await InterviewResult.find(query)
+      .sort({ completedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Get user info for each interview
+    const interviewsWithUser = await Promise.all(
+      interviews.map(async (interview) => {
+        const user = await User.findById(interview.userId).select(
+          "fullName email userName",
+        );
+        return {
+          id: interview._id,
+          userId: interview.userId,
+          userName: user?.fullName || user?.userName || "Unknown",
+          userEmail: user?.email || "Unknown",
+          topic: interview.topic,
+          difficulty: interview.difficulty,
+          totalScore: interview.totalScore,
+          createdAt: interview.completedAt,
+        };
+      }),
+    );
+
+    res.json({
+      success: true,
+      interviews: interviewsWithUser,
+      total,
+      pages: Math.ceil(total / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    console.error("Get all interviews error:", error);
+    res.status(500).json({ message: "Failed to fetch interviews" });
+  }
+};
+
+// Get interview stats
+const getInterviewStats = async (req, res) => {
+  try {
+    const total = await InterviewResult.countDocuments();
+    const avgScoreResult = await InterviewResult.aggregate([
+      { $group: { _id: null, avgScore: { $avg: "$totalScore" } } },
+    ]);
+    const uniqueUsers = await InterviewResult.distinct("userId");
+
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const thisWeek = await InterviewResult.countDocuments({
+      completedAt: { $gte: oneWeekAgo },
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        total,
+        avgScore: avgScoreResult[0]?.avgScore || 0,
+        uniqueUsers: uniqueUsers.length,
+        thisWeek,
+      },
+    });
+  } catch (error) {
+    console.error("Get stats error:", error);
+    res.status(500).json({ message: "Failed to fetch stats" });
+  }
+};
+
+// Get single interview by id (admin)
+const getInterviewByIdForAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const interview = await InterviewResult.findById(id).lean();
+    if (!interview) {
+      return res.status(404).json({ message: "Interview not found" });
+    }
+
+    // Format response
+    let mcqResultsArray = interview.mcqResults;
+    let textResultsArray = interview.textResults;
+    if (!mcqResultsArray && interview.results?.mcq)
+      mcqResultsArray = interview.results.mcq;
+    if (!textResultsArray && interview.results?.text)
+      textResultsArray = interview.results.text;
+
+    const mcqScore = mcqResultsArray
+      ? mcqResultsArray.reduce((sum, m) => sum + (m.score || 0), 0)
+      : 0;
+    const essayScore = textResultsArray
+      ? textResultsArray.reduce((sum, e) => sum + (e.score || 0), 0)
+      : 0;
+
+    res.json({
+      success: true,
+      interview: {
+        id: interview._id,
+        topic: interview.topic,
+        difficulty: interview.difficulty,
+        totalScore: interview.totalScore,
+        mcqScore,
+        essayScore,
+        mcqResults: mcqResultsArray || [],
+        textResults: textResultsArray || [],
+        createdAt: interview.completedAt,
+      },
+    });
+  } catch (error) {
+    console.error("Get interview by id error:", error);
+    res.status(500).json({ message: "Failed to fetch interview" });
+  }
+};
+
+// Delete interview by id (admin)
+const deleteInterviewById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await InterviewResult.findByIdAndDelete(id);
+    if (!result) {
+      return res.status(404).json({ message: "Interview not found" });
+    }
+    res.json({ success: true, message: "Interview deleted successfully" });
+  } catch (error) {
+    console.error("Delete interview error:", error);
+    res.status(500).json({ message: "Failed to delete interview" });
   }
 };
 
@@ -247,4 +419,9 @@ module.exports = {
   getHistory,
   deleteHistory,
   getHistoryById,
+  //Admin
+  getAllInterviews,
+  getInterviewStats,
+  getInterviewByIdForAdmin,
+  deleteInterviewById,
 };
