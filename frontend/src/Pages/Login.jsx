@@ -40,8 +40,9 @@ export default function Login() {
   const redirectTimeoutRef = useRef(null);
 
   useEffect(() => {
+    const timeoutId = redirectTimeoutRef.current; // 👈 copy ra biến local
     return () => {
-      if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 

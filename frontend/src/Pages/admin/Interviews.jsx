@@ -1,5 +1,5 @@
 // src/pages/admin/Interviews.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Briefcase,
   Search,
@@ -9,14 +9,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  User,
-  BarChart3,
   TrendingUp,
   Users,
   FileText,
   X,
-  Download,
-  Clock,
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
@@ -49,13 +45,7 @@ export default function Interviews() {
   const [showFilters, setShowFilters] = useState(false);
 
   const limit = 10;
-
-  useEffect(() => {
-    fetchInterviews();
-    fetchStats();
-  }, [page, search, filters]);
-
-  const fetchInterviews = async () => {
+  const fetchInterviews = useCallback(async () => {
     try {
       setLoading(true);
       const params = { page, limit };
@@ -65,9 +55,7 @@ export default function Interviews() {
       if (filters.fromDate) params.fromDate = filters.fromDate;
       if (filters.toDate) params.toDate = filters.toDate;
 
-      const response = await api.get("/interview/admin/interviews", {
-        params,
-      });
+      const response = await api.get("/interview/admin/interviews", { params });
       setInterviews(response.data.interviews || []);
       setTotalPages(response.data.pages || 1);
       setTotalInterviews(response.data.total || 0);
@@ -77,16 +65,21 @@ export default function Interviews() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, filters]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await api.get("/interview/admin/interviews/stats");
       setStats(response.data.stats);
     } catch (error) {
       console.error("Failed to fetch stats:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchInterviews();
+    fetchStats();
+  }, [fetchInterviews, fetchStats]);
 
   const handleDelete = async (id) => {
     try {
@@ -479,11 +472,17 @@ export default function Interviews() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
                   Interview Details
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {selectedInterview.topic} • {selectedInterview.difficulty}
+                  <span className="text-blue-500 font-medium">
+                    {selectedInterview.topic}
+                  </span>
+                  {" • "}
+                  <span className="text-blue-400">
+                    {selectedInterview.difficulty}
+                  </span>
                 </p>
               </div>
               <button
@@ -498,19 +497,17 @@ export default function Interviews() {
               {/* Summary */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-indigo-500 dark:text-indigo-400 font-medium">
                     Total Score
                   </p>
                   <p
-                    className={`text-2xl font-bold ${getScoreColor(
-                      selectedInterview.totalScore,
-                    )}`}
+                    className={`text-2xl font-bold ${getScoreColor(selectedInterview.totalScore)}`}
                   >
                     {selectedInterview.totalScore}/100
                   </p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-indigo-500 dark:text-indigo-400 font-medium">
                     MCQ Score
                   </p>
                   <p className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -518,7 +515,7 @@ export default function Interviews() {
                   </p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-indigo-500 dark:text-indigo-400 font-medium">
                     Essay Score
                   </p>
                   <p className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -530,7 +527,7 @@ export default function Interviews() {
               {/* MCQ Questions */}
               {selectedInterview.mcqResults?.length > 0 && (
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                  <h4 className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
                     Multiple Choice Questions
                   </h4>
                   <div className="space-y-4">
@@ -540,18 +537,20 @@ export default function Interviews() {
                         className="border border-gray-200 dark:border-gray-700 rounded-xl p-4"
                       >
                         <div className="flex items-start justify-between mb-3">
-                          <p className="font-medium text-gray-800 dark:text-white">
+                          <p className="font-medium text-blue-600 dark:text-blue-400">
                             {idx + 1}. {q.question}
                           </p>
                           {q.isCorrect ? (
-                            <CheckCircle className="w-5 h-5 text-emerald-500" />
+                            <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                           ) : (
-                            <AlertCircle className="w-5 h-5 text-red-500" />
+                            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                           )}
                         </div>
                         <div className="space-y-2 text-sm">
                           <p>
-                            <span className="text-gray-500">Your answer:</span>{" "}
+                            <span className="text-indigo-400 font-medium">
+                              Your answer:
+                            </span>{" "}
                             <span
                               className={
                                 q.isCorrect
@@ -564,15 +563,15 @@ export default function Interviews() {
                           </p>
                           {!q.isCorrect && (
                             <p>
-                              <span className="text-gray-500">
+                              <span className="text-indigo-400 font-medium">
                                 Correct answer:
                               </span>{" "}
-                              <span className="text-green-600">
+                              <span className="text-emerald-600">
                                 {q.correctAnswer}
                               </span>
                             </p>
                           )}
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 italic">
                             {q.explanation}
                           </p>
                         </div>
@@ -585,7 +584,7 @@ export default function Interviews() {
               {/* Essay Questions */}
               {selectedInterview.textResults?.length > 0 && (
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                  <h4 className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
                     Essay Questions
                   </h4>
                   <div className="space-y-4">
@@ -594,31 +593,70 @@ export default function Interviews() {
                         key={idx}
                         className="border border-gray-200 dark:border-gray-700 rounded-xl p-4"
                       >
-                        <p className="font-medium text-gray-800 dark:text-white mb-3">
+                        <p className="font-medium text-blue-600 dark:text-blue-400 mb-3">
                           {idx + 1}. {q.question}
                         </p>
                         <div className="space-y-3 text-sm">
                           <div>
-                            <p className="text-gray-500 mb-1">Your answer:</p>
+                            <p className="text-indigo-400 font-medium mb-1">
+                              Your answer:
+                            </p>
                             <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
                               {q.userAnswer || "No answer provided"}
                             </p>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-500">Score:</span>
+                            <span className="text-indigo-400 font-medium">
+                              Score:
+                            </span>
                             <span
-                              className={`font-semibold ${getScoreColor(
-                                q.score * 10,
-                              )}`}
+                              className={`font-semibold ${getScoreColor(q.score * 10)}`}
                             >
                               {q.score}/10
                             </span>
                           </div>
                           {q.feedback && (
                             <div>
-                              <p className="text-gray-500 mb-1">Feedback:</p>
+                              <p className="text-indigo-400 font-medium mb-1">
+                                Feedback:
+                              </p>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
                                 {q.feedback}
+                              </p>
+                            </div>
+                          )}
+                          {q.sampleAnswer && (
+                            <div>
+                              <p className="text-indigo-400 font-medium mb-1">
+                                Sample answer:
+                              </p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                                {q.sampleAnswer}
+                              </p>
+                            </div>
+                          )}
+                          {q.idealKeywords?.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-indigo-400 font-medium">
+                                Ideal keywords:
+                              </span>
+                              {q.idealKeywords.map((kw, i) => (
+                                <span
+                                  key={i}
+                                  className="px-2 py-0.5 text-xs bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-full"
+                                >
+                                  {kw}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {q.gradingExplanation && (
+                            <div>
+                              <p className="text-indigo-400 font-medium mb-1">
+                                Grading explanation:
+                              </p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                                {q.gradingExplanation}
                               </p>
                             </div>
                           )}

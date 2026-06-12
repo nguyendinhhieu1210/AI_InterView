@@ -233,7 +233,15 @@ const getHistoryById = async (req, res) => {
       totalQuestions: mcqCount + essayCount,
       createdAt: record.completedAt,
       mcqResults: mcqResultsArray || [],
-      textResults: textResultsArray || [],
+      textResults: (textResultsArray || []).map((e) => ({
+        question: e.question,
+        userAnswer: e.userAnswer,
+        score: e.score,
+        feedback: e.feedback,
+        sampleAnswer: e.sampleAnswer, // 👈 thêm
+        idealKeywords: e.idealKeywords, // 👈 thêm
+        gradingExplanation: e.gradingExplanation, // 👈 thêm
+      })),
     };
     res.json({ success: true, interview: formatted });
   } catch (error) {

@@ -1,5 +1,5 @@
 // src/pages/admin/UsersList.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import {
@@ -33,18 +33,7 @@ export default function UsersList() {
 
   const limit = 10;
 
-  useEffect(() => {
-    fetchUsers();
-  }, [page, search, roleFilter]);
-
-  useEffect(() => {
-    if (successPopup) {
-      const timer = setTimeout(() => setSuccessPopup(null), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [successPopup]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const params = { page, limit };
@@ -60,7 +49,18 @@ export default function UsersList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, roleFilter]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    if (successPopup) {
+      const timer = setTimeout(() => setSuccessPopup(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [successPopup]);
 
   const handleDelete = async (userId) => {
     try {
