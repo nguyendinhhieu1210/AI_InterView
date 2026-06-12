@@ -1,25 +1,38 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from './AuthContext';
 
 const ThemeContext = createContext();
 
-export const ThemeProvider = ({ children }) => {
+export const ThemeProvider = ({ children, forcedTheme = null }) => {
+  const { user } = useAuth();
+  const themeKey = user ? `theme_${user.id}` : 'theme_guest';
+
   const [theme, setTheme] = useState(
-    localStorage.getItem('theme') || 'light'
+    localStorage.getItem(themeKey) || 'light'
   );
 
-  // toggle theme
+  // Khi user đổi (login/logout/chuyển tài khoản) → load lại theme đúng của user đó
+  useEffect(() => {
+    setTheme(localStorage.getItem(themeKey) || 'light');
+  }, [themeKey]);
+
   const toggleDarkMode = () => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // sync toàn app
+  const activeTheme = forcedTheme ?? theme;
+
   useEffect(() => {
-  localStorage.setItem('theme', theme);
-  document.documentElement.classList.toggle('dark', theme === 'dark');
-}, [theme]);
+    if (!forcedTheme) {
+      localStorage.setItem(themeKey, theme);
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme, forcedTheme, themeKey]);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleDarkMode }}>
+    <ThemeContext.Provider value={{ theme: activeTheme, toggleDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );

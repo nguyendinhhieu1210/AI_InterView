@@ -35,6 +35,7 @@ export default function Login() {
         if (error) setError('');
     };
 
+    // Pages/Login.jsx - Phiên bản có debug
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -53,15 +54,21 @@ export default function Login() {
                 rememberMe
             });
 
-            const { token, user } = response.data;
-            login(token, user);
+            // ✅ Lấy thêm refreshToken
+            const { token, user, refreshToken } = response.data;
+
+            // ✅ Truyền refreshToken vào login()
+            login(token, user, refreshToken);
 
             redirectTimeoutRef.current = setTimeout(() => {
-                navigate('/welcome', { replace: true });
-            }, 2000);
+                if (user.role === 'admin') {
+                    navigate('/admin', { replace: true });
+                } else {
+                    navigate('/welcome', { replace: true });
+                }
+            }, 500); // ✅ Giảm từ 2000 → 500ms, không cần chờ lâu
 
         } catch (err) {
-            console.error('LOGIN ERROR:', err);
             setError(
                 err.response?.data?.message ||
                 'Login failed. Please try again.'
@@ -91,19 +98,17 @@ export default function Login() {
     ];
 
     return (
-        <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 px-4 py-8 sm:px-6 lg:px-8 ${
-            isDark 
-                ? 'bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900' 
-                : 'bg-gradient-to-br from-slate-50 via-white to-blue-50'
-        }`}>
+        <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 px-4 py-8 sm:px-6 lg:px-8 ${isDark
+            ? 'bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900'
+            : 'bg-gradient-to-br from-slate-50 via-white to-blue-50'
+            }`}>
             <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
                 {/* Left panel */}
                 <div className="hidden lg:block flex-1">
-                    <div className={`relative rounded-3xl p-8 shadow-xl border transition-all duration-300 ${
-                        isDark 
-                            ? 'bg-gray-800/60 backdrop-blur-sm border-gray-700' 
-                            : 'bg-white/60 backdrop-blur-sm border-white/50'
-                    }`}>
+                    <div className={`relative rounded-3xl p-8 shadow-xl border transition-all duration-300 ${isDark
+                        ? 'bg-gray-800/60 backdrop-blur-sm border-gray-700'
+                        : 'bg-white/60 backdrop-blur-sm border-white/50'
+                        }`}>
                         <div className="relative">
                             <div className="flex items-center gap-3 mb-8">
                                 <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-2xl shadow-lg">
@@ -194,14 +199,12 @@ export default function Login() {
 
                 {/* Login Form */}
                 <div className="flex-1 w-full max-w-md mx-auto lg:mx-0">
-                    <div className={`rounded-3xl shadow-2xl border overflow-hidden transition-all duration-300 ${
-                        isDark 
-                            ? 'bg-gray-800 border-gray-700 shadow-gray-950/50' 
-                            : 'bg-white border-gray-100 shadow-indigo-100/50'
-                    }`}>
-                        <div className={`relative pt-8 px-8 pb-6 text-center border-b ${
-                            isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
+                    <div className={`rounded-3xl shadow-2xl border overflow-hidden transition-all duration-300 ${isDark
+                        ? 'bg-gray-800 border-gray-700 shadow-gray-950/50'
+                        : 'bg-white border-gray-100 shadow-indigo-100/50'
                         }`}>
+                        <div className={`relative pt-8 px-8 pb-6 text-center border-b ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
+                            }`}>
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-500"></div>
                             <div className="inline-flex p-3 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-2xl shadow-md mb-4">
                                 <Shield className="w-7 h-7 text-white" />
@@ -228,15 +231,13 @@ export default function Login() {
                                     onChange={handleChange}
                                     onFocus={() => setFocusedField('email')}
                                     onBlur={() => setFocusedField(null)}
-                                    className={`w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 ${
-                                        focusedField === 'email'
-                                            ? 'border-indigo-400 ring-2 ring-indigo-100 dark:ring-indigo-500/30'
-                                            : `border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500`
-                                    } ${
-                                        isDark 
-                                            ? 'bg-gray-700 text-white placeholder-gray-400' 
+                                    className={`w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 ${focusedField === 'email'
+                                        ? 'border-indigo-400 ring-2 ring-indigo-100 dark:ring-indigo-500/30'
+                                        : `border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500`
+                                        } ${isDark
+                                            ? 'bg-gray-700 text-white placeholder-gray-400'
                                             : 'bg-white text-gray-800'
-                                    }`}
+                                        }`}
                                     required
                                 />
                             </div>
@@ -255,23 +256,20 @@ export default function Login() {
                                         onChange={handleChange}
                                         onFocus={() => setFocusedField('password')}
                                         onBlur={() => setFocusedField(null)}
-                                        className={`w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 pr-12 ${
-                                            focusedField === 'password'
-                                                ? 'border-indigo-400 ring-2 ring-indigo-100 dark:ring-indigo-500/30'
-                                                : `border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500`
-                                        } ${
-                                            isDark 
-                                                ? 'bg-gray-700 text-white placeholder-gray-400' 
+                                        className={`w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 pr-12 ${focusedField === 'password'
+                                            ? 'border-indigo-400 ring-2 ring-indigo-100 dark:ring-indigo-500/30'
+                                            : `border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500`
+                                            } ${isDark
+                                                ? 'bg-gray-700 text-white placeholder-gray-400'
                                                 : 'bg-white text-gray-800'
-                                        }`}
+                                            }`}
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className={`absolute right-4 top-1/2 -translate-y-1/2 transition ${
-                                            isDark ? 'text-gray-400 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-500'
-                                        }`}
+                                        className={`absolute right-4 top-1/2 -translate-y-1/2 transition ${isDark ? 'text-gray-400 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-500'
+                                            }`}
                                     >
                                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                     </button>
@@ -338,12 +336,11 @@ export default function Login() {
                             </div>
 
                             <Link
-                                to="/register"
-                                className={`w-full py-3 rounded-xl border flex items-center justify-center gap-2 transition-all group ${
-                                    isDark 
-                                        ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600 hover:border-indigo-500'
-                                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-indigo-300'
-                                }`}
+                                to="/"
+                                className={`w-full py-3 rounded-xl border flex items-center justify-center gap-2 transition-all group ${isDark
+                                    ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600 hover:border-indigo-500'
+                                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-indigo-300'
+                                    }`}
                             >
                                 <ChevronRight className="w-4 h-4 text-indigo-500" />
                                 <span className="font-medium">Create an account</span>
