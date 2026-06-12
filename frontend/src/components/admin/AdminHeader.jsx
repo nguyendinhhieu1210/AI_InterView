@@ -1,16 +1,16 @@
 // src/components/admin/AdminHeader.jsx
-import { useState, useEffect } from 'react';
-import { Bell, Menu, Sun, Moon, UserCircle } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useState, useEffect } from "react";
+import { Bell, Menu, Sun, Moon } from "lucide-react";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const AdminHeader = () => {
   const { theme, toggleTheme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === "dark";
   const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
+    const userData = localStorage.getItem("user");
     if (userData) {
       setUser(JSON.parse(userData));
     }
@@ -28,7 +28,7 @@ const AdminHeader = () => {
       <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden md:block">
         Admin Dashboard
       </h2>
-      
+
       <div className="flex-1" />
 
       <div className="flex items-center gap-3">
@@ -37,7 +37,11 @@ const AdminHeader = () => {
           onClick={toggleTheme}
           className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
         >
-          {isDark ? <Sun size={20} className="text-yellow-500" /> : <Moon size={20} className="text-gray-600" />}
+          {isDark ? (
+            <Sun size={20} className="text-yellow-500" />
+          ) : (
+            <Moon size={20} className="text-gray-600" />
+          )}
         </button>
 
         {/* Notifications */}
@@ -49,11 +53,13 @@ const AdminHeader = () => {
         {/* User Info */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 text-white flex items-center justify-center font-bold shadow-md">
-            {user?.fullName?.charAt(0)?.toUpperCase() || user?.userName?.charAt(0)?.toUpperCase() || 'A'}
+            {user?.fullName?.charAt(0)?.toUpperCase() ||
+              user?.userName?.charAt(0)?.toUpperCase() ||
+              "A"}
           </div>
           <div className="hidden md:block">
             <p className="font-medium text-gray-800 dark:text-white text-sm">
-              {user?.fullName || user?.userName || 'Admin'}
+              {user?.fullName || user?.userName || "Admin"}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Administrator
@@ -65,7 +71,7 @@ const AdminHeader = () => {
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
         <>
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 z-40 md:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />

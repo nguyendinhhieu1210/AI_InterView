@@ -1,7 +1,7 @@
 // src/pages/admin/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Users, UserCheck, UserX, Shield, TrendingUp, Activity, Calendar } from 'lucide-react';
+import { Users, UserCheck, UserX, Shield, TrendingUp } from 'lucide-react';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
