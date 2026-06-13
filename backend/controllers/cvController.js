@@ -50,7 +50,7 @@ const extractTextFromFile = async (filePath, mimetype) => {
 /**
  * Upload CV file
  */
-exports.uploadCV = async (req, res) => {
+const uploadCV = async (req, res) => {
   try {
     const file = req.file;
 
@@ -114,7 +114,7 @@ exports.uploadCV = async (req, res) => {
 /**
  * Analyze CV text directly
  */
-exports.analyzeCVText = async (req, res) => {
+const analyzeCVText = async (req, res) => {
   try {
     let { cvText } = req.body;
 
@@ -136,7 +136,7 @@ exports.analyzeCVText = async (req, res) => {
 /**
  * Generate interview questions
  */
-exports.generateQuestionsFromText = async (req, res) => {
+const generateQuestionsFromText = async (req, res) => {
   try {
     const { cvText, selectedSkills } = req.body;
 
@@ -155,7 +155,7 @@ exports.generateQuestionsFromText = async (req, res) => {
 /**
  * Submit interview answers
  */
-exports.submitCVAnswers = async (req, res) => {
+const submitCVAnswers = async (req, res) => {
   try {
     const { questions, answers, selectedSkills, cvName } = req.body;
 
@@ -214,7 +214,7 @@ exports.submitCVAnswers = async (req, res) => {
 /**
  * Get all CV interview history
  */
-exports.getCVSessionHistory = async (req, res) => {
+const getCVSessionHistory = async (req, res) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -234,7 +234,7 @@ exports.getCVSessionHistory = async (req, res) => {
 /**
  * Get CV interview detail
  */
-exports.getCVSessionDetail = async (req, res) => {
+const getCVSessionDetail = async (req, res) => {
   try {
     const sessionId = req.params.id;
 
@@ -258,4 +258,180 @@ exports.getCVSessionDetail = async (req, res) => {
     console.error("Get CV session detail error:", error);
     return res.status(500).json({ error: "Failed to fetch CV session detail" });
   }
+};
+
+// backend/controllers/cvController.js
+// Thêm vào cuối file, trước module.exports
+
+/**
+ * ADMIN: Get all CV interview sessions (all users)
+ */
+const getAllCVSessions = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const { search, fromDate, toDate } = req.query;
+
+    let query = {};
+
+    // Search by user name or email or cvName
+    if (search) {
+      const User = require("../models/User");
+      const users = await User.find({
+        $or: [
+          { fullName: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { userName: { $regex: search, $options: "i" } },
+        ],
+      }).select("_id");
+
+      query.userId = { $in: users.map((u) => u._id) };
+    }
+
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      if (fromDate) query.createdAt.$gte = new Date(fromDate);
+      if (toDate) query.createdAt.$lte = new Date(toDate + "T23:59:59");
+    }
+
+    const total = await CVInterviewSession.countDocuments(query);
+    const sessions = await CVInterviewSession.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Get user info for each session
+    const User = require("../models/User");
+    const sessionsWithUser = await Promise.all(
+      sessions.map(async (session) => {
+        const user = await User.findById(session.userId).select(
+          "fullName email userName",
+        );
+        return {
+          id: session._id,
+          userId: session.userId,
+          userName: user?.fullName || user?.userName || "Unknown",
+          userEmail: user?.email || "Unknown",
+          cvName: session.cvName || "Untitled CV",
+          topic: session.topic || [],
+          totalScore: session.totalScore || 0,
+          summary: session.summary || {},
+          createdAt: session.createdAt,
+        };
+      }),
+    );
+
+    // Get stats
+    const totalSessions = await CVInterviewSession.countDocuments();
+    const uniqueUsers = await CVInterviewSession.distinct("userId");
+    const avgScoreResult = await CVInterviewSession.aggregate([
+      { $group: { _id: null, avgScore: { $avg: "$totalScore" } } },
+    ]);
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const thisWeek = await CVInterviewSession.countDocuments({
+      createdAt: { $gte: oneWeekAgo },
+    });
+
+    res.json({
+      success: true,
+      sessions: sessionsWithUser,
+      total,
+      pages: Math.ceil(total / limit),
+      currentPage: page,
+      stats: {
+        total: totalSessions,
+        uniqueUsers: uniqueUsers.length,
+        avgScore: avgScoreResult[0]?.avgScore || 0,
+        thisWeek,
+      },
+    });
+  } catch (error) {
+    console.error("Get all CV sessions error:", error);
+    res.status(500).json({ message: "Failed to fetch CV sessions" });
+  }
+};
+
+/**
+ * ADMIN: Get single CV session by id
+ */
+const getCVSessionByIdForAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const session = await CVInterviewSession.findById(id).lean();
+
+    if (!session) {
+      return res.status(404).json({ message: "CV session not found" });
+    }
+
+    // Get user info
+    const User = require("../models/User");
+    const user = await User.findById(session.userId).select(
+      "fullName email userName",
+    );
+
+    // Format response
+    const results = session.results || [];
+    const mcqResults = results.filter((r) => r.type === "mcq" || !r.type);
+    const textResults = results.filter((r) => r.type === "text");
+
+    const mcqScore = mcqResults.reduce((sum, r) => sum + (r.score || 0), 0);
+    const textScore = textResults.reduce((sum, r) => sum + (r.score || 0), 0);
+
+    res.json({
+      success: true,
+      session: {
+        id: session._id,
+        userId: session.userId,
+        userName: user?.fullName || user?.userName || "Unknown",
+        userEmail: user?.email || "Unknown",
+        cvName: session.cvName || "Untitled CV",
+        topic: session.topic || [],
+        totalScore: session.totalScore || 0,
+        mcqScore,
+        textScore,
+        summary: session.summary || {},
+        questions: session.questions || {},
+        answers: session.answers || {},
+        results: session.results || [],
+        createdAt: session.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Get CV session by id error:", error);
+    res.status(500).json({ message: "Failed to fetch CV session" });
+  }
+};
+
+/**
+ * ADMIN: Delete CV session by id
+ */
+const deleteCVSessionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await CVInterviewSession.findByIdAndDelete(id);
+
+    if (!result) {
+      return res.status(404).json({ message: "CV session not found" });
+    }
+
+    res.json({ success: true, message: "CV session deleted successfully" });
+  } catch (error) {
+    console.error("Delete CV session error:", error);
+    res.status(500).json({ message: "Failed to delete CV session" });
+  }
+};
+
+module.exports = {
+  uploadCV,
+  analyzeCVText,
+  generateQuestionsFromText,
+  submitCVAnswers,
+  getCVSessionHistory,
+  getCVSessionDetail,
+  getAllCVSessions,
+  getCVSessionByIdForAdmin,
+  deleteCVSessionById,
 };
