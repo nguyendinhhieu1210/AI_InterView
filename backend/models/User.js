@@ -17,25 +17,26 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String, default: "" },
     isVerified: { type: Boolean, default: false },
 
-    // 🔥 Các trường OTP xác thực email
-    emailVerificationOTP: { type: String },
-    emailVerificationExpires: { type: Date },
+    // OTP xác thực email
+    emailVerificationOTP:     { type: String,  default: null },
+    emailVerificationExpires: { type: Date,    default: null },
 
     emailPreferences: {
-      interviewResults: {
-        type: Boolean,
-        default: true,
-      },
+      interviewResults: { type: Boolean, default: true },
     },
 
-    // 🔥 Các trường OTP reset password (nếu có)
-    resetPasswordOTP: { type: String },
-    resetPasswordExpires: { type: Date },
+    // OTP reset password
+    resetPasswordOTP:     { type: String, default: null },
+    resetPasswordExpires: { type: Date,   default: null },
+
+    // ── Refresh token (thêm mới) ──
+    refreshToken:           { type: String,  default: null },
+    refreshTokenExpires:    { type: Date,    default: null },
   },
   { timestamps: true },
 );
 
-// ✅ Sửa middleware pre('save') – KHÔNG dùng next
+// Hash password trước khi save
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
   const salt = await bcrypt.genSalt(10);
@@ -44,6 +45,22 @@ userSchema.pre("save", async function () {
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// ── Method kiểm tra refresh token còn hạn không ──
+userSchema.methods.isRefreshTokenValid = function (token) {
+  return (
+    this.refreshToken === token &&
+    this.refreshTokenExpires &&
+    this.refreshTokenExpires > Date.now()
+  );
+};
+
+// ── Method xóa refresh token (dùng khi logout) ──
+userSchema.methods.clearRefreshToken = async function () {
+  this.refreshToken = null;
+  this.refreshTokenExpires = null;
+  await this.save();
 };
 
 module.exports = mongoose.model("User", userSchema);
