@@ -1,5 +1,5 @@
 // src/pages/admin/CVHistory.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   FileText,
   Search,
@@ -43,11 +43,7 @@ export default function CVHistory() {
 
   const limit = 10;
 
-  useEffect(() => {
-    fetchSessions();
-  }, [page, search, filters.fromDate, filters.toDate]);
-
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -79,7 +75,11 @@ export default function CVHistory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, filters.fromDate, filters.toDate]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
 
   const handleDelete = async (id) => {
     try {
