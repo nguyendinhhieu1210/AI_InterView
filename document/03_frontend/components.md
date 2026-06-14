@@ -248,7 +248,45 @@ Hỗ trợ & FAQ:
 
 ---
 
-## 4. Quy Ước Component
+## 4. Admin Components & Pages
+
+> Các thành phần này được dùng riêng cho khu vực quản trị viên, nằm trong thư mục `layouts/` và `Pages/admin/`.
+
+### 🛡️ AdminLayout & AdminRoute
+**File:** `layouts/AdminLayout.jsx`, `components/admin/AdminRoute.jsx`
+- `AdminRoute`: Đảm bảo chỉ người dùng đã đăng nhập và có `role === 'admin'` mới được truy cập. Nếu không, redirect về `/`.
+- `AdminLayout`: Cấu trúc chung của trang admin bao gồm Sidebar điều hướng và Topbar.
+
+### 📊 Dashboard
+**File:** `Pages/admin/Dashboard.jsx`
+- Trang tổng quan hệ thống dành cho admin.
+- Hiển thị thống kê số lượng người dùng (tổng số, đã xác thực, admin) bằng cách gọi `/api/users/admin/users/stats`.
+- Hiển thị danh sách người dùng đăng ký gần đây.
+
+### 👥 Users Management
+**File:** `Pages/admin/UsersList.jsx`, `Pages/admin/UserDetail.jsx`
+- `UsersList`: Bảng danh sách tất cả người dùng trong hệ thống. Cho phép phân trang và tìm kiếm.
+- `UserDetail`: Xem chi tiết hồ sơ một người dùng, quản lý quyền hạn, xem trạng thái xác thực và hỗ trợ tính năng reset password (dành cho admin).
+
+### 🎤 Interviews Management
+**File:** `Pages/admin/Interviews.jsx`
+- Quản lý tất cả các bài phỏng vấn tiêu chuẩn của toàn bộ người dùng.
+- Hiển thị điểm số, kết quả đánh giá, thời gian hoàn thành.
+
+### 📋 CV History Management
+**File:** `Pages/admin/CVHistory.jsx`
+- Quản lý các phiên phỏng vấn dựa trên CV.
+- Cho phép admin xem danh sách các CV đã được tải lên và điểm số phỏng vấn của từng người dùng.
+
+### 🚧 Các Trang Đang Triển Khai (Sprint 9)
+- `CodingSessions.jsx`: Theo dõi các bài thi Live Coding.
+- `AdaptiveSessions.jsx`: Quản lý các phiên phỏng vấn Adaptive.
+- `SystemLogs.jsx`: Nhật ký hoạt động hệ thống.
+- `Settings.jsx`: Cài đặt chung cho trang Admin.
+
+---
+
+## 5. Quy Ước Component
 
 | Quy Ước | Mô Tả |
 |---|---|

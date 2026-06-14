@@ -1,9 +1,11 @@
+// controllers/adaptiveInterviewController.js
 const adaptiveService = require("../services/adaptive/adaptiveSession");
 const AdaptiveSession = require("../models/AdaptiveSession");
-const Activity = require("../models/Activity");
 const saveActivity = require("../utils/saveActivity");
+const User = require("../models/User"); // thêm để lấy thông tin user
 
-exports.startAdaptiveInterview = async (req, res) => {
+// ========== USER FUNCTIONS ==========
+const startAdaptiveInterview = async (req, res) => {
   try {
     const { topic, difficulty } = req.body;
     const userId = req.user.id;
@@ -32,7 +34,7 @@ exports.startAdaptiveInterview = async (req, res) => {
   }
 };
 
-exports.submitAnswer = async (req, res) => {
+const submitAnswer = async (req, res) => {
   try {
     const { sessionId, answer } = req.body;
     const userId = req.user.id;
@@ -75,7 +77,7 @@ exports.submitAnswer = async (req, res) => {
   }
 };
 
-exports.getSession = async (req, res) => {
+const getSession = async (req, res) => {
   try {
     const { sessionId } = req.params;
     const userId = req.user.id;
@@ -99,7 +101,7 @@ exports.getSession = async (req, res) => {
   }
 };
 
-exports.getHistory = async (req, res) => {
+const getHistory = async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -114,6 +116,8 @@ exports.getHistory = async (req, res) => {
         ) || [];
 
       const totalQuestions = questions.length;
+      // totalScore here is intentionally on a 0-100 scale for the
+      // generic history list UI (matches CV/quiz history display).
       const totalScore = (session.finalScore || 0) * 10;
 
       return {
@@ -144,4 +148,166 @@ exports.getHistory = async (req, res) => {
       error: "Failed to fetch history",
     });
   }
+};
+
+// ========== ADMIN FUNCTIONS ==========
+const getAllSessions = async (req, res) => {
+  try {
+    // Lấy tất cả adaptive sessions, populate thông tin user
+    const sessions = await AdaptiveSession.find()
+      .populate("userId", "userName email fullName")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Format lại dữ liệu cho admin
+    const formatted = sessions.map((session) => {
+      const totalQuestions =
+        session.summary?.questionBreakdown?.length ||
+        session.conversation?.filter(
+          (msg) => msg.role === "assistant" && msg.type === "question",
+        ).length ||
+        0;
+
+      return {
+        id: session._id,
+        user: session.userId
+          ? {
+              id: session.userId._id,
+              name: session.userId.fullName || session.userId.userName,
+              email: session.userId.email,
+            }
+          : null,
+        topic: session.topic,
+        difficulty: session.difficulty,
+        totalQuestions,
+        // finalScore kept on its native 0-10 scale, same as session.finalScore
+        finalScore:
+          session.finalScore !== undefined && session.finalScore !== null
+            ? session.finalScore
+            : null,
+        status: session.status || "active",
+        createdAt: session.createdAt,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt || null,
+      };
+    });
+
+    res.json({
+      success: true,
+      sessions: formatted,
+    });
+  } catch (error) {
+    console.error("Admin get all sessions error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch sessions",
+    });
+  }
+};
+
+const getSessionDetail = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = await AdaptiveSession.findById(sessionId)
+      .populate("userId", "userName email fullName")
+      .lean();
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: "Session not found",
+      });
+    }
+
+    const totalQuestions =
+      session.summary?.questionBreakdown?.length ||
+      session.conversation?.filter(
+        (msg) => msg.role === "assistant" && msg.type === "question",
+      ).length ||
+      0;
+
+    const durationInSeconds =
+      session.startedAt && session.endedAt
+        ? Math.floor(
+            (new Date(session.endedAt) - new Date(session.startedAt)) / 1000,
+          )
+        : (session.durationInSeconds ?? null);
+
+    const result = {
+      id: session._id,
+      user: session.userId
+        ? {
+            id: session.userId._id,
+            name: session.userId.fullName || session.userId.userName,
+            email: session.userId.email,
+          }
+        : null,
+      topic: session.topic,
+      difficulty: session.difficulty,
+      status: session.status || "active",
+      startedAt: session.startedAt,
+      endedAt: session.endedAt || null,
+      durationInSeconds,
+      // finalScore kept on its native 0-10 scale
+      finalScore:
+        session.finalScore !== undefined && session.finalScore !== null
+          ? session.finalScore
+          : null,
+      totalQuestions,
+      conversation: session.conversation || [],
+      summary: session.summary || null,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+    };
+
+    res.json({
+      success: true,
+      session: result,
+    });
+  } catch (error) {
+    console.error("Admin get session detail error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch session detail",
+    });
+  }
+};
+
+const deleteSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = await AdaptiveSession.findById(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: "Session not found",
+      });
+    }
+
+    await session.deleteOne();
+
+    res.json({
+      success: true,
+      message: "Session deleted successfully",
+    });
+  } catch (error) {
+    console.error("Admin delete session error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete session",
+    });
+  }
+};
+
+// Export tất cả các hàm
+module.exports = {
+  startAdaptiveInterview,
+  submitAnswer,
+  getSession,
+  getHistory,
+  getAllSessions,
+  getSessionDetail,
+  deleteSession,
 };

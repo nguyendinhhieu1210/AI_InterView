@@ -1,10 +1,14 @@
 // contexts/AuthContext.js
 import React, {
-  createContext, useContext, useState,
-  useEffect, useCallback, useRef
-} from 'react';
-import api from '../services/api';
-import { authDebug } from '../utils/authDebugger';
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
+import api from "../services/api";
+import { authDebug } from "../utils/authDebugger";
 
 const AuthContext = createContext();
 
@@ -12,24 +16,23 @@ const IDLE_TIMEOUT = 30 * 60 * 1000;
 const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000;
 const REFRESH_THROTTLE = 60 * 1000;
 
-// ── Phân biệt admin / user bằng storage key riêng ──
-const isAdminPath = () => window.location.pathname.startsWith('/admin');
-
+// ── Dùng chung 1 bộ key cho cả user và admin, phân quyền bằng user.role ──
 const STORAGE_KEYS = {
-  token:        () => isAdminPath() ? 'admin_token'        : 'token',
-  user:         () => isAdminPath() ? 'admin_user'         : 'user',
-  refreshToken: () => isAdminPath() ? 'admin_refreshToken' : 'refreshToken',
-  lastActivity: () => isAdminPath() ? 'admin_lastActivity' : 'lastActivity',
+  token: "token",
+  user: "user",
+  refreshToken: "refreshToken",
+  lastActivity: "lastActivity",
 };
 
 const parseJwt = (token) => {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
-      atob(base64).split('').map(
-        c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-      ).join('')
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch {
@@ -39,61 +42,63 @@ const parseJwt = (token) => {
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser]                       = useState(null);
-  const [loading, setLoading]                 = useState(true);
-  const [token, setToken]                     = useState(
-    () => localStorage.getItem(STORAGE_KEYS.token())
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(() =>
+    localStorage.getItem(STORAGE_KEYS.token),
   );
 
-  const logoutLock     = useRef(false);
+  const logoutLock = useRef(false);
   const refreshPromise = useRef(null);
 
   // ================= LOGOUT =================
   const logout = useCallback(() => {
-    authDebug('LOGOUT');
+    authDebug("LOGOUT");
 
     if (logoutLock.current) {
-      authDebug('LOGOUT BLOCKED');
+      authDebug("LOGOUT BLOCKED");
       return;
     }
 
     logoutLock.current = true;
 
-    // Chỉ xóa key của role hiện tại, không đụng key của role kia
-    localStorage.removeItem(STORAGE_KEYS.token());
-    localStorage.removeItem(STORAGE_KEYS.user());
-    localStorage.removeItem(STORAGE_KEYS.refreshToken());
-    localStorage.removeItem(STORAGE_KEYS.lastActivity());
+    localStorage.removeItem(STORAGE_KEYS.token);
+    localStorage.removeItem(STORAGE_KEYS.user);
+    localStorage.removeItem(STORAGE_KEYS.refreshToken);
+    localStorage.removeItem(STORAGE_KEYS.lastActivity);
     sessionStorage.clear();
 
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
 
-    const redirectPath = isAdminPath() ? '/login' : '/login';
-    window.location.replace(redirectPath);
+    window.location.replace("/login");
 
-    // ❌ Bỏ hoàn toàn logout_event - không broadcast cross-tab
-    setTimeout(() => { logoutLock.current = false; }, 500);
+    setTimeout(() => {
+      logoutLock.current = false;
+    }, 500);
   }, []);
 
   // ================= LOGIN =================
   const login = useCallback((newToken, userData, refreshTokenValue) => {
-    authDebug('LOGIN START');
+    authDebug("LOGIN START");
 
-    localStorage.setItem(STORAGE_KEYS.token(),        newToken);
-    localStorage.setItem(STORAGE_KEYS.user(),         JSON.stringify(userData));
-    localStorage.setItem(STORAGE_KEYS.lastActivity(), Date.now().toString());
+    localStorage.setItem(STORAGE_KEYS.token, newToken);
+    localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(userData));
+    localStorage.setItem(STORAGE_KEYS.lastActivity, Date.now().toString());
 
     if (refreshTokenValue) {
-      localStorage.setItem(STORAGE_KEYS.refreshToken(), refreshTokenValue);
+      localStorage.setItem(STORAGE_KEYS.refreshToken, refreshTokenValue);
     }
 
     setToken(newToken);
     setUser(userData);
     setIsAuthenticated(true);
 
-    authDebug('LOGIN SUCCESS', { email: userData?.email });
+    authDebug("LOGIN SUCCESS", {
+      email: userData?.email,
+      role: userData?.role,
+    });
   }, []);
 
   // ================= REFRESH TOKEN =================
@@ -102,32 +107,32 @@ export const AuthProvider = ({ children }) => {
 
     refreshPromise.current = (async () => {
       try {
-        authDebug('REFRESH TOKEN START');
+        authDebug("REFRESH TOKEN START");
 
-        const rt = localStorage.getItem(STORAGE_KEYS.refreshToken());
-        if (!rt) throw new Error('No refresh token');
+        const rt = localStorage.getItem(STORAGE_KEYS.refreshToken);
+        if (!rt) throw new Error("No refresh token");
 
-        const res = await api.post('/auth/refresh', { refreshToken: rt });
+        const res = await api.post("/auth/refresh", { refreshToken: rt });
         const { token: newToken, refreshToken: newRefresh } = res.data;
 
-        localStorage.setItem(STORAGE_KEYS.token(), newToken);
+        localStorage.setItem(STORAGE_KEYS.token, newToken);
         setToken(newToken);
 
         if (newRefresh) {
-          localStorage.setItem(STORAGE_KEYS.refreshToken(), newRefresh);
+          localStorage.setItem(STORAGE_KEYS.refreshToken, newRefresh);
         }
 
         const decoded = parseJwt(newToken);
         if (decoded?.user) {
-          localStorage.setItem(STORAGE_KEYS.user(), JSON.stringify(decoded.user));
+          localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(decoded.user));
           setUser(decoded.user);
         }
 
         setIsAuthenticated(true);
-        authDebug('REFRESH SUCCESS');
+        authDebug("REFRESH SUCCESS");
         return true;
       } catch (err) {
-        authDebug('REFRESH FAILED', { message: err?.message });
+        authDebug("REFRESH FAILED", { message: err?.message });
         logout();
         return false;
       } finally {
@@ -140,7 +145,7 @@ export const AuthProvider = ({ children }) => {
 
   // ================= CHECK TOKEN =================
   const ensureValidToken = useCallback(async () => {
-    const t = localStorage.getItem(STORAGE_KEYS.token());
+    const t = localStorage.getItem(STORAGE_KEYS.token);
     if (!t) return false;
 
     const decoded = parseJwt(t);
@@ -157,14 +162,16 @@ export const AuthProvider = ({ children }) => {
   // ================= ACTIVITY =================
   const updateActivity = useCallback(async () => {
     const now = Date.now();
-    localStorage.setItem(STORAGE_KEYS.lastActivity(), String(now));
+    localStorage.setItem(STORAGE_KEYS.lastActivity, String(now));
 
     if (!isAuthenticated) return;
 
-    const lastRefreshCheck = Number(sessionStorage.getItem('lastRefreshCheck') || 0);
+    const lastRefreshCheck = Number(
+      sessionStorage.getItem("lastRefreshCheck") || 0,
+    );
     if (now - lastRefreshCheck < REFRESH_THROTTLE) return;
 
-    sessionStorage.setItem('lastRefreshCheck', String(now));
+    sessionStorage.setItem("lastRefreshCheck", String(now));
     await ensureValidToken();
   }, [isAuthenticated, ensureValidToken]);
 
@@ -172,10 +179,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const init = async () => {
       try {
-        authDebug('INIT START');
+        authDebug("INIT START");
 
-        const storedToken = localStorage.getItem(STORAGE_KEYS.token());
-        const storedUser  = localStorage.getItem(STORAGE_KEYS.user());
+        const storedToken = localStorage.getItem(STORAGE_KEYS.token);
+        const storedUser = localStorage.getItem(STORAGE_KEYS.user);
 
         if (!storedToken || !storedUser) {
           setLoading(false);
@@ -188,70 +195,58 @@ export const AuthProvider = ({ children }) => {
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
           setIsAuthenticated(true);
-          localStorage.setItem(STORAGE_KEYS.lastActivity(), Date.now().toString());
+          localStorage.setItem(
+            STORAGE_KEYS.lastActivity,
+            Date.now().toString(),
+          );
         } else {
           const ok = await refreshToken();
           if (!ok) logout();
         }
       } catch (err) {
-        authDebug('INIT FAILED', { message: err?.message });
+        authDebug("INIT FAILED", { message: err?.message });
         logout();
       } finally {
         setLoading(false);
-        authDebug('INIT DONE');
+        authDebug("INIT DONE");
       }
     };
 
     init();
   }, [logout, refreshToken]);
 
-  // ================= MULTI TAB =================
-  // ❌ Bỏ hoàn toàn listener logout_event
-  // Mỗi tab tự quản lý session độc lập
-
   // ================= IDLE CHECK =================
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    authDebug('IDLE CHECK START');
+    authDebug("IDLE CHECK START");
 
-    const interval = setInterval(async () => {
+    const interval = setInterval(() => {
       // Chỉ check khi tab đang active (visible)
       if (document.hidden) return;
 
-      const last  = Number(localStorage.getItem(STORAGE_KEYS.lastActivity()) || 0);
-      const idle  = Date.now() - last;
+      const last = Number(localStorage.getItem(STORAGE_KEYS.lastActivity) || 0);
+      const idle = Date.now() - last;
 
       const remainingMinutes = Math.floor((IDLE_TIMEOUT - idle) / 1000 / 60);
       const remainingSeconds = Math.floor(((IDLE_TIMEOUT - idle) / 1000) % 60);
 
-      authDebug('IDLE COUNTDOWN', {
+      authDebug("IDLE COUNTDOWN", {
         idleSeconds: Math.floor(idle / 1000),
-        remainingTime: `${remainingMinutes}m ${remainingSeconds}s`
+        remainingTime: `${remainingMinutes}m ${remainingSeconds}s`,
       });
 
-      if (idle < IDLE_TIMEOUT) return;
-
-      authDebug('USER IDLE TIMEOUT');
-
-      // Tab visible + idle → thử refresh trước khi logout
-      const ok = await ensureValidToken();
-      if (ok) {
-        // Refresh thành công → reset activity, không logout
-        localStorage.setItem(STORAGE_KEYS.lastActivity(), Date.now().toString());
-        authDebug('RECOVER SESSION SUCCESS');
-        return;
+      if (idle >= IDLE_TIMEOUT) {
+        authDebug("AUTO LOGOUT - IDLE");
+        logout();
       }
-
-      authDebug('AUTO LOGOUT');
-      logout();
     }, 1000);
 
     return () => {
       clearInterval(interval);
-      authDebug('IDLE CHECK STOP');
+      authDebug("IDLE CHECK STOP");
     };
-  }, [isAuthenticated, logout, ensureValidToken]);
+  }, [isAuthenticated, logout]);
 
   // ================= AUTO REFRESH =================
   useEffect(() => {
@@ -269,32 +264,52 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
-    events.forEach(e => window.addEventListener(e, updateActivity, { passive: true }));
+    const events = [
+      "mousedown",
+      "mousemove",
+      "keydown",
+      "scroll",
+      "touchstart",
+      "click",
+    ];
+    events.forEach((e) =>
+      window.addEventListener(e, updateActivity, { passive: true }),
+    );
 
-    return () => events.forEach(e => window.removeEventListener(e, updateActivity));
+    return () =>
+      events.forEach((e) => window.removeEventListener(e, updateActivity));
   }, [isAuthenticated, updateActivity]);
 
   // ================= FOCUS =================
   useEffect(() => {
-    const handleFocus   = () => updateActivity();
-    const handleVisible = () => { if (!document.hidden) updateActivity(); };
+    const handleFocus = () => updateActivity();
+    const handleVisible = () => {
+      if (!document.hidden) updateActivity();
+    };
 
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisible);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisible);
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisible);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisible);
     };
   }, [updateActivity]);
 
   // ================= CONTEXT =================
   return (
-    <AuthContext.Provider value={{
-      isAuthenticated, user, token, loading,
-      login, logout, refreshToken, updateActivity
-    }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        user,
+        token,
+        loading,
+        login,
+        logout,
+        refreshToken,
+        updateActivity,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -302,6 +317,6 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 };

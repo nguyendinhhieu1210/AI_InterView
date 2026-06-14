@@ -1,32 +1,39 @@
 // backend/routes/cv.js
-const express = require('express');
-const multer = require('multer');
+const express = require("express");
+const multer = require("multer");
 const router = express.Router();
-const cvController = require('../controllers/cvController');
-const auth = require('../middleware/auth');
+const cvController = require("../controllers/cvController");
+const auth = require("../middleware/auth");
+const adminMiddleware = require("../middleware/admin");
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: "uploads/" });
 
-// Upload CV – không lưu DB, trả về { fullName, skills, rawText, fileName }
-router.post(
-    '/upload',
-    auth,
-    upload.single('cv'),
-    cvController.uploadCV
+// ==================== USER ROUTES ====================
+router.post("/upload", auth, upload.single("cv"), cvController.uploadCV);
+router.post("/analyze-text", cvController.analyzeCVText);
+router.post("/generate-questions", cvController.generateQuestionsFromText);
+router.post("/submit-answers", auth, cvController.submitCVAnswers);
+router.get("/history", auth, cvController.getCVSessionHistory);
+router.get("/history/:id", auth, cvController.getCVSessionDetail);
+
+// ==================== ADMIN ROUTES ====================
+router.get(
+  "/admin/sessions",
+  auth,
+  adminMiddleware,
+  cvController.getAllCVSessions,
 );
-
-// Phân tích text CV (không lưu) – dùng cho preview
-router.post('/analyze-text', cvController.analyzeCVText);
-
-// Sinh câu hỏi từ text và selectedSkills (không cần lưu CV)
-router.post('/generate-questions', cvController.generateQuestionsFromText);
-
-// routes/cv.js
-router.post('/submit-answers', auth, cvController.submitCVAnswers);  // thêm auth
-
-router.get('/history', auth, cvController.getCVSessionHistory);
-
-// routes/cv.js
-router.get('/history/:id', auth, cvController.getCVSessionDetail);
+router.get(
+  "/admin/sessions/:id",
+  auth,
+  adminMiddleware,
+  cvController.getCVSessionByIdForAdmin,
+);
+router.delete(
+  "/admin/sessions/:id",
+  auth,
+  adminMiddleware,
+  cvController.deleteCVSessionById,
+);
 
 module.exports = router;
