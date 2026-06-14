@@ -125,13 +125,23 @@ export default function CVHistory() {
     setPage(1);
   };
 
+  // Helper format date an toàn
+  const formatDateSafe = (dateValue) => {
+    if (!dateValue) return "N/A";
+    const date = new Date(dateValue);
+    return isNaN(date.getTime())
+      ? "Invalid date"
+      : format(date, "dd/MM/yyyy HH:mm");
+  };
+
   return (
     <div className="space-y-4 md:space-y-6 p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">
-            CV Interview History
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <FileText className="w-6 h-6 text-indigo-500" /> CV Interview
+            History
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             Manage and review all CV-based interview sessions
@@ -149,7 +159,7 @@ export default function CVHistory() {
         </button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - giữ nguyên màu cũ nhưng đồng bộ icon */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-3 md:p-4 shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
@@ -328,13 +338,18 @@ export default function CVHistory() {
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition duration-150"
                   >
                     <td className="px-4 py-3">
-                      <div>
-                        <p className="font-medium text-sm text-gray-800 dark:text-white">
-                          {session.userName || "Unknown"}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {session.userEmail}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-blue-400 text-white flex items-center justify-center font-bold text-xs">
+                          {session.userName?.charAt(0)?.toUpperCase() || "U"}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm text-gray-800 dark:text-white">
+                            {session.userName || "Unknown"}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {session.userEmail}
+                          </p>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -347,7 +362,7 @@ export default function CVHistory() {
                         {(session.topic || []).slice(0, 2).map((skill, idx) => (
                           <span
                             key={idx}
-                            className="px-1.5 py-0.5 text-xs font-medium rounded bg-gray-100 dark:bg-gray-700 text-violet-600 dark:text-violet-400"
+                            className="px-1.5 py-0.5 text-xs font-medium rounded bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400"
                           >
                             {skill}
                           </span>
@@ -370,10 +385,7 @@ export default function CVHistory() {
                       <div className="flex items-center gap-1">
                         <Calendar size={12} className="text-gray-400" />
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {format(
-                            new Date(session.createdAt),
-                            "dd/MM/yyyy HH:mm",
-                          )}
+                          {formatDateSafe(session.createdAt)}
                         </span>
                       </div>
                     </td>
@@ -426,7 +438,7 @@ export default function CVHistory() {
         )}
       </div>
 
-      {/* Detail Modal */}
+      {/* Detail Modal - giữ nguyên cấu trúc, chỉ đổi màu gradient và badge */}
       {showDetailModal && selectedSession && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-3xl w-full max-h-[85vh] overflow-y-auto">
@@ -517,13 +529,11 @@ export default function CVHistory() {
                   <div className="space-y-4">
                     {selectedSession.results.map((item, idx) => {
                       const isMCQ = item.isCorrect !== undefined;
-
                       return (
                         <div
                           key={idx}
                           className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
                         >
-                          {/* Header */}
                           <div
                             className={`px-4 py-2 flex justify-between items-center ${item.isCorrect ? "bg-emerald-50 dark:bg-emerald-950/20" : isMCQ ? "bg-red-50 dark:bg-red-950/20" : "bg-gray-50 dark:bg-gray-900/50"}`}
                           >
@@ -569,17 +579,12 @@ export default function CVHistory() {
                               </span>
                             )}
                           </div>
-
-                          {/* Body */}
                           <div className="p-4 space-y-3">
-                            {/* Question */}
                             <div>
                               <p className="text-sm font-medium text-gray-800 dark:text-white">
                                 {idx + 1}. {item.question}
                               </p>
                             </div>
-
-                            {/* User Answer */}
                             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
                               <p className="text-xs text-gray-500 mb-1">
                                 📝 Your answer:
@@ -590,8 +595,6 @@ export default function CVHistory() {
                                   "No answer provided"}
                               </p>
                             </div>
-
-                            {/* MCQ: show correct answer and explanation */}
                             {isMCQ && !item.isCorrect && (
                               <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg p-3">
                                 <p className="text-xs text-gray-500 mb-1">
@@ -612,8 +615,6 @@ export default function CVHistory() {
                                 )}
                               </div>
                             )}
-
-                            {/* Essay: AI Suggested Answer */}
                             {!isMCQ && item.aiSuggestedAnswer && (
                               <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-3">
                                 <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">
@@ -624,8 +625,6 @@ export default function CVHistory() {
                                 </p>
                               </div>
                             )}
-
-                            {/* Essay: Detailed Feedback (đã bao gồm strengths và weaknesses) */}
                             {!isMCQ && item.detailedFeedback && (
                               <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3">
                                 <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">
@@ -660,7 +659,7 @@ export default function CVHistory() {
                 Delete CV session from{" "}
                 <span className="font-semibold">
                   {showDeleteModal.userName}
-                </span>
+                </span>{" "}
                 ?
               </p>
               <div className="flex gap-2 justify-end">

@@ -278,6 +278,7 @@ const getAllCVSessions = async (req, res) => {
     // Search by user name or email or cvName
     if (search) {
       const User = require("../models/User");
+
       const users = await User.find({
         $or: [
           { fullName: { $regex: search, $options: "i" } },
@@ -286,7 +287,10 @@ const getAllCVSessions = async (req, res) => {
         ],
       }).select("_id");
 
-      query.userId = { $in: users.map((u) => u._id) };
+      query.$or = [
+        { userId: { $in: users.map((u) => u._id) } },
+        { cvName: { $regex: search, $options: "i" } },
+      ];
     }
 
     if (fromDate || toDate) {

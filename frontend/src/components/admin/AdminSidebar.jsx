@@ -30,17 +30,17 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
       path: "/admin/interviews",
     },
     {
-      name: "CV History",
+      name: "CV Interviews",
       icon: <FileText size={20} />,
       path: "/admin/cv-history",
     },
     {
-      name: "Coding Sessions",
+      name: "Coding Interviews",
       icon: <Code size={20} />,
       path: "/admin/coding-sessions",
     },
     {
-      name: "Adaptive Sessions",
+      name: "Adaptive Interviews",
       icon: <Brain size={20} />,
       path: "/admin/adaptive-sessions",
     },
