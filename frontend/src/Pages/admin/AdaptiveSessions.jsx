@@ -17,6 +17,58 @@ import {
 import api from "../../services/api";
 import { toast } from "react-hot-toast";
 
+// ==================== NGOÀI COMPONENT ====================
+const normalizeTo10 = (score) => {
+  if (score === undefined || score === null) return null;
+  return score > 10 ? score / 10 : score;
+};
+
+const getDisplayFinalScore = (session) => {
+  if (session.finalScore !== undefined && session.finalScore !== null) {
+    return normalizeTo10(session.finalScore);
+  }
+  if (session.summary?.overallScore !== undefined) {
+    return normalizeTo10(session.summary.overallScore);
+  }
+  return null;
+};
+
+const formatDateSafe = (dateValue) => {
+  if (!dateValue) return "N/A";
+  const date = new Date(dateValue);
+  return isNaN(date.getTime()) ? "Invalid date" : date.toLocaleDateString();
+};
+
+const getScoreBadgeClass = (score) => {
+  if (score === undefined || score === null) return "bg-gray-100 text-gray-700";
+  if (score >= 7)
+    return "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400";
+  if (score >= 4)
+    return "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400";
+  return "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400";
+};
+
+const getDifficultyColor = (difficulty) => {
+  switch (difficulty?.toLowerCase()) {
+    case "easy":
+      return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400";
+    case "medium":
+      return "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400";
+    case "hard":
+      return "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400";
+    default:
+      return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+  }
+};
+
+const getScoreColor = (scorePercent) => {
+  if (scorePercent >= 80) return "text-emerald-600 dark:text-emerald-400";
+  if (scorePercent >= 60) return "text-blue-600 dark:text-blue-400";
+  if (scorePercent >= 40) return "text-amber-600 dark:text-amber-400";
+  return "text-red-600 dark:text-red-400";
+};
+
+// ==================== TRONG COMPONENT ====================
 export default function AdaptiveSessions() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +76,6 @@ export default function AdaptiveSessions() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSession, setSelectedSession] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     difficulty: "",
@@ -33,13 +84,6 @@ export default function AdaptiveSessions() {
     toDate: "",
   });
   const itemsPerPage = 10;
-
-  // Helper: format date safely
-  const formatDateSafe = (dateValue) => {
-    if (!dateValue) return "N/A";
-    const date = new Date(dateValue);
-    return isNaN(date.getTime()) ? "Invalid date" : date.toLocaleDateString();
-  };
 
   useEffect(() => {
     fetchSessions();
@@ -78,7 +122,6 @@ export default function AdaptiveSessions() {
 
   const handleViewDetail = async (sessionId) => {
     try {
-      setDetailLoading(true);
       const res = await api.get(`/adaptive/admin/session/${sessionId}`);
       if (res.data.success) {
         setSelectedSession(res.data.session);
@@ -88,28 +131,9 @@ export default function AdaptiveSessions() {
       }
     } catch (err) {
       toast.error("Error loading detail");
-    } finally {
-      setDetailLoading(false);
     }
   };
 
-  // Score helpers
-  const normalizeTo10 = (score) => {
-    if (score === undefined || score === null) return null;
-    return score > 10 ? score / 10 : score;
-  };
-
-  const getDisplayFinalScore = (session) => {
-    if (session.finalScore !== undefined && session.finalScore !== null) {
-      return normalizeTo10(session.finalScore);
-    }
-    if (session.summary?.overallScore !== undefined) {
-      return normalizeTo10(session.summary.overallScore);
-    }
-    return null;
-  };
-
-  // Stats from sessions
   const stats = useMemo(() => {
     const total = sessions.length;
     const uniqueUsers = new Set(
@@ -128,7 +152,6 @@ export default function AdaptiveSessions() {
     return { total, avgScore, uniqueUsers, thisWeek };
   }, [sessions]);
 
-  // Filter sessions
   const filtered = useMemo(() => {
     return sessions.filter((s) => {
       const matchesSearch =
@@ -167,36 +190,6 @@ export default function AdaptiveSessions() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
-
-  const getScoreBadgeClass = (score) => {
-    if (score === undefined || score === null)
-      return "bg-gray-100 text-gray-700";
-    if (score >= 7)
-      return "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400";
-    if (score >= 4)
-      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400";
-    return "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400";
-  };
-
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty?.toLowerCase()) {
-      case "easy":
-        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400";
-      case "medium":
-        return "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400";
-      case "hard":
-        return "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400";
-      default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
-    }
-  };
-
-  const getScoreColor = (scorePercent) => {
-    if (scorePercent >= 80) return "text-emerald-600 dark:text-emerald-400";
-    if (scorePercent >= 60) return "text-blue-600 dark:text-blue-400";
-    if (scorePercent >= 40) return "text-amber-600 dark:text-amber-400";
-    return "text-red-600 dark:text-red-400";
-  };
 
   const resetFilters = () => {
     setFilters({ difficulty: "", topic: "", fromDate: "", toDate: "" });
