@@ -601,11 +601,9 @@ const submitExplanation = async (req, res) => {
     }
 
     if (!evalResult || typeof evalResult.correct !== "boolean") {
-      return res
-        .status(503)
-        .json({
-          error: "AI evaluation returned invalid data, please try again",
-        });
+      return res.status(503).json({
+        error: "AI evaluation returned invalid data, please try again",
+      });
     }
 
     session.explainAnswers.push({
@@ -874,8 +872,20 @@ const getSessionDetail = async (req, res) => {
 const getAllCodingSessions = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    let limit = req.query.limit;
+    let skip = (page - 1) * (parseInt(limit) || 10);
+    let usePagination = true;
+
+    // Nếu limit là 'all' hoặc '0' => lấy toàn bộ, không phân trang
+    if (limit === "all" || limit === "0") {
+      usePagination = false;
+      limit = null;
+      skip = null;
+    } else {
+      limit = parseInt(limit) || 10;
+      skip = (page - 1) * limit;
+    }
+
     const { search, language, difficulty, fromDate, toDate } = req.query;
 
     let query = {};
@@ -901,11 +911,12 @@ const getAllCodingSessions = async (req, res) => {
     }
 
     const total = await LiveCodingSession.countDocuments(query);
-    const sessions = await LiveCodingSession.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+
+    let sessionsQuery = LiveCodingSession.find(query).sort({ createdAt: -1 });
+    if (usePagination) {
+      sessionsQuery = sessionsQuery.skip(skip).limit(limit);
+    }
+    const sessions = await sessionsQuery.lean();
 
     const User = require("../models/User");
     const sessionsWithUser = await Promise.all(
@@ -937,6 +948,7 @@ const getAllCodingSessions = async (req, res) => {
       }),
     );
 
+    // Thống kê toàn bộ (không bị ảnh hưởng bởi phân trang)
     const totalSessions = await LiveCodingSession.countDocuments();
     const uniqueUsers = await LiveCodingSession.distinct("userId");
     const languagesStats = await LiveCodingSession.aggregate([
@@ -952,8 +964,8 @@ const getAllCodingSessions = async (req, res) => {
       success: true,
       sessions: sessionsWithUser,
       total,
-      pages: Math.ceil(total / limit),
-      currentPage: page,
+      pages: usePagination ? Math.ceil(total / limit) : 1,
+      currentPage: usePagination ? page : 1,
       stats: {
         total: totalSessions,
         uniqueUsers: uniqueUsers.length,
