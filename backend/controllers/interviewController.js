@@ -253,16 +253,29 @@ const getHistoryById = async (req, res) => {
 //ADMIN Từ bên dưới đổ xuống là của ADMIN
 
 // Get all interviews (admin)
+// Get all interviews (admin) – hỗ trợ lấy tất cả bản ghi
 const getAllInterviews = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    let limit = req.query.limit;
+    let skip = (page - 1) * (parseInt(limit) || 10);
+    let usePagination = true;
+
+    // Nếu limit là 'all' hoặc '0' => lấy toàn bộ, không phân trang
+    if (limit === "all" || limit === "0") {
+      usePagination = false;
+      limit = null;
+      skip = null;
+    } else {
+      limit = parseInt(limit) || 10;
+      skip = (page - 1) * limit;
+    }
+
     const { search, difficulty, topic, fromDate, toDate } = req.query;
 
     let query = {};
 
-    // Search by user name or email
+    // Tìm kiếm theo tên / email người dùng hoặc chủ đề
     if (search) {
       const users = await User.find({
         $or: [
@@ -286,13 +299,14 @@ const getAllInterviews = async (req, res) => {
     }
 
     const total = await InterviewResult.countDocuments(query);
-    const interviews = await InterviewResult.find(query)
-      .sort({ completedAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
 
-    // Get user info for each interview
+    let interviewsQuery = InterviewResult.find(query).sort({ completedAt: -1 });
+    if (usePagination) {
+      interviewsQuery = interviewsQuery.skip(skip).limit(limit);
+    }
+    const interviews = await interviewsQuery.lean();
+
+    // Gắn thông tin user
     const interviewsWithUser = await Promise.all(
       interviews.map(async (interview) => {
         const user = await User.findById(interview.userId).select(
@@ -315,8 +329,8 @@ const getAllInterviews = async (req, res) => {
       success: true,
       interviews: interviewsWithUser,
       total,
-      pages: Math.ceil(total / limit),
-      currentPage: page,
+      pages: usePagination ? Math.ceil(total / limit) : 1,
+      currentPage: usePagination ? page : 1,
     });
   } catch (error) {
     console.error("Get all interviews error:", error);

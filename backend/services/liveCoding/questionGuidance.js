@@ -1,8 +1,7 @@
-// services/liveCoding/questionGuidance.js - COMPLETE FIXED VERSION
+// services/liveCoding/questionGuidance.js - COMPLETE FIXED VERSION WITH DIFFICULTY
 
-// ========== 1. MAP TOPIC -> CATEGORY với STYLE (ĐÃ MỞ RỘNG) ==========
+// ========== 1. MAP TOPIC -> CATEGORY với STYLE ==========
 const TOPIC_CATEGORY = {
-  // ===== FUNCTION-BASED topics =====
   Arrays: { category: "array_basic", style: "function" },
   Lists: { category: "linear_ds", style: "function" },
   Tuples: { category: "linear_ds", style: "function" },
@@ -13,8 +12,6 @@ const TOPIC_CATEGORY = {
   Currying: { category: "functional", style: "function" },
   "Error Handling": { category: "error_handling", style: "function" },
   Packages: { category: "error_handling", style: "function" },
-
-  // ===== CLASS-BASED topics =====
   Inheritance: { category: "oop_inheritance", style: "class" },
   Polymorphism: { category: "oop_inheritance", style: "class" },
   Encapsulation: { category: "oop_encapsulation", style: "class" },
@@ -24,8 +21,6 @@ const TOPIC_CATEGORY = {
   Classes: { category: "oop_basic", style: "class" },
   Prototypes: { category: "oop_basic", style: "class" },
   "Magic Methods": { category: "oop_basic", style: "class" },
-
-  // ===== DATA STRUCTURE topics =====
   List: { category: "linear_ds", style: "auto" },
   Queue: { category: "linear_ds", style: "auto" },
   Stacks: { category: "linear_ds", style: "auto" },
@@ -38,32 +33,24 @@ const TOPIC_CATEGORY = {
   "Linked Lists": { category: "linked_list", style: "auto" },
   Trees: { category: "tree_graph", style: "auto" },
   Graphs: { category: "tree_graph", style: "auto" },
-
-  // ===== C++ SPECIFIC topics =====
   "Smart Pointers": { category: "cpp_smart_pointers", style: "class" },
   "Move Semantics": { category: "cpp_move", style: "function" },
   RAII: { category: "cpp_raii", style: "class" },
   Templates: { category: "cpp_templates", style: "function" },
   STL: { category: "cpp_stl", style: "function" },
   "Virtual Functions": { category: "cpp_virtual", style: "class" },
-
-  // ===== C# SPECIFIC topics =====
   Events: { category: "csharp_events", style: "class" },
   Properties: { category: "csharp_properties", style: "class" },
   Indexers: { category: "csharp_indexers", style: "class" },
   Delegates: { category: "csharp_delegates", style: "function" },
   LINQ: { category: "csharp_linq", style: "functional_builtin" },
   "async/await": { category: "csharp_async", style: "async" },
-
-  // ===== GO SPECIFIC topics =====
   Goroutines: { category: "go_goroutines", style: "conceptual" },
   Channels: { category: "go_channels", style: "conceptual" },
   Select: { category: "go_select", style: "conceptual" },
   WaitGroups: { category: "go_waitgroups", style: "conceptual" },
   Context: { category: "go_context", style: "conceptual" },
   defer: { category: "go_defer", style: "function" },
-
-  // ===== SPECIAL topics =====
   Threads: { category: "concurrency", style: "conceptual" },
   Runnable: { category: "concurrency", style: "conceptual" },
   Synchronized: { category: "concurrency", style: "conceptual" },
@@ -102,20 +89,13 @@ function getTopicStyle(topic, language, difficulty) {
 
   let { style, category } = topicInfo;
 
-  // Auto-detect dựa trên language và difficulty
   if (style === "auto") {
     const lang = language.toLowerCase();
-
-    // Java/C#/C++ thường dùng class cho data structures
     if (["java", "csharp", "cpp"].includes(lang)) {
       style = "class";
-    }
-    // Python/JS có thể dùng function hoặc class
-    else if (["python", "javascript", "typescript"].includes(lang)) {
+    } else if (["python", "javascript", "typescript"].includes(lang)) {
       style = difficulty === "beginner" ? "function" : "class";
-    }
-    // Go ưu tiên function (không có class)
-    else if (lang === "go") {
+    } else if (lang === "go") {
       style = "function";
     } else {
       style = "function";
@@ -203,7 +183,7 @@ REQUIRED STRUCTURE — CLOSURE:
 - Demonstrate state preservation.`,
 };
 
-// ========== 5. CATEGORY TEMPLATES (MỞ RỘNG) ==========
+// ========== 5. CATEGORY TEMPLATES (cũ) ==========
 const CATEGORY_TEMPLATES = {
   array_basic: `
 TOPIC FOCUS — ARRAY OPERATIONS:
@@ -287,7 +267,6 @@ TOPIC FOCUS — {TOPIC}:
 - {STYLE_DESCRIPTION}
 - Show both success and error paths.`,
 
-  // ===== C++ SPECIFIC =====
   cpp_smart_pointers: `
 TOPIC FOCUS — SMART POINTERS (C++):
 - Use std::unique_ptr, std::shared_ptr, or std::weak_ptr.
@@ -324,7 +303,6 @@ TOPIC FOCUS — VIRTUAL FUNCTIONS (C++):
 - Derived class overrides with 'override' keyword.
 - Demonstrate polymorphism via base pointer/reference.`,
 
-  // ===== C# SPECIFIC =====
   csharp_events: `
 TOPIC FOCUS — EVENTS (C#):
 - Define event using EventHandler or custom delegate.
@@ -361,7 +339,6 @@ TOPIC FOCUS — ASYNC/AWAIT (C#):
 - Await async operations.
 - Handle CancellationToken.`,
 
-  // ===== GO SPECIFIC =====
   go_goroutines: `
 TOPIC FOCUS — GOROUTINES (Go):
 - Use 'go' keyword to launch goroutine.
@@ -405,7 +382,7 @@ TOPIC FOCUS — {TOPIC}:
 - Ensure solution matches difficulty level.`,
 };
 
-// ========== 6. HÀM CHÍNH ==========
+// ========== 6. HÀM CHÍNH (có thêm difficulty guide) ==========
 function getTopicGuidance(topic, language, difficulty = "intermediate") {
   const { style, category } = getTopicStyle(topic, language, difficulty);
 
@@ -433,7 +410,7 @@ function getTopicGuidance(topic, language, difficulty = "intermediate") {
     .replace(/\{TOPIC\}/g, topic)
     .replace(/\{STYLE_DESCRIPTION\}/g, shortStyleDesc);
 
-  // Special case: Arrays in Java/C#/C++ - NO class wrapper
+  // Special case for arrays in Java/C#/C++
   if (
     category === "array_basic" &&
     ["java", "csharp", "cpp"].includes(language.toLowerCase())
@@ -444,10 +421,39 @@ Good: "public static int findMax(int[] arr)"
 Bad: "new ArrayManipulator().findMax(arr)"`;
   }
 
-  return guidance;
+  // ========== THÊM HƯỚNG DẪN THEO DIFFICULTY ==========
+  let diffGuide = "";
+  if (difficulty === "beginner") {
+    diffGuide = `
+BEGINNER LEVEL GUIDELINES:
+- Keep solution simple (max 15 lines).
+- Use basic constructs: loops, conditionals, simple functions.
+- No recursion unless extremely trivial.
+- Provide clear, runnable code.
+- Do not require deep algorithmic knowledge.`;
+  } else if (difficulty === "intermediate") {
+    diffGuide = `
+INTERMEDIATE LEVEL GUIDELINES:
+- Solution length 15-30 lines.
+- May include a class with few methods or recursion.
+- Handle edge cases (empty input, nulls).
+- Reasonable efficiency, but not necessarily optimal.
+- Expected to demonstrate understanding of the topic.`;
+  } else if (difficulty === "advanced") {
+    diffGuide = `
+ADVANCED LEVEL GUIDELINES:
+- Solution length 30-50 lines.
+- May use inheritance, generics, concurrency simulation, functional patterns.
+- Must handle all edge cases robustly.
+- Optimize for time/space (e.g., O(n log n) instead of O(n²)).
+- Provide complexity analysis in comments.
+- Production-quality code.`;
+  }
+
+  return guidance + diffGuide;
 }
 
-// ========== 7. LANGUAGE GUIDANCE (MỞ RỘNG) ==========
+// ========== 7. LANGUAGE GUIDANCE ==========
 const LANGUAGE_GUIDANCE = {
   java: `
 JAVA SYNTAX RULES:

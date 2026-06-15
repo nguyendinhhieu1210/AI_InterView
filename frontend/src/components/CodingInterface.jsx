@@ -1,33 +1,39 @@
-import { useState, useRef, useEffect } from 'react';
-import Editor from '@monaco-editor/react';
-import api from '../services/api';
-import toast from 'react-hot-toast';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import EvaluationModal from '../components/EvaluationModal';
-import { useNavigate } from 'react-router-dom';
-import * as monaco from 'monaco-editor';
+import { useState, useRef, useEffect } from "react";
+import Editor from "@monaco-editor/react";
+import api from "../services/api";
+import toast from "react-hot-toast";
+import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
+import EvaluationModal from "../components/EvaluationModal";
+import { useNavigate } from "react-router-dom";
+import * as monaco from "monaco-editor";
 
-const toMonacoLang = (lang = '') => {
+const toMonacoLang = (lang = "") => {
   const map = {
-    javascript: 'javascript', js: 'javascript',
-    typescript: 'typescript', ts: 'typescript',
-    python: 'python', py: 'python',
-    java: 'java',
-    cpp: 'cpp', 'c++': 'cpp',
-    c: 'c',
-    csharp: 'csharp', cs: 'csharp',
-    go: 'go',
-    rust: 'rust',
-    php: 'php',
-    ruby: 'ruby', rb: 'ruby',
-    swift: 'swift',
-    kotlin: 'kotlin',
+    javascript: "javascript",
+    js: "javascript",
+    typescript: "typescript",
+    ts: "typescript",
+    python: "python",
+    py: "python",
+    java: "java",
+    cpp: "cpp",
+    "c++": "cpp",
+    c: "c",
+    csharp: "csharp",
+    cs: "csharp",
+    go: "go",
+    rust: "rust",
+    php: "php",
+    ruby: "ruby",
+    rb: "ruby",
+    swift: "swift",
+    kotlin: "kotlin",
   };
-  return map[lang.toLowerCase()] || 'plaintext';
+  return map[lang.toLowerCase()] || "plaintext";
 };
 
-const getStarterCode = (lang = '') => {
+const getStarterCode = (lang = "") => {
   const l = lang.toLowerCase();
   const map = {
     java: `public class Main {\n    public static void main(String[] args) {\n        // Write your solution here\n    }\n}`,
@@ -47,36 +53,49 @@ const getStarterCode = (lang = '') => {
   return map[l] || `// Write your ${lang} solution here\n`;
 };
 
-const getExt = (lang = '') => {
+const getExt = (lang = "") => {
   const map = {
-    java: 'java', javascript: 'js', typescript: 'ts', python: 'py',
-    cpp: 'cpp', c: 'c', csharp: 'cs', go: 'go', rust: 'rs',
-    php: 'php', ruby: 'rb', swift: 'swift', kotlin: 'kt',
+    java: "java",
+    javascript: "js",
+    typescript: "ts",
+    python: "py",
+    cpp: "cpp",
+    c: "c",
+    csharp: "cs",
+    go: "go",
+    rust: "rs",
+    php: "php",
+    ruby: "rb",
+    swift: "swift",
+    kotlin: "kt",
   };
-  return map[lang.toLowerCase()] || 'txt';
+  return map[lang.toLowerCase()] || "txt";
 };
 
 const LANG_BADGE = {
-  java: 'border-primary/50 text-primary bg-primary/10',
-  python: 'border-blue-500/50 text-blue-500 bg-blue-50 dark:bg-blue-950/30',
-  javascript: 'border-yellow-500/50 text-yellow-500 bg-yellow-50 dark:bg-yellow-950/30',
-  typescript: 'border-blue-500/50 text-blue-500 bg-blue-50 dark:bg-blue-950/30',
-  go: 'border-cyan-500/50 text-cyan-500 bg-cyan-50 dark:bg-cyan-950/30',
-  cpp: 'border-indigo-500/50 text-indigo-500 bg-indigo-50 dark:bg-indigo-950/30',
-  rust: 'border-red-500/50 text-red-500 bg-red-50 dark:bg-red-950/30',
-  kotlin: 'border-purple-500/50 text-purple-500 bg-purple-50 dark:bg-purple-950/30',
-  swift: 'border-orange-500/50 text-orange-500 bg-orange-50 dark:bg-orange-950/30',
+  java: "border-primary/50 text-primary bg-primary/10",
+  python: "border-blue-500/50 text-blue-500 bg-blue-50 dark:bg-blue-950/30",
+  javascript:
+    "border-yellow-500/50 text-yellow-500 bg-yellow-50 dark:bg-yellow-950/30",
+  typescript: "border-blue-500/50 text-blue-500 bg-blue-50 dark:bg-blue-950/30",
+  go: "border-cyan-500/50 text-cyan-500 bg-cyan-50 dark:bg-cyan-950/30",
+  cpp: "border-indigo-500/50 text-indigo-500 bg-indigo-50 dark:bg-indigo-950/30",
+  rust: "border-red-500/50 text-red-500 bg-red-50 dark:bg-red-950/30",
+  kotlin:
+    "border-purple-500/50 text-purple-500 bg-purple-50 dark:bg-purple-950/30",
+  swift:
+    "border-orange-500/50 text-orange-500 bg-orange-50 dark:bg-orange-950/30",
 };
 
 const DIFF_BADGE = {
-  beginner: 'border-success/50 text-success bg-success/10',
-  intermediate: 'border-warning/50 text-warning bg-warning/10',
-  advanced: 'border-error/50 text-error bg-error/10',
+  beginner: "border-success/50 text-success bg-success/10",
+  intermediate: "border-warning/50 text-warning bg-warning/10",
+  advanced: "border-error/50 text-error bg-error/10",
 };
 
 const safeDisplayValue = (value) => {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
   try {
     return JSON.stringify(value, null, 2);
   } catch {
@@ -94,22 +113,22 @@ const extractLineNumberFromQuestion = (question) => {
 export default function CodingInterface({
   sessionId,
   problemStatement: initialProblemStatement,
-  language: initialLanguage = 'java',
-  topic = '',
-  domain = '',
-  difficulty = 'beginner',
-  testCriteria: initialTestCriteria = '',
-  exampleInput: initialExampleInput = '',
-  exampleOutput: initialExampleOutput = '',
+  language: initialLanguage = "java",
+  topic = "",
+  domain = "",
+  difficulty = "beginner",
+  testCriteria: initialTestCriteria = "",
+  exampleInput: initialExampleInput = "",
+  exampleOutput: initialExampleOutput = "",
   onReset,
 }) {
   const navigate = useNavigate();
   const { token } = useAuth();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === "dark";
   const language = initialLanguage.toLowerCase();
 
-  const [phase, setPhase] = useState('coding');
+  const [phase, setPhase] = useState("coding");
   const [codeProblem, setCodeProblem] = useState({
     problemStatement: initialProblemStatement,
     testCriteria: initialTestCriteria,
@@ -117,7 +136,7 @@ export default function CodingInterface({
     exampleOutput: initialExampleOutput,
   });
   const [currentQuestion, setCurrentQuestion] = useState({
-    type: 'code',
+    type: "code",
     problemStatement: initialProblemStatement,
     testCriteria: initialTestCriteria,
     exampleInput: initialExampleInput,
@@ -127,27 +146,28 @@ export default function CodingInterface({
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [explainCount, setExplainCount] = useState(0);
-  const [userAnswer, setUserAnswer] = useState('');
+  const [userAnswer, setUserAnswer] = useState("");
   const [codeEvaluation, setCodeEvaluation] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [explainAnswersList, setExplainAnswersList] = useState([]);
-  const [submittedCode, setSubmittedCode] = useState('');
-  const [submittedProblem, setSubmittedProblem] = useState('');
-  const [submittedExampleInput, setSubmittedExampleInput] = useState('');
-  const [submittedExampleOutput, setSubmittedExampleOutput] = useState('');
+  const [submittedCode, setSubmittedCode] = useState("");
+  const [submittedProblem, setSubmittedProblem] = useState("");
+  const [submittedExampleInput, setSubmittedExampleInput] = useState("");
+  const [submittedExampleOutput, setSubmittedExampleOutput] = useState("");
   const [showExitModal, setShowExitModal] = useState(false);
   const [invalidLineError, setInvalidLineError] = useState(null);
 
   const editorRef = useRef(null);
   const decorationsRef = useRef([]);
 
-  const getExplainQuestionText = (questionObj) => questionObj?.question || questionObj?.content || '';
+  const getExplainQuestionText = (questionObj) =>
+    questionObj?.question || questionObj?.content || "";
 
   // Thêm style highlight
   useEffect(() => {
-    const id = 'cdi-highlight-style';
+    const id = "cdi-highlight-style";
     if (!document.getElementById(id)) {
-      const style = document.createElement('style');
+      const style = document.createElement("style");
       style.id = id;
       style.textContent = `
         .error-line-highlight { background-color: rgba(239,68,68,0.2); border-left: 3px solid #ef4444 !important; }
@@ -163,40 +183,60 @@ export default function CodingInterface({
 
   const clearDecorations = () => {
     if (editorRef.current && decorationsRef.current.length) {
-      decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, []);
+      decorationsRef.current = editorRef.current.deltaDecorations(
+        decorationsRef.current,
+        [],
+      );
     }
   };
 
   // HIGHLIGHT dòng được hỏi (và kiểm tra dòng có tồn tại không)
   useEffect(() => {
-    if (phase === 'explaining' && currentQuestion?.type === 'explain' && editorRef.current) {
+    if (
+      phase === "explaining" &&
+      currentQuestion?.type === "explain" &&
+      editorRef.current
+    ) {
       const questionText = getExplainQuestionText(currentQuestion);
       const lineNum = extractLineNumberFromQuestion(questionText);
-      const codeLines = code.split('\n');
+      const codeLines = code.split("\n");
       const maxLine = codeLines.length;
 
       // Kiểm tra hợp lệ
       if (lineNum !== null) {
         if (lineNum < 1 || lineNum > maxLine) {
-          setInvalidLineError(`⚠️ Câu hỏi tham chiếu dòng ${lineNum} nhưng code chỉ có ${maxLine} dòng. Vui lòng báo lỗi.`);
+          setInvalidLineError(
+            `⚠️ Câu hỏi tham chiếu dòng ${lineNum} nhưng code chỉ có ${maxLine} dòng. Vui lòng báo lỗi.`,
+          );
           toast.error(`Dòng ${lineNum} không tồn tại!`);
           clearDecorations();
           return;
         }
         const lineContent = codeLines[lineNum - 1].trim();
         // FIX: bỏ escape [ trong character class
-        if (lineContent === '' || /^[{}()[\];,]+$/.test(lineContent) || lineContent.startsWith('//')) {
-          setInvalidLineError(`⚠️ Dòng ${lineNum} không có nội dung có ý nghĩa (chỉ dấu ngoặc/comment). Hãy trả lời dựa trên ngữ cảnh.`);
+        if (
+          lineContent === "" ||
+          /^[{}()[\];,]+$/.test(lineContent) ||
+          lineContent.startsWith("//")
+        ) {
+          setInvalidLineError(
+            `⚠️ Dòng ${lineNum} không có nội dung có ý nghĩa (chỉ dấu ngoặc/comment). Hãy trả lời dựa trên ngữ cảnh.`,
+          );
         } else {
           setInvalidLineError(null);
         }
 
         // Highlight dòng đó
-        const decorations = [{
-          range: new monaco.Range(lineNum, 1, lineNum, 1),
-          options: { isWholeLine: true, className: 'error-line-highlight' }
-        }];
-        decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, decorations);
+        const decorations = [
+          {
+            range: new monaco.Range(lineNum, 1, lineNum, 1),
+            options: { isWholeLine: true, className: "error-line-highlight" },
+          },
+        ];
+        decorationsRef.current = editorRef.current.deltaDecorations(
+          decorationsRef.current,
+          decorations,
+        );
       } else {
         setInvalidLineError(null);
         clearDecorations();
@@ -214,149 +254,176 @@ export default function CodingInterface({
       exampleOutput: initialExampleOutput,
     });
     setCurrentQuestion({
-      type: 'code',
+      type: "code",
       problemStatement: initialProblemStatement,
       testCriteria: initialTestCriteria,
       exampleInput: initialExampleInput,
       exampleOutput: initialExampleOutput,
     });
     setCode(getStarterCode(language));
-    setPhase('coding');
+    setPhase("coding");
     setFeedback(null);
     setExplainCount(0);
-    setUserAnswer('');
+    setUserAnswer("");
     setCodeEvaluation(null);
     setExplainAnswersList([]);
-    setSubmittedCode('');
-    setSubmittedProblem('');
-    setSubmittedExampleInput('');
-    setSubmittedExampleOutput('');
+    setSubmittedCode("");
+    setSubmittedProblem("");
+    setSubmittedExampleInput("");
+    setSubmittedExampleOutput("");
     setIsModalOpen(false);
     clearDecorations();
     setInvalidLineError(null);
-  }, [initialProblemStatement, initialTestCriteria, initialExampleInput, initialExampleOutput, language]);
+  }, [
+    initialProblemStatement,
+    initialTestCriteria,
+    initialExampleInput,
+    initialExampleOutput,
+    language,
+  ]);
 
   const handleSubmitCode = async () => {
     setLoading(true);
     setFeedback(null);
     clearDecorations();
     try {
-      const res = await api.post(`/live-coding/session/${sessionId}/submit`, { code }, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await api.post(
+        `/live-coding/session/${sessionId}/submit`,
+        { code },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
       const { correct, feedback: fb, nextQuestion } = res.data;
       if (!correct) {
-        setFeedback({ type: 'error', message: fb || 'Code is incorrect. Check your logic.' });
-        toast.error('Code incorrect');
+        setFeedback({
+          type: "error",
+          message: fb || "Code is incorrect. Check your logic.",
+        });
+        toast.error("Code incorrect");
         setLoading(false);
         return;
       }
       setSubmittedCode(code);
-      setSubmittedProblem(codeProblem.problemStatement || '');
+      setSubmittedProblem(codeProblem.problemStatement || "");
       setSubmittedExampleInput(safeDisplayValue(codeProblem.exampleInput));
       setSubmittedExampleOutput(safeDisplayValue(codeProblem.exampleOutput));
-      setFeedback({ type: 'success', message: fb || '✅ Correct! Click "Continue" to explain.' });
-      toast.success('Correct!');
-      if (nextQuestion?.type === 'explain') {
+      setFeedback({
+        type: "success",
+        message: fb || '✅ Correct! Click "Continue" to explain.',
+      });
+      toast.success("Correct!");
+      if (nextQuestion?.type === "explain") {
         setCurrentQuestion(nextQuestion);
-        setPhase('explain_pending');
+        setPhase("explain_pending");
         setExplainCount(1);
-        setUserAnswer('');
+        setUserAnswer("");
         setExplainAnswersList([]);
       } else {
-        setPhase('completed');
+        setPhase("completed");
       }
     } catch (err) {
       const status = err.response?.status;
       const errMsg = err.response?.data?.error;
       if (status === 404) {
-        toast.error('Session expired. Redirecting...');
-        setTimeout(() => navigate('/welcome'), 1500);
+        toast.error("Session expired. Redirecting...");
+        setTimeout(() => navigate("/welcome"), 1500);
         return;
       }
-      toast.error(errMsg || 'Failed to submit code');
+      toast.error(errMsg || "Failed to submit code");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleContinueToExplain = () => setPhase('explaining');
+  const handleContinueToExplain = () => setPhase("explaining");
 
   const handleSubmitAnswer = async () => {
     if (!userAnswer.trim()) {
-      toast.error('Please enter your answer');
+      toast.error("Please enter your answer");
       return;
     }
     setLoading(true);
     try {
-      const res = await api.post(`/live-coding/session/${sessionId}/explain`, { answer: userAnswer }, { headers: { Authorization: `Bearer ${token}` } });
-      const { correct, feedback: fb, nextQuestion, evaluation, completedForCurrentCode, modelAnswer } = res.data;
+      const res = await api.post(
+        `/live-coding/session/${sessionId}/explain`,
+        { answer: userAnswer },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const {
+        correct,
+        feedback: fb,
+        nextQuestion,
+        evaluation,
+        completedForCurrentCode,
+        modelAnswer,
+      } = res.data;
 
       const newExplainAnswer = {
         question: getExplainQuestionText(currentQuestion),
         answer: userAnswer,
         isCorrect: correct,
-        feedback: fb || (correct ? 'Correct' : 'Incorrect'),
-        modelAnswer: modelAnswer || '',
+        feedback: fb || (correct ? "Correct" : "Incorrect"),
+        modelAnswer: modelAnswer || "",
       };
       const updatedList = [...explainAnswersList, newExplainAnswer];
       setExplainAnswersList(updatedList);
 
       setFeedback({
-        type: correct ? 'success' : 'error',
-        message: correct ? '✅ Correct' : '❌ Incorrect'
+        type: correct ? "success" : "error",
+        message: correct ? "✅ Correct" : "❌ Incorrect",
       });
 
-      correct ? toast.success('✅ Correct') : toast.error('❌ Incorrect');
+      correct ? toast.success("✅ Correct") : toast.error("❌ Incorrect");
 
       if (evaluation && completedForCurrentCode) {
-        console.log('✅ Completed round, opening evaluation modal...');
+        console.log("✅ Completed round, opening evaluation modal...");
         setCodeEvaluation(evaluation);
         setExplainAnswersList(updatedList);
         setCurrentQuestion(null);
-        setPhase('review');
+        setPhase("review");
         setIsModalOpen(true);
         setLoading(false);
         return;
       }
 
-      if (nextQuestion?.type === 'explain') {
+      if (nextQuestion?.type === "explain") {
         setCurrentQuestion(nextQuestion);
-        setExplainCount(prev => prev + 1);
-        setUserAnswer('');
-        setPhase('explaining');
-      } else if (nextQuestion?.type === 'code') {
+        setExplainCount((prev) => prev + 1);
+        setUserAnswer("");
+        setPhase("explaining");
+      } else if (nextQuestion?.type === "code") {
         const newCodeProblemData = {
-          problemStatement: nextQuestion.problemStatement || '',
-          testCriteria: nextQuestion.testCriteria || '',
-          exampleInput: nextQuestion.exampleInput || '',
-          exampleOutput: nextQuestion.exampleOutput || '',
+          problemStatement: nextQuestion.problemStatement || "",
+          testCriteria: nextQuestion.testCriteria || "",
+          exampleInput: nextQuestion.exampleInput || "",
+          exampleOutput: nextQuestion.exampleOutput || "",
         };
         setCodeProblem(newCodeProblemData);
-        setCurrentQuestion({ type: 'code', ...newCodeProblemData });
+        setCurrentQuestion({ type: "code", ...newCodeProblemData });
         setCode(getStarterCode(language));
-        setPhase('coding');
+        setPhase("coding");
         setExplainCount(0);
-        setUserAnswer('');
+        setUserAnswer("");
         setFeedback(null);
         setCodeEvaluation(null);
         setExplainAnswersList([]);
-        setSubmittedCode('');
-        setSubmittedProblem('');
-        setSubmittedExampleInput('');
-        setSubmittedExampleOutput('');
-        toast.success('Cycle completed! New code question ready.');
+        setSubmittedCode("");
+        setSubmittedProblem("");
+        setSubmittedExampleInput("");
+        setSubmittedExampleOutput("");
+        toast.success("Cycle completed! New code question ready.");
       } else {
-        setPhase('completed');
+        setPhase("completed");
       }
     } catch (err) {
       const status = err.response?.status;
       const errMsg = err.response?.data?.error;
       if (status === 404) {
-        toast.error('Session expired. Redirecting...');
-        setTimeout(() => navigate('/welcome'), 1500);
+        toast.error("Session expired. Redirecting...");
+        setTimeout(() => navigate("/welcome"), 1500);
         return;
       }
-      console.error('Submit answer error:', err);
-      toast.error(errMsg || 'Failed to submit answer');
+      console.error("Submit answer error:", err);
+      toast.error(errMsg || "Failed to submit answer");
     } finally {
       setLoading(false);
     }
@@ -365,81 +432,118 @@ export default function CodingInterface({
   const handleNextCode = async () => {
     setLoading(true);
     try {
-      const res = await api.post(`/live-coding/session/${sessionId}/next-code`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await api.post(
+        `/live-coding/session/${sessionId}/next-code`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
       const { nextQuestion } = res.data;
-      if (nextQuestion?.type === 'code') {
+      if (nextQuestion?.type === "code") {
         const newCodeProblemData = {
-          problemStatement: nextQuestion.problemStatement || '',
-          testCriteria: nextQuestion.testCriteria || '',
-          exampleInput: nextQuestion.exampleInput || '',
-          exampleOutput: nextQuestion.exampleOutput || '',
+          problemStatement: nextQuestion.problemStatement || "",
+          testCriteria: nextQuestion.testCriteria || "",
+          exampleInput: nextQuestion.exampleInput || "",
+          exampleOutput: nextQuestion.exampleOutput || "",
         };
         setCodeProblem(newCodeProblemData);
-        setCurrentQuestion({ type: 'code', ...newCodeProblemData });
+        setCurrentQuestion({ type: "code", ...newCodeProblemData });
         setCode(getStarterCode(language));
-        setPhase('coding');
+        setPhase("coding");
         setExplainCount(0);
-        setUserAnswer('');
+        setUserAnswer("");
         setFeedback(null);
         setCodeEvaluation(null);
         setExplainAnswersList([]);
-        setSubmittedCode('');
-        setSubmittedProblem('');
-        setSubmittedExampleInput('');
-        setSubmittedExampleOutput('');
+        setSubmittedCode("");
+        setSubmittedProblem("");
+        setSubmittedExampleInput("");
+        setSubmittedExampleOutput("");
         setIsModalOpen(false);
-        toast.success('New coding question ready!');
+        toast.success("New coding question ready!");
       } else {
-        toast.error('Could not load next question');
+        toast.error("Could not load next question");
       }
     } catch (err) {
       const status = err.response?.status;
       const errMsg = err.response?.data?.error;
       if (status === 404) {
-        toast.error('Session expired. Redirecting...');
-        setTimeout(() => navigate('/welcome'), 1500);
+        toast.error("Session expired. Redirecting...");
+        setTimeout(() => navigate("/welcome"), 1500);
         return;
       }
-      toast.error(errMsg || 'Error loading next question');
+      toast.error(errMsg || "Error loading next question");
     } finally {
       setLoading(false);
     }
   };
 
   const handleReset = () => {
-    if (window.confirm('Change topic? All progress will be lost.')) onReset();
+    if (window.confirm("Change topic? All progress will be lost.")) onReset();
   };
 
   const handleExit = () => setShowExitModal(true);
   const confirmExit = () => {
     setShowExitModal(false);
-    navigate('/welcome');
+    navigate("/welcome");
   };
   const cancelExit = () => setShowExitModal(false);
 
-  const langBadgeClass = LANG_BADGE[language] || 'border-border text-muted bg-muted/10';
-  const diffBadgeClass = DIFF_BADGE[difficulty] || 'border-border text-muted bg-muted/10';
+  const langBadgeClass =
+    LANG_BADGE[language] || "border-border text-muted bg-muted/10";
+  const diffBadgeClass =
+    DIFF_BADGE[difficulty] || "border-border text-muted bg-muted/10";
   const fileName = `Main.${getExt(language)}`;
-  const isSubmitCodeDisabled = loading || phase === 'explain_pending' || phase === 'explaining' || phase === 'review';
-  const explainQuestionText = (phase === 'explaining' || phase === 'explain_pending') && currentQuestion?.type === 'explain' ? getExplainQuestionText(currentQuestion) : '';
+  const isSubmitCodeDisabled =
+    loading ||
+    phase === "explain_pending" ||
+    phase === "explaining" ||
+    phase === "review";
+  const explainQuestionText =
+    (phase === "explaining" || phase === "explain_pending") &&
+    currentQuestion?.type === "explain"
+      ? getExplainQuestionText(currentQuestion)
+      : "";
 
   return (
     <>
       <div className="min-h-screen bg-bg">
         {/* Header */}
         <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 px-4 sm:px-6 py-3 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
-          <button onClick={handleExit} className="text-muted hover:text-text hover:bg-muted/10 transition px-3 py-1.5 rounded-lg text-sm">
+          <button
+            onClick={handleExit}
+            className="text-muted hover:text-text hover:bg-muted/10 transition px-3 py-1.5 rounded-lg text-sm"
+          >
             ← Exit
           </button>
-          <button onClick={handleReset} className="text-muted hover:text-text hover:bg-muted/10 transition px-3 py-1.5 rounded-lg text-sm">
+          <button
+            onClick={handleReset}
+            className="text-muted hover:text-text hover:bg-muted/10 transition px-3 py-1.5 rounded-lg text-sm"
+          >
             ↺ Topic
           </button>
-          <span className="font-semibold text-sm sm:text-base text-text">{topic || 'Live Coding'}</span>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${langBadgeClass}`}>{initialLanguage}</span>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${diffBadgeClass}`}>{difficulty}</span>
-          {domain && <span className="text-xs text-muted ml-auto hidden sm:inline">{domain}</span>}
+          <span className="font-semibold text-sm sm:text-base text-text">
+            {topic || "Live Coding"}
+          </span>
+          <span
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${langBadgeClass}`}
+          >
+            {initialLanguage}
+          </span>
+          <span
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${diffBadgeClass}`}
+          >
+            {difficulty}
+          </span>
+          {domain && (
+            <span className="text-xs text-muted ml-auto hidden sm:inline">
+              {domain}
+            </span>
+          )}
           {codeEvaluation && (
-            <button onClick={() => setIsModalOpen(true)} className="ml-auto sm:ml-0 text-xs bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg transition">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="ml-auto sm:ml-0 text-xs bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg transition"
+            >
               View Result
             </button>
           )}
@@ -452,21 +556,36 @@ export default function CodingInterface({
             <div className="lg:col-span-2 space-y-4">
               <div className="bg-card rounded-xl overflow-hidden border border-border shadow-soft">
                 <div className="bg-muted/10 px-4 sm:px-5 py-2.5 text-sm font-mono flex justify-between items-center border-b border-border">
-                  <span className="flex items-center gap-2 text-text">📁 {fileName}</span>
-                  <span className="text-xs text-muted bg-muted/20 px-2 py-0.5 rounded">{initialLanguage.toUpperCase()}</span>
+                  <span className="flex items-center gap-2 text-text">
+                    📁 {fileName}
+                  </span>
+                  <span className="text-xs text-muted bg-muted/20 px-2 py-0.5 rounded">
+                    {initialLanguage.toUpperCase()}
+                  </span>
                 </div>
                 <Editor
                   height="520px"
                   language={toMonacoLang(language)}
                   value={code}
-                  onChange={(val) => setCode(val || '')}
+                  onChange={(val) => setCode(val || "")}
                   onMount={(editor) => (editorRef.current = editor)}
-                  theme={isDark ? 'vs-dark' : 'light'}
-                  options={{ fontSize: 14, minimap: { enabled: false }, scrollBeyondLastLine: false, automaticLayout: true, lineNumbers: 'on', tabSize: 4 }}
+                  theme={isDark ? "vs-dark" : "light"}
+                  options={{
+                    fontSize: 14,
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    lineNumbers: "on",
+                    tabSize: 4,
+                  }}
                 />
               </div>
-              <button onClick={handleSubmitCode} disabled={isSubmitCodeDisabled} className="w-full bg-primary hover:brightness-105 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-base transition shadow-md">
-                {loading ? 'Checking...' : '▶ Submit Code'}
+              <button
+                onClick={handleSubmitCode}
+                disabled={isSubmitCodeDisabled}
+                className="w-full bg-primary hover:brightness-105 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-base transition shadow-md"
+              >
+                {loading ? "Checking..." : "▶ Submit Code"}
               </button>
             </div>
 
@@ -474,25 +593,41 @@ export default function CodingInterface({
             <div className="space-y-5 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-100px)] pr-1 custom-scroll">
               {/* Problem card */}
               <div className="bg-card rounded-xl border border-border shadow-soft flex flex-col max-h-[500px] overflow-hidden">
-                <div className="sticky top-0 z-10 flex items-center gap-2 text-primary font-semibold text-base px-5 pt-5 pb-2 bg-inherit">📝 Problem</div>
+                <div className="sticky top-0 z-10 flex items-center gap-2 text-primary font-semibold text-base px-5 pt-5 pb-2 bg-inherit">
+                  📝 Problem
+                </div>
                 <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4 custom-scroll">
-                  <pre className="whitespace-pre-wrap break-words text-sm leading-relaxed font-sans text-text">{codeProblem.problemStatement}</pre>
+                  <pre className="whitespace-pre-wrap break-words text-sm leading-relaxed font-sans text-text">
+                    {codeProblem.problemStatement}
+                  </pre>
                   {codeProblem.exampleInput && (
                     <div className="mt-4">
-                      <p className="text-xs uppercase tracking-wide text-muted">📥 Example Input</p>
-                      <pre className="bg-muted/10 p-3 rounded-lg text-success text-xs whitespace-pre-wrap break-words">{safeDisplayValue(codeProblem.exampleInput)}</pre>
+                      <p className="text-xs uppercase tracking-wide text-muted">
+                        📥 Example Input
+                      </p>
+                      <pre className="bg-muted/10 p-3 rounded-lg text-success text-xs whitespace-pre-wrap break-words">
+                        {safeDisplayValue(codeProblem.exampleInput)}
+                      </pre>
                     </div>
                   )}
                   {codeProblem.exampleOutput && (
                     <div className="mt-3">
-                      <p className="text-xs uppercase tracking-wide text-muted">📤 Example Output</p>
-                      <pre className="bg-muted/10 p-3 rounded-lg text-primary text-xs whitespace-pre-wrap break-words">{safeDisplayValue(codeProblem.exampleOutput)}</pre>
+                      <p className="text-xs uppercase tracking-wide text-muted">
+                        📤 Example Output
+                      </p>
+                      <pre className="bg-muted/10 p-3 rounded-lg text-primary text-xs whitespace-pre-wrap break-words">
+                        {safeDisplayValue(codeProblem.exampleOutput)}
+                      </pre>
                     </div>
                   )}
                   {codeProblem.testCriteria && (
                     <div className="mt-3">
-                      <p className="text-xs uppercase tracking-wide text-muted">🔍 Constraints</p>
-                      <pre className="whitespace-pre-wrap break-words text-xs mt-1 text-muted">{codeProblem.testCriteria}</pre>
+                      <p className="text-xs uppercase tracking-wide text-muted">
+                        🔍 Constraints
+                      </p>
+                      <pre className="whitespace-pre-wrap break-words text-xs mt-1 text-muted">
+                        {codeProblem.testCriteria}
+                      </pre>
                     </div>
                   )}
                 </div>
@@ -500,16 +635,23 @@ export default function CodingInterface({
 
               {/* Feedback card */}
               {feedback && (
-                <div className={`p-4 rounded-xl border text-sm ${feedback.type === 'error'
-                  ? 'bg-error/10 border-error/30 text-error'
-                  : 'bg-success/10 border-success/30 text-success'
-                  }`}>
+                <div
+                  className={`p-4 rounded-xl border text-sm ${
+                    feedback.type === "error"
+                      ? "bg-error/10 border-error/30 text-error"
+                      : "bg-success/10 border-success/30 text-success"
+                  }`}
+                >
                   <div className="font-semibold">{feedback.message}</div>
-                  {feedback.type === 'success' && phase === 'explain_pending' && (
-                    <button onClick={handleContinueToExplain} className="mt-3 bg-primary hover:brightness-105 text-white text-sm py-1.5 px-4 rounded-lg transition">
-                      Continue → Answer Question
-                    </button>
-                  )}
+                  {feedback.type === "success" &&
+                    phase === "explain_pending" && (
+                      <button
+                        onClick={handleContinueToExplain}
+                        className="mt-3 bg-primary hover:brightness-105 text-white text-sm py-1.5 px-4 rounded-lg transition"
+                      >
+                        Continue → Answer Question
+                      </button>
+                    )}
                 </div>
               )}
 
@@ -521,38 +663,48 @@ export default function CodingInterface({
               )}
 
               {/* Explanation card */}
-              {phase === 'explaining' && currentQuestion?.type === 'explain' && explainQuestionText && (
-                <div className="bg-card border border-primary/30 rounded-xl p-5 shadow-soft">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-primary font-semibold text-sm">🤖 Explain ({explainCount}/3)</div>
-                    <span className="text-xs text-muted bg-muted/20 px-2 py-0.5 rounded-full">Explain</span>
-                  </div>
-                  <p className="text-text text-sm mb-4 leading-relaxed break-words">{explainQuestionText}</p>
-                  <textarea
-                    rows={4}
-                    value={userAnswer}
-                    onChange={(e) => setUserAnswer(e.target.value)}
-                    placeholder="Your answer..."
-                    className={`w-full border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary focus:border-transparent resize-none placeholder:text-muted/50 transition-colors duration-200 ${isDark
-                        ? 'bg-gray-800 text-white'
-                        : 'bg-white text-gray-900'
+              {phase === "explaining" &&
+                currentQuestion?.type === "explain" &&
+                explainQuestionText && (
+                  <div className="bg-card border border-primary/30 rounded-xl p-5 shadow-soft">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-primary font-semibold text-sm">
+                        🤖 Explain ({explainCount}/3)
+                      </div>
+                      <span className="text-xs text-muted bg-muted/20 px-2 py-0.5 rounded-full">
+                        Explain
+                      </span>
+                    </div>
+                    <p className="text-text text-sm mb-4 leading-relaxed break-words">
+                      {explainQuestionText}
+                    </p>
+                    <textarea
+                      rows={4}
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                      placeholder="Your answer..."
+                      className={`w-full border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary focus:border-transparent resize-none placeholder:text-muted/50 transition-colors duration-200 ${
+                        isDark
+                          ? "bg-gray-800 text-white"
+                          : "bg-white text-gray-900"
                       }`}
-                  />
-                  <button
-                    onClick={handleSubmitAnswer}
-                    disabled={loading}
-                    className="mt-3 w-full bg-primary hover:brightness-105 disabled:opacity-50 text-white py-2 rounded-lg text-sm font-semibold transition"
-                  >
-                    {loading ? 'Submitting...' : 'Submit Answer'}
-                  </button>
-                </div>
-              )}
+                    />
+                    <button
+                      onClick={handleSubmitAnswer}
+                      disabled={loading}
+                      className="mt-3 w-full bg-primary hover:brightness-105 disabled:opacity-50 text-white py-2 rounded-lg text-sm font-semibold transition"
+                    >
+                      {loading ? "Submitting..." : "Submit Answer"}
+                    </button>
+                  </div>
+                )}
 
               {/* Next Code button in review phase */}
-              {phase === 'review' && codeEvaluation && (
+              {phase === "review" && codeEvaluation && (
                 <div className="p-4 rounded-xl border bg-warning/10 border-warning/30 text-warning">
                   <p className="text-sm mb-3">
-                    ✅ Code evaluation complete! Ready for the next question?
+                    ✅ Code evaluation complete! You can review your code and AI
+                    feedback.
                   </p>
                 </div>
               )}
@@ -580,8 +732,19 @@ export default function CodingInterface({
             <div className="p-6">
               <div className="flex items-center justify-center mb-4">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center bg-muted/20">
-                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  <svg
+                    className="w-6 h-6 text-primary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
                   </svg>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-// services/liveCoding/llmProvider.js - WITH EXAMPLES
+// services/liveCoding/llmProvider.js - REFACTORED WITH DIFFICULTY-AWARE EXAMPLES
 
 const { GroqService } = require("../ai/groqService");
 const { extractJson } = require("../../utils/jsonExtractor");
@@ -17,6 +17,10 @@ const {
   logTokenUsage,
   generateRequestId,
 } = require("../../utils/aiLogger");
+const {
+  getExampleForTopic,
+  getDefaultExampleObject,
+} = require("./exampleTemplates");
 
 require("dotenv").config();
 
@@ -70,7 +74,6 @@ function isProblemTooComplex(problemStatement, difficulty, topic = "") {
 }
 
 // ========== CALL AI ==========
-// ========== CALL AI ==========
 async function callAI(
   prompt,
   systemMessage = `You are an AI programming expert. Return valid JSON only. No markdown. No explanation outside JSON.`,
@@ -90,8 +93,6 @@ async function callAI(
     const result = await groq.invokeWithRetry(messages);
     const durationMs = Date.now() - startTime;
 
-    // ===== LẤY CONTENT TỪ RESPONSE =====
-    // Nếu result là object có content, lấy content, nếu không thì dùng result
     const responseContent =
       typeof result === "object"
         ? result.content || JSON.stringify(result)
@@ -99,7 +100,6 @@ async function callAI(
 
     logResponse(model, requestId, responseContent, durationMs);
 
-    // ===== LẤY TOKEN USAGE =====
     const usage = groq.getLastUsage();
 
     let inputTokens = 0,
@@ -111,7 +111,6 @@ async function callAI(
       outputTokens = usage.output_tokens || usage.completion_tokens || 0;
       totalTokens = usage.total_tokens || inputTokens + outputTokens || 0;
     } else {
-      // Fallback: ước lượng từ độ dài text
       inputTokens = Math.ceil(prompt.length / 4);
       outputTokens = Math.ceil(responseContent.length / 4);
       totalTokens = inputTokens + outputTokens;
@@ -154,8 +153,7 @@ function fallbackResponse(prompt) {
   });
 }
 
-// ========== HÀM TẠO CÂU HỎI - CÓ VÍ DỤ CỤ THỂ ==========
-// ========== HÀM TẠO CÂU HỎI - CÓ VÍ DỤ CỤ THỂ (FIXED) ==========
+// ========== HÀM TẠO CÂU HỎI - DÙNG PATTERN-BASED VỚI DIFFICULTY ==========
 async function generateCodeQuestion(language, domain, topic, difficulty) {
   const { style } = getTopicStyle(topic, language, difficulty);
 
@@ -164,70 +162,33 @@ async function generateCodeQuestion(language, domain, topic, difficulty) {
   const languageGuidance = getLanguageGuidance(language);
   const domainNote = getDomainNote(domain);
 
-  // ===== VÍ DỤ CỤ THỂ CHO TỪNG TOPIC =====
+  // ===== DÙNG PATTERN-BASED EXAMPLES CÓ PHÂN CẤP ĐỘ KHÓ =====
   let examples = "";
+  let patternExample = getExampleForTopic(topic, language, difficulty);
 
-  // ===== JAVA EXAMPLES =====
-  if (style === "function" && topic === "Arrays") {
-    examples = getArrayExample(language);
-  } else if (style === "function" && topic === "Sorting") {
-    examples = getSortingExample(language);
-  } else if (style === "class" && topic === "Inheritance") {
-    examples = getInheritanceExample(language);
-  } else if (style === "class" && topic === "Encapsulation") {
-    examples = getEncapsulationExample(language);
-  } else if (style === "auto" && (topic === "Stack" || topic === "Queue")) {
-    examples = getStackQueueExample(language);
+  if (patternExample) {
+    examples = `
+EXAMPLE BASED ON PATTERN (${topic}, difficulty: ${difficulty}):
+
+${JSON.stringify(patternExample, null, 2)}
+
+IMPORTANT INSTRUCTIONS:
+- Follow this EXACT structure but create a COMPLETELY NEW problem
+- Use DIFFERENT variable names, values, and scenarios
+- Keep the same difficulty level (${difficulty})
+- Ensure the solution requires understanding of ${topic}
+- Make it practical and realistic
+`;
+  } else {
+    // Fallback to default template nếu không có pattern
+    examples = getDefaultExampleString(language, topic, difficulty);
   }
 
-  // ===== C++ SPECIFIC EXAMPLES =====
-  else if (topic === "Smart Pointers") {
-    examples = getSmartPointersExample();
-  } else if (topic === "Move Semantics") {
-    examples = getMoveSemanticsExample();
-  } else if (topic === "Templates") {
-    examples = getTemplatesExample();
-  } else if (topic === "STL") {
-    examples = getSTLExample();
-  }
-
-  // ===== C# SPECIFIC EXAMPLES =====
-  else if (topic === "Events") {
-    examples = getEventsExample();
-  } else if (topic === "Properties") {
-    examples = getPropertiesExample();
-  } else if (topic === "LINQ") {
-    examples = getLINQExample();
-  } else if (topic === "async/await" || topic === "Async/Await") {
-    examples = getAsyncAwaitExample(language);
-  }
-
-  // ===== GO SPECIFIC EXAMPLES =====
-  else if (topic === "Goroutines") {
-    examples = getGoroutinesExample();
-  } else if (topic === "Channels") {
-    examples = getChannelsExample();
-  } else if (topic === "Select") {
-    examples = getSelectExample();
-  } else if (topic === "WaitGroups") {
-    examples = getWaitGroupsExample();
-  } else if (topic === "Context") {
-    examples = getContextExample();
-  }
-
-  // ===== DEFAULT TEMPLATE =====
-  else {
-    examples = getDefaultExample(language);
-  }
-
-  // Difficulty rules
+  // Difficulty rules (mở rộng)
   const difficultyMap = {
-    beginner:
-      "Max 15 lines. Simple logic. One function or simple class. No recursion.",
-    intermediate:
-      "15-30 lines. Can have class with 2-3 methods. One loop allowed.",
-    advanced:
-      "30-50 lines. Can have inheritance or recursion. Complex logic allowed.",
+    beginner: `Max 15 lines. Simple logic. One function or simple class. No recursion. No advanced language features. Use built-in helpers if available. Provide complete runnable code.`,
+    intermediate: `15-30 lines. Can have class with 2-3 methods. One loop allowed. May include recursion. Handle basic edge cases.`,
+    advanced: `30-50 lines. Can have inheritance or recursion. Complex logic allowed. Optimize for time/space. Handle all edge cases. Provide complexity analysis in comments.`,
   };
 
   const difficultyRules =
@@ -249,29 +210,47 @@ DIFFICULTY RULES: ${difficultyRules}
 
 ${examples}
 
-NOW generate a NEW problem for ${topic} in ${language} at ${difficulty} level.
-The problem MUST be SPECIFIC and PRACTICAL - something a real developer would implement.
+NOW generate a NEW, UNIQUE problem for ${topic} in ${language} at ${difficulty} level.
+
+REQUIREMENTS:
+1. The problem MUST be different from the example above
+2. Use different numbers, names, and scenarios
+3. Must be practical and realistic
+4. Must test understanding of ${topic}
+5. Provide clear example input/output
+6. At ${difficulty} level, the problem should be ${difficulty === "beginner" ? "trivial to solve with basic constructs" : difficulty === "intermediate" ? "requires some thinking but not overly complex" : "challenging and requires optimization/design patterns"}
+
 Return ONLY valid JSON, no markdown, no explanation.`;
 
   const result = await callAI(prompt, undefined, "generateCodeQuestion");
   const parsed = extractJson(result);
 
+  // Validate và fix missing fields
   if (parsed && typeof parsed === "object") {
-    if (!parsed.problemStatement) {
-      parsed.problemStatement =
-        parsed.content || parsed.description || "Problem not provided";
+    if (
+      !parsed.problemStatement ||
+      parsed.problemStatement === "Problem not provided"
+    ) {
+      parsed.problemStatement = getFallbackProblemStatement(
+        topic,
+        language,
+        difficulty,
+      );
     }
-    if (!parsed.functionSignature) {
-      parsed.functionSignature = "// Function signature here";
+    if (
+      !parsed.functionSignature ||
+      parsed.functionSignature === "// Function signature here"
+    ) {
+      parsed.functionSignature = getFallbackSignature(language, topic);
     }
     if (!parsed.exampleInput) {
-      parsed.exampleInput = "// Example usage";
+      parsed.exampleInput = getFallbackExampleInput(language);
     }
     if (!parsed.exampleOutput) {
-      parsed.exampleOutput = "// Expected output";
+      parsed.exampleOutput = getFallbackExampleOutput(topic);
     }
     if (!parsed.testCriteria) {
-      parsed.testCriteria = "• Test case 1\n• Test case 2";
+      parsed.testCriteria = getFallbackTestCriteria(topic, difficulty);
     }
     if (!parsed.description) {
       parsed.description = parsed.problemStatement.substring(0, 100);
@@ -284,287 +263,67 @@ Return ONLY valid JSON, no markdown, no explanation.`;
   return extractJson(fallbackResponse("coding problem"));
 }
 
-// ========== HÀM LẤY VÍ DỤ CHO TỪNG TOPIC ==========
-
-function getArrayExample(language) {
+// ========== FALLBACK FUNCTIONS ==========
+function getDefaultExampleString(language, topic, difficulty) {
+  const defaultExample = getDefaultExampleObject(language, topic, difficulty);
   return `
-EXAMPLE OF A GOOD ARRAY PROBLEM (${language}):
-{
-  "problemStatement": "Write a function that takes an array of integers and returns the sum of all elements. If the array is empty, return 0.",
-  "functionSignature": "${language === "java" ? "public static int sumArray(int[] arr)" : language === "python" ? "def sum_array(arr: list) -> int:" : "function sumArray(arr) { }"}",
-  "exampleInput": "${language === "java" ? "int[] numbers = {1, 2, 3, 4, 5};\\nint result = sumArray(numbers);" : language === "python" ? "numbers = [1, 2, 3, 4, 5]\\nresult = sum_array(numbers)" : "const numbers = [1, 2, 3, 4, 5];\\nconst result = sumArray(numbers);"}",
-  "exampleOutput": "result = 15",
-  "testCriteria": "• Empty array: return 0\\n• Single element: return that element\\n• Negative numbers: sum correctly",
-  "description": "Calculate the sum of all integers in an array."
-}`;
+EXAMPLE TEMPLATE (use this structure but create NEW content):
+${JSON.stringify(defaultExample, null, 2)}`;
 }
 
-function getSortingExample(language) {
-  return `
-EXAMPLE OF A GOOD SORTING PROBLEM (${language}):
-{
-  "problemStatement": "Write a function that sorts an array of integers in ascending order. Do not use built-in sort methods.",
-  "functionSignature": "${language === "python" ? "def bubble_sort(arr: list) -> list:" : "function bubbleSort(arr) { }"}",
-  "exampleInput": "numbers = [64, 34, 25, 12, 22, 11, 90]\\nsorted_nums = bubble_sort(numbers)",
-  "exampleOutput": "sorted_nums = [11, 12, 22, 25, 34, 64, 90]",
-  "testCriteria": "• Already sorted array\\n• Reverse sorted array\\n• Array with duplicates\\n• Single element array\\n• Empty array",
-  "description": "Sort an array using bubble sort algorithm."
-}`;
+function getFallbackProblemStatement(topic, language, difficulty) {
+  const templates = {
+    beginner: `Write a simple function that demonstrates the concept of ${topic} in ${language}. Focus on basic syntax and logic.`,
+    intermediate: `Implement a solution that showcases ${topic} in ${language}. Include proper error handling and edge cases.`,
+    advanced: `Create a robust implementation of ${topic} in ${language}. Demonstrate best practices and handle complex scenarios.`,
+  };
+  return templates[difficulty?.toLowerCase()] || templates.intermediate;
 }
 
-function getInheritanceExample(language) {
-  return `
-EXAMPLE OF A GOOD INHERITANCE PROBLEM (${language}):
-{
-  "problemStatement": "Create an Animal class with a makeSound() method. Then create a Dog class that extends Animal and overrides makeSound(). Also add a bark() method specific to Dog.",
-  "functionSignature": "${language === "java" ? "class Animal { public void makeSound() { } }\\nclass Dog extends Animal { @Override public void makeSound() { } public void bark() { } }" : language === "python" ? "class Animal:\\n    def make_sound(self): pass\\nclass Dog(Animal):\\n    def make_sound(self): pass\\n    def bark(self): pass" : "class Animal { makeSound() { } }\\nclass Dog extends Animal { makeSound() { } bark() { } }"}",
-  "exampleInput": "Animal myAnimal = new Animal();\\nDog myDog = new Dog();\\nmyAnimal.makeSound();\\nmyDog.makeSound();\\nmyDog.bark();",
-  "exampleOutput": "Some sound\\nWoof!\\nBarking...",
-  "testCriteria": "• Animal class exists\\n• Dog extends Animal\\n• Dog overrides makeSound()\\n• Dog has bark() method",
-  "description": "Demonstrate inheritance with Animal and Dog classes."
-}`;
+function getFallbackSignature(language, topic) {
+  const cleanTopic = topic.toLowerCase().replace(/\s+/g, "_");
+  const signatures = {
+    javascript: `function ${cleanTopic}() { /* implementation */ }`,
+    python: `def ${cleanTopic}():\n    pass`,
+    java: `public static void ${cleanTopic}() { }`,
+    csharp: `public static void ${cleanTopic}() { }`,
+    cpp: `void ${cleanTopic}() { }`,
+    go: `func ${cleanTopic}() { }`,
+  };
+  return signatures[language] || `// Define ${topic} function/method`;
 }
 
-function getEncapsulationExample(language) {
-  return `
-EXAMPLE OF A GOOD ENCAPSULATION PROBLEM (${language}):
-{
-  "problemStatement": "Create a BankAccount class with private balance field. Provide deposit(amount) and withdraw(amount) methods with validation.",
-  "functionSignature": "${language === "java" ? "public class BankAccount { private double balance; public void deposit(double amount) { } public boolean withdraw(double amount) { } public double getBalance() { } }" : language === "python" ? "class BankAccount:\\n    def __init__(self):\\n        self.__balance = 0\\n    def deposit(self, amount): pass\\n    def withdraw(self, amount): pass\\n    def get_balance(self): pass" : "class BankAccount { #balance; deposit(amount) { } withdraw(amount) { } getBalance() { } }"}",
-  "exampleInput": "account = BankAccount(100)\\naccount.deposit(50)\\naccount.withdraw(30)\\nprint(account.get_balance())",
-  "exampleOutput": "120",
-  "testCriteria": "• Balance is private\\n• Deposit validates amount > 0\\n• Withdraw checks sufficient balance",
-  "description": "Create a bank account with encapsulated balance."
-}`;
+function getFallbackExampleInput(language) {
+  const examples = {
+    javascript: "// Example: const result = yourFunction(5);",
+    python: "# Example: result = your_function(5)",
+    java: "// Example: int result = yourFunction(5);",
+    csharp: "// Example: int result = YourFunction(5);",
+    cpp: "// Example: auto result = yourFunction(5);",
+    go: "// Example: result := YourFunction(5)",
+  };
+  return examples[language] || "// Example usage";
 }
 
-function getStackQueueExample(language) {
-  const lang = language.toLowerCase();
-  const isClassBased = ["java", "csharp", "cpp"].includes(lang);
+function getFallbackExampleOutput(topic) {
+  if (topic.includes("Sum") || topic.includes("Total")) return "15";
+  if (topic.includes("Max")) return "10";
+  if (topic.includes("Sort")) return "[1, 2, 3, 4, 5]";
+  if (topic.includes("Array")) return "// Processed result";
+  return "// Expected output";
+}
 
-  if (isClassBased) {
-    return `
-EXAMPLE FOR STACK (CLASS-BASED for ${language}):
-{
-  "problemStatement": "Implement a Stack class with push(item), pop(), peek(), and isEmpty() methods.",
-  "functionSignature": "public class Stack<T> {\\n    private List<T> items;\\n    public Stack() { }\\n    public void push(T item) { }\\n    public T pop() { }\\n    public T peek() { }\\n    public boolean isEmpty() { }\\n}",
-  "exampleInput": "Stack<Integer> stack = new Stack<>();\\nstack.push(10);\\nstack.push(20);\\nSystem.out.println(stack.pop());\\nSystem.out.println(stack.peek());",
-  "exampleOutput": "20\\n10",
-  "description": "Implement a generic Stack class."
-}`;
+function getFallbackTestCriteria(topic, difficulty) {
+  if (difficulty === "beginner") {
+    return "• Basic functionality works\n• Simple test cases pass";
+  } else if (difficulty === "intermediate") {
+    return "• Handles edge cases\n• Error handling implemented\n• Efficient solution";
   } else {
-    return `
-EXAMPLE FOR STACK (FUNCTION-BASED for ${language}):
-{
-  "problemStatement": "Write functions to implement a stack: push(stack, item), pop(stack), peek(stack), is_empty(stack).",
-  "functionSignature": "def push(stack, item):\\ndef pop(stack):\\ndef peek(stack):\\ndef is_empty(stack):",
-  "exampleInput": "stack = []\\npush(stack, 10)\\npush(stack, 20)\\nprint(pop(stack))\\nprint(peek(stack))",
-  "exampleOutput": "20\\n10",
-  "description": "Implement stack operations using functions."
-}`;
+    return "• All edge cases covered\n• Optimized solution\n• Production-ready code\n• Comprehensive error handling";
   }
 }
 
-// ===== C++ EXAMPLES =====
-function getSmartPointersExample() {
-  return `
-EXAMPLE FOR SMART POINTERS (C++):
-{
-  "problemStatement": "Create a Person class with name and age. Use unique_ptr to manage Person objects in a vector. Demonstrate automatic cleanup when vector goes out of scope.",
-  "functionSignature": "class Person { string name; int age; };\\nint main() { vector<unique_ptr<Person>> people; people.push_back(make_unique<Person>(\"Alice\", 30)); }",
-  "exampleInput": "auto p1 = make_unique<Person>(\"Alice\", 30);\\nauto p2 = make_unique<Person>(\"Bob\", 25);\\npeople.push_back(move(p1));\\npeople.push_back(move(p2));",
-  "exampleOutput": "People vector size: 2\\nPerson destroyed when vector clears",
-  "testCriteria": "• Use make_unique for creation\\n• No raw new/delete\\n• Move semantics for transfer\\n• Automatic cleanup",
-  "description": "Demonstrate RAII with smart pointers."
-}`;
-}
-
-function getMoveSemanticsExample() {
-  return `
-EXAMPLE FOR MOVE SEMANTICS (C++):
-{
-  "problemStatement": "Implement a Buffer class that manages a dynamic array. Implement move constructor and move assignment operator to transfer ownership without copying.",
-  "functionSignature": "class Buffer {\\n    int* data;\\n    size_t size;\\npublic:\\n    Buffer(Buffer&& other) noexcept;\\n    Buffer& operator=(Buffer&& other) noexcept;\\n};",
-  "exampleInput": "Buffer b1(1000);\\nBuffer b2 = std::move(b1);  // b1 becomes empty",
-  "exampleOutput": "b2.size() = 1000\\nb1.size() = 0",
-  "testCriteria": "• Move constructor transfers ownership\\n• Source object left in valid state\\n• No memory leaks\\n• noexcept specifier",
-  "description": "Implement move semantics for efficient resource transfer."
-}`;
-}
-
-function getTemplatesExample() {
-  return `
-EXAMPLE FOR TEMPLATES (C++):
-{
-  "problemStatement": "Write a generic findMax function that works with any type that supports comparison operators (int, double, string).",
-  "functionSignature": "template<typename T>\\nT findMax(const vector<T>& arr) { }",
-  "exampleInput": "vector<int> nums = {3, 7, 2, 9, 1};\\nint maxInt = findMax(nums);\\nvector<string> words = {\"apple\", \"zebra\", \"banana\"};\\nstring maxStr = findMax(words);",
-  "exampleOutput": "maxInt = 9\\nmaxStr = \"zebra\"",
-  "testCriteria": "• Works with int, double, string\\n• Handles empty vector\\n• Uses const reference for efficiency",
-  "description": "Create a generic function using templates."
-}`;
-}
-
-function getSTLExample() {
-  return `
-EXAMPLE FOR STL (C++):
-{
-  "problemStatement": "Write a function that removes all duplicate values from a vector using std::sort and std::unique. Return a new vector with unique elements in sorted order.",
-  "functionSignature": "vector<int> removeDuplicates(const vector<int>& input)",
-  "exampleInput": "vector<int> nums = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3};\\nauto result = removeDuplicates(nums);",
-  "exampleOutput": "result = [1, 2, 3, 4, 5, 6, 9]",
-  "testCriteria": "• Uses std::sort\\n• Uses std::unique\\n• Handles empty vector\\n• Preserves sorted order",
-  "description": "Use STL algorithms to remove duplicates."
-}`;
-}
-
-// ===== C# EXAMPLES =====
-function getEventsExample() {
-  return `
-EXAMPLE FOR EVENTS (C#):
-{
-  "problemStatement": "Create a Button class with a Click event. When the button is clicked, raise the event with a message. Demonstrate subscribing to and handling the event.",
-  "functionSignature": "public class Button {\\n    public event EventHandler Click;\\n    public void OnClick() { }\\n}",
-  "exampleInput": "Button btn = new Button();\\nbtn.Click += (sender, e) => Console.WriteLine(\"Button clicked!\");\\nbtn.OnClick();",
-  "exampleOutput": "Button clicked!",
-  "testCriteria": "• Event uses EventHandler delegate\\n• Null check before raising\\n• Can subscribe multiple handlers",
-  "description": "Implement and use events in C#."
-}`;
-}
-
-function getPropertiesExample() {
-  return `
-EXAMPLE FOR PROPERTIES (C#):
-{
-  "problemStatement": "Create a Product class with Name (required, max 100 chars) and Price (positive) properties. Use validation in setters.",
-  "functionSignature": "public class Product {\\n    private string name;\\n    private decimal price;\\n    public string Name { get; set; }\\n    public decimal Price { get; set; }\\n}",
-  "exampleInput": "Product p = new Product();\\np.Name = \"Laptop\";\\np.Price = 999.99m;\\nConsole.WriteLine(p.Name);",
-  "exampleOutput": "Laptop",
-  "testCriteria": "• Name cannot be null or empty\\n• Name max length 100\\n• Price must be > 0\\n• Properties validate input",
-  "description": "Create a class with validation in property setters."
-}`;
-}
-
-function getLINQExample() {
-  return `
-EXAMPLE FOR LINQ (C#):
-{
-  "problemStatement": "Given a list of Product objects (Name, Price, Category), use LINQ to get the names of products in 'Electronics' category priced over $500, sorted by price descending.",
-  "functionSignature": "List<string> GetExpensiveElectronics(List<Product> products)",
-  "exampleInput": "var products = new List<Product> {\\n    new Product { Name = \"Laptop\", Price = 1200, Category = \"Electronics\" },\\n    new Product { Name = \"Mouse\", Price = 25, Category = \"Electronics\" }\\n};\\nvar result = GetExpensiveElectronics(products);",
-  "exampleOutput": "result = [\"Laptop\"]",
-  "testCriteria": "• Uses LINQ Where, OrderByDescending, Select\\n• Returns only names\\n• Filters correctly\\n• Returns empty list if none match",
-  "description": "Use LINQ to query and transform data."
-}`;
-}
-
-function getAsyncAwaitExample(language) {
-  if (language === "csharp") {
-    return `
-EXAMPLE FOR ASYNC/AWAIT (C#):
-{
-  "problemStatement": "Write an async method that downloads data from multiple URLs concurrently using Task.WhenAll. Return concatenated results.",
-  "functionSignature": "public async Task<string> DownloadAllAsync(string[] urls)",
-  "exampleInput": "string[] urls = { \"https://api1.com\", \"https://api2.com\" };\\nstring result = await DownloadAllAsync(urls);",
-  "exampleOutput": "Content from api1.com\\nContent from api2.com",
-  "testCriteria": "• Uses async/await pattern\\n• Uses Task.WhenAll for concurrency\\n• Handles exceptions\\n• Returns Task<string>",
-  "description": "Implement concurrent async downloads."
-}`;
-  } else if (language === "javascript") {
-    return `
-EXAMPLE FOR ASYNC/AWAIT (JavaScript):
-{
-  "problemStatement": "Write an async function that fetches data from multiple APIs using Promise.all and returns combined results.",
-  "functionSignature": "async function fetchAllData(urls) { }",
-  "exampleInput": "const urls = ['https://api1.com', 'https://api2.com'];\\nconst data = await fetchAllData(urls);",
-  "exampleOutput": "['data1', 'data2']",
-  "testCriteria": "• Uses async/await\\n• Uses Promise.all\\n• Handles errors\\n• Returns combined results",
-  "description": "Fetch multiple APIs concurrently."
-}`;
-  }
-  return getDefaultExample(language);
-}
-
-// ===== GO EXAMPLES =====
-function getGoroutinesExample() {
-  return `
-EXAMPLE FOR GOROUTINES (Go):
-{
-  "problemStatement": "Write a function that launches multiple goroutines to print numbers from 1 to N concurrently. Use sync.WaitGroup to ensure all goroutines complete.",
-  "functionSignature": "func printNumbersConcurrently(n int)",
-  "exampleInput": "printNumbersConcurrently(5)",
-  "exampleOutput": "Goroutine 1: 1\\nGoroutine 2: 2\\nGoroutine 3: 3\\nGoroutine 4: 4\\nGoroutine 5: 5",
-  "testCriteria": "• Uses 'go' keyword\\n• Uses sync.WaitGroup\\n• All goroutines complete\\n• No data races",
-  "description": "Launch and manage multiple goroutines."
-}`;
-}
-
-function getChannelsExample() {
-  return `
-EXAMPLE FOR CHANNELS (Go):
-{
-  "problemStatement": "Write a function that sends numbers 1 to N into a channel, and another goroutine that reads and squares each number. Use unbuffered channels for synchronization.",
-  "functionSignature": "func processNumbers(n int) []int",
-  "exampleInput": "result := processNumbers(5)",
-  "exampleOutput": "result = [1, 4, 9, 16, 25]",
-  "testCriteria": "• Uses make(chan int)\\n• Send/receive with <- operator\\n• Channel closing\\n• Synchronization via channels",
-  "description": "Use channels for communication between goroutines."
-}`;
-}
-
-function getSelectExample() {
-  return `
-EXAMPLE FOR SELECT (Go):
-{
-  "problemStatement": "Write a function that receives from two channels and uses select to handle whichever arrives first. Add a timeout using time.After.",
-  "functionSignature": "func firstResponse(ch1, ch2 <-chan string) string",
-  "exampleInput": "ch1 := make(chan string)\\nch2 := make(chan string)\\ngo func() { time.Sleep(100*time.Millisecond); ch1 <- \"from ch1\" }()\\ngo func() { ch2 <- \"from ch2\" }()\\nresult := firstResponse(ch1, ch2)",
-  "exampleOutput": "\"from ch2\" (or whichever arrives first)",
-  "testCriteria": "• Uses select statement\\n• Handles multiple channels\\n• Implements timeout\\n• Non-blocking operations",
-  "description": "Use select to wait on multiple channel operations."
-}`;
-}
-
-function getWaitGroupsExample() {
-  return `
-EXAMPLE FOR WAITGROUPS (Go):
-{
-  "problemStatement": "Write a function that processes a list of URLs concurrently using goroutines. Use sync.WaitGroup to wait for all HTTP requests to complete before returning.",
-  "functionSignature": "func fetchAll(urls []string) []string",
-  "exampleInput": "urls := []string{\"https://api1.com\", \"https://api2.com\", \"https://api3.com\"}\\nresults := fetchAll(urls)",
-  "exampleOutput": "results = [\"response1\", \"response2\", \"response3\"]",
-  "testCriteria": "• Uses sync.WaitGroup\\n• Add/Done/Wait methods\\n• Concurrent execution\\n• Collects all results",
-  "description": "Use WaitGroup to wait for goroutine completion."
-}`;
-}
-
-function getContextExample() {
-  return `
-EXAMPLE FOR CONTEXT (Go):
-{
-  "problemStatement": "Write a function that performs an HTTP request that can be cancelled via context. Use context.WithTimeout to automatically cancel after 1 second.",
-  "functionSignature": "func fetchWithTimeout(ctx context.Context, url string) (string, error)",
-  "exampleInput": "ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)\\ndefer cancel()\\nresult, err := fetchWithTimeout(ctx, \"https://slow-api.com\")",
-  "exampleOutput": "If success: \"response data\"\\nIf timeout: \"context deadline exceeded\"",
-  "testCriteria": "• Uses context.Context\\n• Checks ctx.Done()\\n• Handles cancellation\\n• Returns appropriate error",
-  "description": "Use context for timeout and cancellation."
-}`;
-}
-
-function getDefaultExample(language) {
-  return `
-EXAMPLE TEMPLATE:
-{
-  "problemStatement": "Clear description of what to implement in ${language}",
-  "functionSignature": "Exact signature in ${language}",
-  "exampleInput": "Code showing how to use",
-  "exampleOutput": "Expected output",
-  "testCriteria": "• Bullet points of test cases",
-  "description": "One sentence summary"
-}`;
-}
-// ========== CÁC HÀM KHÁC (giữ nguyên từ bản cũ) ==========
-
+// ========== HÀM GIẢI THÍCH (giữ nguyên) ==========
 async function generateExplanationQuestion(
   language,
   userCode,

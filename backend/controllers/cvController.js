@@ -266,11 +266,26 @@ const getCVSessionDetail = async (req, res) => {
 /**
  * ADMIN: Get all CV interview sessions (all users)
  */
+/**
+ * ADMIN: Get all CV interview sessions (all users) – hỗ trợ lấy tất cả bản ghi
+ */
 const getAllCVSessions = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    let limit = req.query.limit;
+    let skip = (page - 1) * (parseInt(limit) || 10);
+    let usePagination = true;
+
+    // Nếu limit là 'all' hoặc '0' => lấy toàn bộ, không phân trang
+    if (limit === "all" || limit === "0") {
+      usePagination = false;
+      limit = null;
+      skip = null;
+    } else {
+      limit = parseInt(limit) || 10;
+      skip = (page - 1) * limit;
+    }
+
     const { search, fromDate, toDate } = req.query;
 
     let query = {};
@@ -300,11 +315,12 @@ const getAllCVSessions = async (req, res) => {
     }
 
     const total = await CVInterviewSession.countDocuments(query);
-    const sessions = await CVInterviewSession.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+
+    let sessionsQuery = CVInterviewSession.find(query).sort({ createdAt: -1 });
+    if (usePagination) {
+      sessionsQuery = sessionsQuery.skip(skip).limit(limit);
+    }
+    const sessions = await sessionsQuery.lean();
 
     // Get user info for each session
     const User = require("../models/User");
@@ -327,7 +343,7 @@ const getAllCVSessions = async (req, res) => {
       }),
     );
 
-    // Get stats
+    // Get stats (vẫn tính trên toàn bộ database, không bị ảnh hưởng bởi phân trang)
     const totalSessions = await CVInterviewSession.countDocuments();
     const uniqueUsers = await CVInterviewSession.distinct("userId");
     const avgScoreResult = await CVInterviewSession.aggregate([
@@ -343,8 +359,8 @@ const getAllCVSessions = async (req, res) => {
       success: true,
       sessions: sessionsWithUser,
       total,
-      pages: Math.ceil(total / limit),
-      currentPage: page,
+      pages: usePagination ? Math.ceil(total / limit) : 1,
+      currentPage: usePagination ? page : 1,
       stats: {
         total: totalSessions,
         uniqueUsers: uniqueUsers.length,
