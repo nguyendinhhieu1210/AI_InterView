@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../../services/api";
 import {
   Users,
@@ -145,10 +145,6 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
-
   // Helper: extract array từ response của admin endpoints
   function extractSessions(res) {
     if (!res?.data) return [];
@@ -203,8 +199,7 @@ export default function Dashboard() {
       email: "",
     };
   }
-
-  async function fetchAll() {
+  const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -221,17 +216,18 @@ export default function Dashboard() {
         api.get("/live-coding/admin/sessions"),
       ]);
 
-      // Extract sessions
       const interviewSessions =
         ivRes.status === "fulfilled" ? extractSessions(ivRes.value) : [];
+
       const cvSessions =
         cvRes.status === "fulfilled" ? extractSessions(cvRes.value) : [];
+
       const adaptiveSessions =
         adRes.status === "fulfilled" ? extractSessions(adRes.value) : [];
+
       const codingSessions =
         lcRes.status === "fulfilled" ? extractSessions(lcRes.value) : [];
 
-      // ── 3. Tính tổng sessions hôm nay ──────────────────────────────────────
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayStr = today.toDateString();
@@ -239,7 +235,9 @@ export default function Dashboard() {
       const isToday = (session) => {
         const createdAt =
           session.createdAt || session.created_at || session.timestamp;
+
         if (!createdAt) return false;
+
         return new Date(createdAt).toDateString() === todayStr;
       };
 
@@ -250,7 +248,6 @@ export default function Dashboard() {
         ...codingSessions.filter(isToday),
       ].length;
 
-      // ── 4. Tổng tokens ────────────────────────────────────────────────────
       const totalTokens = statsRes.data.totalTokens || 0;
 
       setTotals({
@@ -262,37 +259,51 @@ export default function Dashboard() {
         today: totalToday,
       });
 
-      // ── 5. Gom tất cả sessions ────────────────────────────────────────────
       const allSessions = [
-        ...interviewSessions.map((s) => ({ ...s, _type: "interview" })),
-        ...cvSessions.map((s) => ({ ...s, _type: "cv" })),
-        ...adaptiveSessions.map((s) => ({ ...s, _type: "adaptive" })),
-        ...codingSessions.map((s) => ({ ...s, _type: "live-coding" })),
+        ...interviewSessions.map((s) => ({
+          ...s,
+          _type: "interview",
+        })),
+        ...cvSessions.map((s) => ({
+          ...s,
+          _type: "cv",
+        })),
+        ...adaptiveSessions.map((s) => ({
+          ...s,
+          _type: "adaptive",
+        })),
+        ...codingSessions.map((s) => ({
+          ...s,
+          _type: "live-coding",
+        })),
       ];
 
-      // ── 6. Biểu đồ 7 ngày gần nhất (lấy đúng 7 ngày) ──────────────────────
+      // Chart 7 ngày
       const days = [];
       const dayLabels = [];
       const dayCounts = [];
 
-      // Tạo mảng 7 ngày từ hôm nay lùi về quá khứ
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
         d.setHours(0, 0, 0, 0);
+
         days.push(d);
         dayLabels.push(formatDate(d));
       }
 
-      // Đếm số sessions cho mỗi ngày
       days.forEach((day) => {
         const dayStr = day.toDateString();
+
         const count = allSessions.filter((session) => {
           const createdAt =
             session.createdAt || session.created_at || session.timestamp;
+
           if (!createdAt) return false;
+
           return new Date(createdAt).toDateString() === dayStr;
         }).length;
+
         dayCounts.push(count);
       });
 
@@ -301,27 +312,30 @@ export default function Dashboard() {
         counts: dayCounts,
       });
 
-      // ── 7. Activity feed (10 hoạt động mới nhất) ──────────────────────────
+      // Activity
       const sortedActivities = [...allSessions]
         .filter((s) => s.createdAt || s.created_at || s.timestamp)
         .sort((a, b) => {
           const dateA = new Date(
             a.createdAt || a.created_at || a.timestamp || 0,
           );
+
           const dateB = new Date(
             b.createdAt || b.created_at || b.timestamp || 0,
           );
+
           return dateB - dateA;
         })
         .slice(0, 10);
 
       setActivity(sortedActivities);
 
-      // ── 8. Top 5 users có nhiều sessions nhất (dựa trên tổng sessions) ────
+      // Top users
       const userSessionMap = new Map();
 
       allSessions.forEach((session) => {
         const userInfo = getUserFromSession(session);
+
         if (userInfo.uid && userInfo.uid !== "undefined") {
           if (!userSessionMap.has(userInfo.uid)) {
             userSessionMap.set(userInfo.uid, {
@@ -331,6 +345,7 @@ export default function Dashboard() {
               count: 0,
             });
           }
+
           userSessionMap.get(userInfo.uid).count++;
         }
       });
@@ -348,12 +363,16 @@ export default function Dashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchAll();
   };
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   // ── chart configs ──────────────────────────────────────────────────────────
 

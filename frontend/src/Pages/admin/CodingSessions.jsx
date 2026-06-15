@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  TrendingUp,
   Users,
   X,
   Terminal,
