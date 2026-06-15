@@ -1,5 +1,14 @@
-const { GroqService } = require('../ai/groqService');
-const { extractJson } = require('../../utils/jsonExtractor');
+// services/liveCoding/llmProvider.js - WITH EXAMPLES
+
+const { GroqService } = require("../ai/groqService");
+const { extractJson } = require("../../utils/jsonExtractor");
+const {
+  getTopicGuidance,
+  getLanguageGuidance,
+  getDomainNote,
+  isConcurrencyOrAsyncTopic,
+  getTopicStyle,
+} = require("./questionGuidance");
 const {
   logRequest,
   logResponse,
@@ -7,508 +16,828 @@ const {
   logRateLimit,
   logTokenUsage,
   generateRequestId,
-} = require('../../utils/aiLogger');
+} = require("../../utils/aiLogger");
 
-require('dotenv').config();
+require("dotenv").config();
 
 const groq = new GroqService(
   process.env.GROQ_API_KEY,
-  'llama-3.3-70b-versatile',
-  0.2
+  "llama-3.3-70b-versatile",
+  0.2,
 );
 
-// ========== UTILITY: Lấy các dòng code có ý nghĩa ==========
-// FIX: Regex cũ `/^[{}()\[\];,]+$/` lọc cả dòng như `} else {` hoặc `});`
-// → Chỉ bỏ dòng THỰC SỰ không có nội dung logic (chỉ toàn ký tự cấu trúc, không có chữ/số)
+// ========== UTILITY ==========
 function getMeaningfulLines(code) {
-  const lines = code.split('\n');
+  const lines = code.split("\n");
   const meaningful = [];
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-
-    // Bỏ dòng trống
-    if (trimmed === '') continue;
-
-    // Bỏ comment thuần
-    if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
-
-    // Bỏ dòng CHỈ có ký tự cấu trúc (không có chữ cái hoặc số)
-    // VD: "}", "{", "});", "})" → bỏ
-    // VD: "for (let i = 0..." → GIỮ vì có chữ
+    if (trimmed === "") continue;
+    if (
+      trimmed.startsWith("//") ||
+      trimmed.startsWith("#") ||
+      trimmed.startsWith("*") ||
+      trimmed.startsWith("/*")
+    )
+      continue;
     if (/^[{}()\[\];,\s]+$/.test(trimmed)) continue;
-
     meaningful.push({ lineNum: i + 1, content: lines[i] });
   }
   return meaningful;
 }
 
-// ========== VALIDATION: Kiểm tra câu hỏi tham chiếu dòng có thực không ==========
 function validateQuestion(question, code) {
-  const lines = code.split('\n');
+  const lines = code.split("\n");
   const maxLine = lines.length;
   const meaningfulLines = getMeaningfulLines(code);
-  const meaningfulLineNumbers = meaningfulLines.map(l => l.lineNum);
+  const meaningfulLineNumbers = meaningfulLines.map((l) => l.lineNum);
 
   const lineMatches = question.match(/\b(?:dòng|line)\s+(\d+)\b/gi) || [];
   for (const match of lineMatches) {
     const lineNum = parseInt(match.match(/\d+/)[0]);
-    if (lineNum < 1 || lineNum > maxLine) {
-      console.warn(`⚠️  Line ${lineNum} out of range (1-${maxLine})`);
-      return false;
-    }
-    if (!meaningfulLineNumbers.includes(lineNum)) {
-      console.warn(`⚠️  Line ${lineNum} is not meaningful — not in list: [${meaningfulLineNumbers.join(', ')}]`);
-      return false;
-    }
+    if (lineNum < 1 || lineNum > maxLine) return false;
+    if (!meaningfulLineNumbers.includes(lineNum)) return false;
   }
 
-  const hallucinations = [
-    'addCargo', 'removeCargo', 'loadCargo', 'unloadCargo',
-    'getCapacity', 'setCapacity', 'isFull', 'isEmpty',
-    'thread', 'mutex', 'semaphore', 'async', 'await',
-    'spawn', 'fork', 'join', 'synchronize'
-  ];
-  for (const h of hallucinations) {
-    if (question.toLowerCase().includes(h.toLowerCase()) && !code.includes(h)) {
-      console.warn(`⚠️  Hallucinated term: ${h}`);
-      return false;
-    }
-  }
   return true;
 }
 
-// ========== GỌI AI + LOG TOKEN ==========
-async function callAI(prompt, systemMessage = `
-You are an AI programming expert.
+function isProblemTooComplex(problemStatement, difficulty, topic = "") {
+  const wordCount = problemStatement.split(/\s+/).length;
+  if (difficulty === "beginner" && wordCount > 80) return true;
+  if (difficulty === "intermediate" && wordCount > 120) return true;
+  return false;
+}
 
-IMPORTANT RULES:
-1. Always return valid JSON only. No markdown. No explanations outside JSON.
-2. Never invent or hallucinate methods, variables, classes that don't exist in the provided code.
-3. Only ask questions about code that actually appears in the source.
-4. When writing a model answer, write a COMPLETE, self-contained explanation. Keep it SHORT (2-4 sentences maximum). 
-5. Do NOT use ellipsis ("...") anywhere. Write full sentences.
-6. The model answer should be natural, easy to understand, and not truncated.
-`, feature = 'general') {
+// ========== CALL AI ==========
+// ========== CALL AI ==========
+async function callAI(
+  prompt,
+  systemMessage = `You are an AI programming expert. Return valid JSON only. No markdown. No explanation outside JSON.`,
+  feature = "general",
+) {
   const requestId = generateRequestId();
-  const model = 'llama-3.3-70b-versatile';
-
+  const model = "llama-3.3-70b-versatile";
   logRequest(model, requestId, prompt, 0.2);
 
   try {
     const messages = [
-      { role: 'system', content: systemMessage },
-      { role: 'user', content: prompt },
+      { role: "system", content: systemMessage },
+      { role: "user", content: prompt },
     ];
 
     const startTime = Date.now();
-    const response = await groq.invokeWithRetry(messages);
+    const result = await groq.invokeWithRetry(messages);
     const durationMs = Date.now() - startTime;
 
-    // Log response
-    logResponse(model, requestId, response, durationMs);
+    // ===== LẤY CONTENT TỪ RESPONSE =====
+    // Nếu result là object có content, lấy content, nếu không thì dùng result
+    const responseContent =
+      typeof result === "object"
+        ? result.content || JSON.stringify(result)
+        : result;
 
-    // Log token usage nếu groq trả về usage (tuỳ GroqService expose hay không)
-    // Nếu groq.invokeWithRetry trả về object có .usage thì dùng dòng dưới:
-    // const { text, usage } = response;
-    // logTokenUsage(model, requestId, usage.input_tokens, usage.output_tokens, usage.total_tokens, feature);
-    // Nếu chỉ trả về string thì estimate:
-    const estimatedTokens = Math.ceil((prompt.length + (typeof response === 'string' ? response.length : 0)) / 4);
-    logTokenUsage(model, requestId, Math.ceil(prompt.length / 4), Math.ceil((typeof response === 'string' ? response.length : 0) / 4), estimatedTokens, feature);
+    logResponse(model, requestId, responseContent, durationMs);
 
-    console.log('\n================ AI RESPONSE ================');
-    console.log(response);
-    console.log('=============================================\n');
+    // ===== LẤY TOKEN USAGE =====
+    const usage = groq.getLastUsage();
 
-    return response;
-  } catch (error) {
-    // Phát hiện rate limit
-    if (error?.status === 429 || error?.message?.includes('rate limit')) {
-      const retryAfter = error?.headers?.['retry-after'] || null;
-      logRateLimit(model, requestId, retryAfter, error);
+    let inputTokens = 0,
+      outputTokens = 0,
+      totalTokens = 0;
+
+    if (usage) {
+      inputTokens = usage.input_tokens || usage.prompt_tokens || 0;
+      outputTokens = usage.output_tokens || usage.completion_tokens || 0;
+      totalTokens = usage.total_tokens || inputTokens + outputTokens || 0;
     } else {
-      logError(model, requestId, error, feature);
+      // Fallback: ước lượng từ độ dài text
+      inputTokens = Math.ceil(prompt.length / 4);
+      outputTokens = Math.ceil(responseContent.length / 4);
+      totalTokens = inputTokens + outputTokens;
     }
-    console.error('LLM Provider Error:', error);
+
+    logTokenUsage(
+      model,
+      requestId,
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      feature,
+    );
+
+    console.log(`\n========== TOKEN USAGE [${feature}] ==========`);
+    console.log(`Input tokens: ${inputTokens}`);
+    console.log(`Output tokens: ${outputTokens}`);
+    console.log(`Total tokens: ${totalTokens}`);
+    console.log(`Response preview: ${responseContent.substring(0, 150)}...`);
+    console.log(`=============================================\n`);
+
+    return responseContent;
+  } catch (error) {
+    console.error("LLM Provider Error:", error);
+    logError(model, requestId, error, feature);
     return fallbackResponse(prompt);
   }
 }
 
-// ========== FALLBACK ==========
 function fallbackResponse(prompt) {
-  const lowerPrompt = prompt.toLowerCase();
-  if (lowerPrompt.includes('coding question') || lowerPrompt.includes('coding problem')) {
-    return JSON.stringify({
-      problemStatement: 'Write a bubbleSort function to sort an array of integers in ascending order.',
-      content: 'Write a bubbleSort function to sort an array of integers in ascending order.',
-      testCriteria: 'The function must sort correctly in ascending order and must not use built-in sort methods.',
-      exampleInput: '[5,2,1,4]',
-      exampleOutput: '[1,2,4,5]'
-    });
-  }
-  if (lowerPrompt.includes('explain') || lowerPrompt.includes('explanation')) {
-    return JSON.stringify({ type: 'explain', question: 'Explain the purpose of the constructor in your code.' });
-  }
-  if (lowerPrompt.includes('next explain') || lowerPrompt.includes('next explanation')) {
-    return JSON.stringify({ type: 'explain', question: 'How does your code handle edge cases like empty input or single elements?' });
-  }
-  if (lowerPrompt.includes('evaluate explanation') || lowerPrompt.includes('evaluate answer')) {
-    return JSON.stringify({ correct: false, feedback: 'AI is temporarily overloaded. Please try again later.', modelAnswer: 'No model answer available due to system error.' });
-  }
-  if (lowerPrompt.includes('evaluate code') || lowerPrompt.includes('overall evaluation')) {
-    return JSON.stringify({ summary: 'Unable to evaluate due to system error. Please try again.', feedback: 'AI encountered an issue and cannot analyze the submission.', strengths: [], weaknesses: [] });
-  }
-  return JSON.stringify({ error: 'Fallback response failed' });
+  return JSON.stringify({
+    problemStatement:
+      "Write a function that takes an array of integers and returns the sum.",
+    functionSignature: "function sum(arr) { }",
+    content: "Sum array elements",
+    testCriteria: "Handle empty array",
+    exampleInput: "[1, 2, 3]",
+    exampleOutput: "6",
+    description: "Sum all numbers in array",
+  });
 }
 
-// ===============================
-// GENERATE CODE QUESTION
-// FIX: Giảm độ khó intermediate và advanced cho hợp lý hơn
-// ===============================
+// ========== HÀM TẠO CÂU HỎI - CÓ VÍ DỤ CỤ THỂ ==========
+// ========== HÀM TẠO CÂU HỎI - CÓ VÍ DỤ CỤ THỂ (FIXED) ==========
 async function generateCodeQuestion(language, domain, topic, difficulty) {
-  let difficultyConstraints = '';
+  const { style } = getTopicStyle(topic, language, difficulty);
 
-  if (difficulty.toLowerCase() === 'beginner') {
-    difficultyConstraints = `
-BEGINNER CONSTRAINTS (MUST FOLLOW):
-- Solvable in 10-15 lines of code (excluding boilerplate).
-- Only 1 function or 1 simple class with 1-2 methods.
-- No recursion, no nested loops, no complex data structures (only arrays or simple variables).
-- Input size <= 5 elements.
-- Do NOT require handling edge cases (empty, null) unless explicitly needed.
-- Problem description < 80 words.
-- Focus on basic syntax: loops, conditionals, simple arithmetic.
-- Do NOT use terms like "optimize", "efficient", "scalable", "concurrent".
-`;
-  } else if (difficulty.toLowerCase() === 'intermediate') {
-    // FIX: Giảm độ khó — trước đây quá nặng (2-3 class, recursion, nested loop)
-    difficultyConstraints = `
-INTERMEDIATE CONSTRAINTS (MUST FOLLOW):
-- Solvable in 15-25 lines of code.
-- 1 class with 2-3 straightforward methods, OR 2-3 related functions.
-- May use ONE simple loop (no nested loops unless simple).
-- May require basic input validation (e.g., check if array is empty).
-- NO recursion, NO complex algorithms, NO design patterns.
-- Problem should be doable by someone who knows basic OOP and loops.
-- Example: implement a simple stack with push/pop, or a basic calculator class.
-- Do NOT require multi-threading, sorting algorithms, or graph/tree structures.
-`;
-  } else {
-    // FIX: Advanced giảm từ "graph BFS, backtracking" → chỉ cần thuật toán quen thuộc
-    difficultyConstraints = `
-ADVANCED CONSTRAINTS (MUST FOLLOW):
-- Solvable in 25-40 lines of code.
-- May involve 1-2 classes with inheritance OR multiple cooperating functions.
-- May require ONE level of recursion (e.g., factorial, simple tree traversal) or one well-known algorithm (binary search, basic sorting).
-- May ask for basic error handling and edge cases.
-- Do NOT require backtracking, graph algorithms, dynamic programming, or complex design patterns.
-- Problem should be doable by someone with solid OOP knowledge and algorithm basics.
-- Example: implement a linked list with insert/delete, or binary search on a sorted array.
-`;
+  // Lấy guidance
+  const topicGuidance = getTopicGuidance(topic, language, difficulty);
+  const languageGuidance = getLanguageGuidance(language);
+  const domainNote = getDomainNote(domain);
+
+  // ===== VÍ DỤ CỤ THỂ CHO TỪNG TOPIC =====
+  let examples = "";
+
+  // ===== JAVA EXAMPLES =====
+  if (style === "function" && topic === "Arrays") {
+    examples = getArrayExample(language);
+  } else if (style === "function" && topic === "Sorting") {
+    examples = getSortingExample(language);
+  } else if (style === "class" && topic === "Inheritance") {
+    examples = getInheritanceExample(language);
+  } else if (style === "class" && topic === "Encapsulation") {
+    examples = getEncapsulationExample(language);
+  } else if (style === "auto" && (topic === "Stack" || topic === "Queue")) {
+    examples = getStackQueueExample(language);
   }
 
-  const prompt = `Generate a ${difficulty} level coding problem in ${language}.
-Domain: ${domain}
-Topic: ${topic}
+  // ===== C++ SPECIFIC EXAMPLES =====
+  else if (topic === "Smart Pointers") {
+    examples = getSmartPointersExample();
+  } else if (topic === "Move Semantics") {
+    examples = getMoveSemanticsExample();
+  } else if (topic === "Templates") {
+    examples = getTemplatesExample();
+  } else if (topic === "STL") {
+    examples = getSTLExample();
+  }
 
-${difficultyConstraints}
+  // ===== C# SPECIFIC EXAMPLES =====
+  else if (topic === "Events") {
+    examples = getEventsExample();
+  } else if (topic === "Properties") {
+    examples = getPropertiesExample();
+  } else if (topic === "LINQ") {
+    examples = getLINQExample();
+  } else if (topic === "async/await" || topic === "Async/Await") {
+    examples = getAsyncAwaitExample(language);
+  }
 
-Requirements:
-- The problem must be relevant to the domain and topic.
-- Provide a detailed problem statement.
-- Include example input and output matching the difficulty level.
-- Specify test criteria/constraints appropriate for the difficulty.
+  // ===== GO SPECIFIC EXAMPLES =====
+  else if (topic === "Goroutines") {
+    examples = getGoroutinesExample();
+  } else if (topic === "Channels") {
+    examples = getChannelsExample();
+  } else if (topic === "Select") {
+    examples = getSelectExample();
+  } else if (topic === "WaitGroups") {
+    examples = getWaitGroupsExample();
+  } else if (topic === "Context") {
+    examples = getContextExample();
+  }
 
-Return ONLY valid JSON, no markdown:
-{
-  "problemStatement": "Detailed problem description",
-  "content": "Brief description",
-  "testCriteria": "Constraints or edge cases",
-  "exampleInput": "Simple and clear example input",
-  "exampleOutput": "Clear example output",
-  "description": "Short summary"
-}`;
+  // ===== DEFAULT TEMPLATE =====
+  else {
+    examples = getDefaultExample(language);
+  }
 
-  let result = await callAI(prompt, undefined, 'generateCodeQuestion');
-  let parsed = extractJson(result);
+  // Difficulty rules
+  const difficultyMap = {
+    beginner:
+      "Max 15 lines. Simple logic. One function or simple class. No recursion.",
+    intermediate:
+      "15-30 lines. Can have class with 2-3 methods. One loop allowed.",
+    advanced:
+      "30-50 lines. Can have inheritance or recursion. Complex logic allowed.",
+  };
 
-  if (parsed && parsed.problemStatement) {
-    const isTooHard = await isProblemTooComplex(parsed.problemStatement, difficulty);
-    if (isTooHard) {
-      console.warn(`⚠️ Problem too hard for ${difficulty}, regenerating...`);
-      const retryPrompt = `The previous problem was too complex for ${difficulty} level. Make it SIMPLER.\n\n${prompt}`;
-      result = await callAI(retryPrompt, undefined, 'generateCodeQuestion_retry');
-      parsed = extractJson(result);
+  const difficultyRules =
+    difficultyMap[difficulty.toLowerCase()] || difficultyMap.intermediate;
+
+  const prompt = `Generate a coding problem with these specifications:
+
+LANGUAGE: ${language}
+DOMAIN: ${domain}
+TOPIC: ${topic}
+DIFFICULTY: ${difficulty.toUpperCase()}
+
+${topicGuidance}
+
+${languageGuidance}
+${domainNote}
+
+DIFFICULTY RULES: ${difficultyRules}
+
+${examples}
+
+NOW generate a NEW problem for ${topic} in ${language} at ${difficulty} level.
+The problem MUST be SPECIFIC and PRACTICAL - something a real developer would implement.
+Return ONLY valid JSON, no markdown, no explanation.`;
+
+  const result = await callAI(prompt, undefined, "generateCodeQuestion");
+  const parsed = extractJson(result);
+
+  if (parsed && typeof parsed === "object") {
+    if (!parsed.problemStatement) {
+      parsed.problemStatement =
+        parsed.content || parsed.description || "Problem not provided";
     }
-  }
+    if (!parsed.functionSignature) {
+      parsed.functionSignature = "// Function signature here";
+    }
+    if (!parsed.exampleInput) {
+      parsed.exampleInput = "// Example usage";
+    }
+    if (!parsed.exampleOutput) {
+      parsed.exampleOutput = "// Expected output";
+    }
+    if (!parsed.testCriteria) {
+      parsed.testCriteria = "• Test case 1\n• Test case 2";
+    }
+    if (!parsed.description) {
+      parsed.description = parsed.problemStatement.substring(0, 100);
+    }
+    parsed.content = parsed.problemStatement;
 
-  if (parsed && typeof parsed === 'object') {
-    if (!parsed.problemStatement) parsed.problemStatement = parsed.content || parsed.description || 'Problem statement not provided';
     return parsed;
   }
-  return extractJson(fallbackResponse(prompt));
+
+  return extractJson(fallbackResponse("coding problem"));
 }
 
-// Helper: kiểm tra bài toán có quá khó không
-async function isProblemTooComplex(problemStatement, difficulty) {
-  const wordCount = problemStatement.split(/\s+/).length;
-  if (difficulty === 'beginner' && wordCount > 80) return true;
-  if (difficulty === 'intermediate' && wordCount > 120) return true;
+// ========== HÀM LẤY VÍ DỤ CHO TỪNG TOPIC ==========
 
-  const hardKeywords = /\b(?:backtrack|dynamic programming|graph|BFS|DFS|heap|red.?black|avl|b-?tree|thread|mutex|semaphore|concurrent|parallel|volatile|synchronized)\b/i;
-  if (hardKeywords.test(problemStatement)) return true;
-
-  // intermediate không nên có recursion hoặc nested loop
-  if (difficulty === 'intermediate') {
-    const intermediateHardKeywords = /\b(?:recurs|nested loop|multi.?level)\b/i;
-    if (intermediateHardKeywords.test(problemStatement)) return true;
-  }
-
-  return false;
+function getArrayExample(language) {
+  return `
+EXAMPLE OF A GOOD ARRAY PROBLEM (${language}):
+{
+  "problemStatement": "Write a function that takes an array of integers and returns the sum of all elements. If the array is empty, return 0.",
+  "functionSignature": "${language === "java" ? "public static int sumArray(int[] arr)" : language === "python" ? "def sum_array(arr: list) -> int:" : "function sumArray(arr) { }"}",
+  "exampleInput": "${language === "java" ? "int[] numbers = {1, 2, 3, 4, 5};\\nint result = sumArray(numbers);" : language === "python" ? "numbers = [1, 2, 3, 4, 5]\\nresult = sum_array(numbers)" : "const numbers = [1, 2, 3, 4, 5];\\nconst result = sumArray(numbers);"}",
+  "exampleOutput": "result = 15",
+  "testCriteria": "• Empty array: return 0\\n• Single element: return that element\\n• Negative numbers: sum correctly",
+  "description": "Calculate the sum of all integers in an array."
+}`;
 }
 
-// ===============================
-// GENERATE EXPLANATION QUESTION
-// FIX: Gửi đúng nội dung dòng vào prompt để AI quote chính xác, không bị chỉ vào ngoặc
-// ===============================
-async function generateExplanationQuestion(language, userCode, originalQuestion, difficulty = 'beginner') {
-  const meaningfulLines = getMeaningfulLines(userCode);
-  const totalLines = userCode.split('\n').length;
+function getSortingExample(language) {
+  return `
+EXAMPLE OF A GOOD SORTING PROBLEM (${language}):
+{
+  "problemStatement": "Write a function that sorts an array of integers in ascending order. Do not use built-in sort methods.",
+  "functionSignature": "${language === "python" ? "def bubble_sort(arr: list) -> list:" : "function bubbleSort(arr) { }"}",
+  "exampleInput": "numbers = [64, 34, 25, 12, 22, 11, 90]\\nsorted_nums = bubble_sort(numbers)",
+  "exampleOutput": "sorted_nums = [11, 12, 22, 25, 34, 64, 90]",
+  "testCriteria": "• Already sorted array\\n• Reverse sorted array\\n• Array with duplicates\\n• Single element array\\n• Empty array",
+  "description": "Sort an array using bubble sort algorithm."
+}`;
+}
 
-  // FIX: Gửi cả nội dung dòng (không chỉ số dòng) để AI biết đang hỏi gì
-  const lineList = meaningfulLines.map(l => `  Line ${l.lineNum}: ${l.content.trim()}`).join('\n');
+function getInheritanceExample(language) {
+  return `
+EXAMPLE OF A GOOD INHERITANCE PROBLEM (${language}):
+{
+  "problemStatement": "Create an Animal class with a makeSound() method. Then create a Dog class that extends Animal and overrides makeSound(). Also add a bark() method specific to Dog.",
+  "functionSignature": "${language === "java" ? "class Animal { public void makeSound() { } }\\nclass Dog extends Animal { @Override public void makeSound() { } public void bark() { } }" : language === "python" ? "class Animal:\\n    def make_sound(self): pass\\nclass Dog(Animal):\\n    def make_sound(self): pass\\n    def bark(self): pass" : "class Animal { makeSound() { } }\\nclass Dog extends Animal { makeSound() { } bark() { } }"}",
+  "exampleInput": "Animal myAnimal = new Animal();\\nDog myDog = new Dog();\\nmyAnimal.makeSound();\\nmyDog.makeSound();\\nmyDog.bark();",
+  "exampleOutput": "Some sound\\nWoof!\\nBarking...",
+  "testCriteria": "• Animal class exists\\n• Dog extends Animal\\n• Dog overrides makeSound()\\n• Dog has bark() method",
+  "description": "Demonstrate inheritance with Animal and Dog classes."
+}`;
+}
 
-  let difficultyRules = '';
-  if (difficulty.toLowerCase() === 'beginner') {
-    difficultyRules = `Ask about the basic function of ONE specific line. E.g., "On line X, what does '...' do?" Do not ask about optimization or design patterns.`;
-  } else if (difficulty.toLowerCase() === 'intermediate') {
-    difficultyRules = `Ask about the logic or how data changes across a few lines. May ask why this approach was chosen.`;
+function getEncapsulationExample(language) {
+  return `
+EXAMPLE OF A GOOD ENCAPSULATION PROBLEM (${language}):
+{
+  "problemStatement": "Create a BankAccount class with private balance field. Provide deposit(amount) and withdraw(amount) methods with validation.",
+  "functionSignature": "${language === "java" ? "public class BankAccount { private double balance; public void deposit(double amount) { } public boolean withdraw(double amount) { } public double getBalance() { } }" : language === "python" ? "class BankAccount:\\n    def __init__(self):\\n        self.__balance = 0\\n    def deposit(self, amount): pass\\n    def withdraw(self, amount): pass\\n    def get_balance(self): pass" : "class BankAccount { #balance; deposit(amount) { } withdraw(amount) { } getBalance() { } }"}",
+  "exampleInput": "account = BankAccount(100)\\naccount.deposit(50)\\naccount.withdraw(30)\\nprint(account.get_balance())",
+  "exampleOutput": "120",
+  "testCriteria": "• Balance is private\\n• Deposit validates amount > 0\\n• Withdraw checks sufficient balance",
+  "description": "Create a bank account with encapsulated balance."
+}`;
+}
+
+function getStackQueueExample(language) {
+  const lang = language.toLowerCase();
+  const isClassBased = ["java", "csharp", "cpp"].includes(lang);
+
+  if (isClassBased) {
+    return `
+EXAMPLE FOR STACK (CLASS-BASED for ${language}):
+{
+  "problemStatement": "Implement a Stack class with push(item), pop(), peek(), and isEmpty() methods.",
+  "functionSignature": "public class Stack<T> {\\n    private List<T> items;\\n    public Stack() { }\\n    public void push(T item) { }\\n    public T pop() { }\\n    public T peek() { }\\n    public boolean isEmpty() { }\\n}",
+  "exampleInput": "Stack<Integer> stack = new Stack<>();\\nstack.push(10);\\nstack.push(20);\\nSystem.out.println(stack.pop());\\nSystem.out.println(stack.peek());",
+  "exampleOutput": "20\\n10",
+  "description": "Implement a generic Stack class."
+}`;
   } else {
-    difficultyRules = `Ask about algorithm choice, time complexity, or possible improvements.`;
+    return `
+EXAMPLE FOR STACK (FUNCTION-BASED for ${language}):
+{
+  "problemStatement": "Write functions to implement a stack: push(stack, item), pop(stack), peek(stack), is_empty(stack).",
+  "functionSignature": "def push(stack, item):\\ndef pop(stack):\\ndef peek(stack):\\ndef is_empty(stack):",
+  "exampleInput": "stack = []\\npush(stack, 10)\\npush(stack, 20)\\nprint(pop(stack))\\nprint(peek(stack))",
+  "exampleOutput": "20\\n10",
+  "description": "Implement stack operations using functions."
+}`;
   }
+}
+
+// ===== C++ EXAMPLES =====
+function getSmartPointersExample() {
+  return `
+EXAMPLE FOR SMART POINTERS (C++):
+{
+  "problemStatement": "Create a Person class with name and age. Use unique_ptr to manage Person objects in a vector. Demonstrate automatic cleanup when vector goes out of scope.",
+  "functionSignature": "class Person { string name; int age; };\\nint main() { vector<unique_ptr<Person>> people; people.push_back(make_unique<Person>(\"Alice\", 30)); }",
+  "exampleInput": "auto p1 = make_unique<Person>(\"Alice\", 30);\\nauto p2 = make_unique<Person>(\"Bob\", 25);\\npeople.push_back(move(p1));\\npeople.push_back(move(p2));",
+  "exampleOutput": "People vector size: 2\\nPerson destroyed when vector clears",
+  "testCriteria": "• Use make_unique for creation\\n• No raw new/delete\\n• Move semantics for transfer\\n• Automatic cleanup",
+  "description": "Demonstrate RAII with smart pointers."
+}`;
+}
+
+function getMoveSemanticsExample() {
+  return `
+EXAMPLE FOR MOVE SEMANTICS (C++):
+{
+  "problemStatement": "Implement a Buffer class that manages a dynamic array. Implement move constructor and move assignment operator to transfer ownership without copying.",
+  "functionSignature": "class Buffer {\\n    int* data;\\n    size_t size;\\npublic:\\n    Buffer(Buffer&& other) noexcept;\\n    Buffer& operator=(Buffer&& other) noexcept;\\n};",
+  "exampleInput": "Buffer b1(1000);\\nBuffer b2 = std::move(b1);  // b1 becomes empty",
+  "exampleOutput": "b2.size() = 1000\\nb1.size() = 0",
+  "testCriteria": "• Move constructor transfers ownership\\n• Source object left in valid state\\n• No memory leaks\\n• noexcept specifier",
+  "description": "Implement move semantics for efficient resource transfer."
+}`;
+}
+
+function getTemplatesExample() {
+  return `
+EXAMPLE FOR TEMPLATES (C++):
+{
+  "problemStatement": "Write a generic findMax function that works with any type that supports comparison operators (int, double, string).",
+  "functionSignature": "template<typename T>\\nT findMax(const vector<T>& arr) { }",
+  "exampleInput": "vector<int> nums = {3, 7, 2, 9, 1};\\nint maxInt = findMax(nums);\\nvector<string> words = {\"apple\", \"zebra\", \"banana\"};\\nstring maxStr = findMax(words);",
+  "exampleOutput": "maxInt = 9\\nmaxStr = \"zebra\"",
+  "testCriteria": "• Works with int, double, string\\n• Handles empty vector\\n• Uses const reference for efficiency",
+  "description": "Create a generic function using templates."
+}`;
+}
+
+function getSTLExample() {
+  return `
+EXAMPLE FOR STL (C++):
+{
+  "problemStatement": "Write a function that removes all duplicate values from a vector using std::sort and std::unique. Return a new vector with unique elements in sorted order.",
+  "functionSignature": "vector<int> removeDuplicates(const vector<int>& input)",
+  "exampleInput": "vector<int> nums = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3};\\nauto result = removeDuplicates(nums);",
+  "exampleOutput": "result = [1, 2, 3, 4, 5, 6, 9]",
+  "testCriteria": "• Uses std::sort\\n• Uses std::unique\\n• Handles empty vector\\n• Preserves sorted order",
+  "description": "Use STL algorithms to remove duplicates."
+}`;
+}
+
+// ===== C# EXAMPLES =====
+function getEventsExample() {
+  return `
+EXAMPLE FOR EVENTS (C#):
+{
+  "problemStatement": "Create a Button class with a Click event. When the button is clicked, raise the event with a message. Demonstrate subscribing to and handling the event.",
+  "functionSignature": "public class Button {\\n    public event EventHandler Click;\\n    public void OnClick() { }\\n}",
+  "exampleInput": "Button btn = new Button();\\nbtn.Click += (sender, e) => Console.WriteLine(\"Button clicked!\");\\nbtn.OnClick();",
+  "exampleOutput": "Button clicked!",
+  "testCriteria": "• Event uses EventHandler delegate\\n• Null check before raising\\n• Can subscribe multiple handlers",
+  "description": "Implement and use events in C#."
+}`;
+}
+
+function getPropertiesExample() {
+  return `
+EXAMPLE FOR PROPERTIES (C#):
+{
+  "problemStatement": "Create a Product class with Name (required, max 100 chars) and Price (positive) properties. Use validation in setters.",
+  "functionSignature": "public class Product {\\n    private string name;\\n    private decimal price;\\n    public string Name { get; set; }\\n    public decimal Price { get; set; }\\n}",
+  "exampleInput": "Product p = new Product();\\np.Name = \"Laptop\";\\np.Price = 999.99m;\\nConsole.WriteLine(p.Name);",
+  "exampleOutput": "Laptop",
+  "testCriteria": "• Name cannot be null or empty\\n• Name max length 100\\n• Price must be > 0\\n• Properties validate input",
+  "description": "Create a class with validation in property setters."
+}`;
+}
+
+function getLINQExample() {
+  return `
+EXAMPLE FOR LINQ (C#):
+{
+  "problemStatement": "Given a list of Product objects (Name, Price, Category), use LINQ to get the names of products in 'Electronics' category priced over $500, sorted by price descending.",
+  "functionSignature": "List<string> GetExpensiveElectronics(List<Product> products)",
+  "exampleInput": "var products = new List<Product> {\\n    new Product { Name = \"Laptop\", Price = 1200, Category = \"Electronics\" },\\n    new Product { Name = \"Mouse\", Price = 25, Category = \"Electronics\" }\\n};\\nvar result = GetExpensiveElectronics(products);",
+  "exampleOutput": "result = [\"Laptop\"]",
+  "testCriteria": "• Uses LINQ Where, OrderByDescending, Select\\n• Returns only names\\n• Filters correctly\\n• Returns empty list if none match",
+  "description": "Use LINQ to query and transform data."
+}`;
+}
+
+function getAsyncAwaitExample(language) {
+  if (language === "csharp") {
+    return `
+EXAMPLE FOR ASYNC/AWAIT (C#):
+{
+  "problemStatement": "Write an async method that downloads data from multiple URLs concurrently using Task.WhenAll. Return concatenated results.",
+  "functionSignature": "public async Task<string> DownloadAllAsync(string[] urls)",
+  "exampleInput": "string[] urls = { \"https://api1.com\", \"https://api2.com\" };\\nstring result = await DownloadAllAsync(urls);",
+  "exampleOutput": "Content from api1.com\\nContent from api2.com",
+  "testCriteria": "• Uses async/await pattern\\n• Uses Task.WhenAll for concurrency\\n• Handles exceptions\\n• Returns Task<string>",
+  "description": "Implement concurrent async downloads."
+}`;
+  } else if (language === "javascript") {
+    return `
+EXAMPLE FOR ASYNC/AWAIT (JavaScript):
+{
+  "problemStatement": "Write an async function that fetches data from multiple APIs using Promise.all and returns combined results.",
+  "functionSignature": "async function fetchAllData(urls) { }",
+  "exampleInput": "const urls = ['https://api1.com', 'https://api2.com'];\\nconst data = await fetchAllData(urls);",
+  "exampleOutput": "['data1', 'data2']",
+  "testCriteria": "• Uses async/await\\n• Uses Promise.all\\n• Handles errors\\n• Returns combined results",
+  "description": "Fetch multiple APIs concurrently."
+}`;
+  }
+  return getDefaultExample(language);
+}
+
+// ===== GO EXAMPLES =====
+function getGoroutinesExample() {
+  return `
+EXAMPLE FOR GOROUTINES (Go):
+{
+  "problemStatement": "Write a function that launches multiple goroutines to print numbers from 1 to N concurrently. Use sync.WaitGroup to ensure all goroutines complete.",
+  "functionSignature": "func printNumbersConcurrently(n int)",
+  "exampleInput": "printNumbersConcurrently(5)",
+  "exampleOutput": "Goroutine 1: 1\\nGoroutine 2: 2\\nGoroutine 3: 3\\nGoroutine 4: 4\\nGoroutine 5: 5",
+  "testCriteria": "• Uses 'go' keyword\\n• Uses sync.WaitGroup\\n• All goroutines complete\\n• No data races",
+  "description": "Launch and manage multiple goroutines."
+}`;
+}
+
+function getChannelsExample() {
+  return `
+EXAMPLE FOR CHANNELS (Go):
+{
+  "problemStatement": "Write a function that sends numbers 1 to N into a channel, and another goroutine that reads and squares each number. Use unbuffered channels for synchronization.",
+  "functionSignature": "func processNumbers(n int) []int",
+  "exampleInput": "result := processNumbers(5)",
+  "exampleOutput": "result = [1, 4, 9, 16, 25]",
+  "testCriteria": "• Uses make(chan int)\\n• Send/receive with <- operator\\n• Channel closing\\n• Synchronization via channels",
+  "description": "Use channels for communication between goroutines."
+}`;
+}
+
+function getSelectExample() {
+  return `
+EXAMPLE FOR SELECT (Go):
+{
+  "problemStatement": "Write a function that receives from two channels and uses select to handle whichever arrives first. Add a timeout using time.After.",
+  "functionSignature": "func firstResponse(ch1, ch2 <-chan string) string",
+  "exampleInput": "ch1 := make(chan string)\\nch2 := make(chan string)\\ngo func() { time.Sleep(100*time.Millisecond); ch1 <- \"from ch1\" }()\\ngo func() { ch2 <- \"from ch2\" }()\\nresult := firstResponse(ch1, ch2)",
+  "exampleOutput": "\"from ch2\" (or whichever arrives first)",
+  "testCriteria": "• Uses select statement\\n• Handles multiple channels\\n• Implements timeout\\n• Non-blocking operations",
+  "description": "Use select to wait on multiple channel operations."
+}`;
+}
+
+function getWaitGroupsExample() {
+  return `
+EXAMPLE FOR WAITGROUPS (Go):
+{
+  "problemStatement": "Write a function that processes a list of URLs concurrently using goroutines. Use sync.WaitGroup to wait for all HTTP requests to complete before returning.",
+  "functionSignature": "func fetchAll(urls []string) []string",
+  "exampleInput": "urls := []string{\"https://api1.com\", \"https://api2.com\", \"https://api3.com\"}\\nresults := fetchAll(urls)",
+  "exampleOutput": "results = [\"response1\", \"response2\", \"response3\"]",
+  "testCriteria": "• Uses sync.WaitGroup\\n• Add/Done/Wait methods\\n• Concurrent execution\\n• Collects all results",
+  "description": "Use WaitGroup to wait for goroutine completion."
+}`;
+}
+
+function getContextExample() {
+  return `
+EXAMPLE FOR CONTEXT (Go):
+{
+  "problemStatement": "Write a function that performs an HTTP request that can be cancelled via context. Use context.WithTimeout to automatically cancel after 1 second.",
+  "functionSignature": "func fetchWithTimeout(ctx context.Context, url string) (string, error)",
+  "exampleInput": "ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)\\ndefer cancel()\\nresult, err := fetchWithTimeout(ctx, \"https://slow-api.com\")",
+  "exampleOutput": "If success: \"response data\"\\nIf timeout: \"context deadline exceeded\"",
+  "testCriteria": "• Uses context.Context\\n• Checks ctx.Done()\\n• Handles cancellation\\n• Returns appropriate error",
+  "description": "Use context for timeout and cancellation."
+}`;
+}
+
+function getDefaultExample(language) {
+  return `
+EXAMPLE TEMPLATE:
+{
+  "problemStatement": "Clear description of what to implement in ${language}",
+  "functionSignature": "Exact signature in ${language}",
+  "exampleInput": "Code showing how to use",
+  "exampleOutput": "Expected output",
+  "testCriteria": "• Bullet points of test cases",
+  "description": "One sentence summary"
+}`;
+}
+// ========== CÁC HÀM KHÁC (giữ nguyên từ bản cũ) ==========
+
+async function generateExplanationQuestion(
+  language,
+  userCode,
+  originalQuestion,
+  difficulty = "beginner",
+) {
+  const meaningfulLines = getMeaningfulLines(userCode);
+  const lineList = meaningfulLines
+    .map((l) => `Line ${l.lineNum}: ${l.content.trim()}`)
+    .join("\n");
 
   const prompt = `Language: ${language}
 Difficulty: ${difficulty}
-Total lines in code: ${totalLines}
 
-SOURCE CODE:
+CODE:
 \`\`\`${language}
 ${userCode}
 \`\`\`
 
-MEANINGFUL LINES (only these can be referenced in your question):
+MEANINGFUL LINES:
 ${lineList}
 
-RULES:
-- You MUST pick ONE line from the MEANINGFUL LINES list above.
-- In your question, quote the EXACT code snippet from that line so the student knows which part you mean.
-- Format: "On line X, the code '[exact snippet]' does what?" — be specific.
-- Do NOT reference line numbers that are NOT in the meaningful lines list.
-- Do NOT ask about lines that only contain braces, brackets, or semicolons.
+Pick ONE line from above. Ask what it does and why it's needed. Quote the exact code.
+Return JSON: {"type": "explain", "question": "..."}`;
 
-${difficultyRules}
-
-Return JSON:
-{
-  "type": "explain",
-  "question": "Your question referencing a specific line and its exact code"
-}`;
-
-  const result = await callAI(prompt, undefined, 'generateExplanationQuestion');
+  const result = await callAI(prompt, undefined, "generateExplanationQuestion");
   const parsed = extractJson(result);
 
-  if (parsed && parsed.type === 'explain' && parsed.question && validateQuestion(parsed.question, userCode)) {
-    return { type: 'explain', question: parsed.question };
+  if (
+    parsed?.type === "explain" &&
+    parsed?.question &&
+    validateQuestion(parsed.question, userCode)
+  ) {
+    return { type: "explain", question: parsed.question };
   }
 
-  // Fallback: chọn random dòng có nghĩa và tạo câu hỏi rõ ràng với nội dung dòng đó
-  console.warn('⚠️  Question validation failed, using smart fallback...');
   if (meaningfulLines.length > 0) {
-    const random = meaningfulLines[Math.floor(Math.random() * meaningfulLines.length)];
+    const random =
+      meaningfulLines[Math.floor(Math.random() * meaningfulLines.length)];
     return {
-      type: 'explain',
-      question: `On line ${random.lineNum}, the code is: \`${random.content.trim()}\`. What does this line do, and why is it needed?`
+      type: "explain",
+      question: `On line ${random.lineNum}: \`${random.content.trim()}\`. What does this line do and why is it needed?`,
     };
   }
-  return { type: 'explain', question: 'Explain the main purpose of the code above.' };
-}
-
-// ===============================
-// GENERATE NEXT EXPLANATION QUESTION
-// FIX: tương tự — gửi nội dung dòng đầy đủ
-// ===============================
-async function generateNextExplanationQuestion(language, userCode, userAnswer, currentQuestion, explainCount, difficulty = 'beginner') {
-  const meaningfulLines = getMeaningfulLines(userCode);
-  const totalLines = userCode.split('\n').length;
-  const lineList = meaningfulLines.map(l => `  Line ${l.lineNum}: ${l.content.trim()}`).join('\n');
-
-  const prompt = `Language: ${language}
-Difficulty: ${difficulty}
-Question Number: ${explainCount + 1}/3
-Total lines in code: ${totalLines}
-
-SOURCE CODE:
-\`\`\`${language}
-${userCode}
-\`\`\`
-
-MEANINGFUL LINES (only these can be referenced):
-${lineList}
-
-PREVIOUS QUESTION: ${currentQuestion.question}
-STUDENT'S ANSWER: ${userAnswer}
-
-RULES:
-- Pick a DIFFERENT aspect or line than the previous question.
-- Quote the EXACT code snippet from the chosen line in your question.
-- Do NOT reference any line NOT in the meaningful lines list above.
-- Difficulty: ${difficulty}.
-
-Return JSON:
-{
-  "type": "explain",
-  "question": "Your follow-up question with exact code quoted"
-}`;
-
-  const result = await callAI(prompt, undefined, 'generateNextExplanationQuestion');
-  const parsed = extractJson(result);
-
-  if (parsed && parsed.type === 'explain' && parsed.question && validateQuestion(parsed.question, userCode)) {
-    return { type: 'explain', question: parsed.question };
-  }
-
-  // Fallback: chọn dòng khác với dòng đã hỏi
-  const previousLineMatch = currentQuestion.question.match(/\b(?:line)\s+(\d+)\b/i);
-  const previousLineNum = previousLineMatch ? parseInt(previousLineMatch[1]) : null;
-  let available = meaningfulLines.filter(l => l.lineNum !== previousLineNum);
-  if (available.length === 0) available = meaningfulLines;
-  const random = available[Math.floor(Math.random() * available.length)];
   return {
-    type: 'explain',
-    question: `On line ${random.lineNum}, the code is: \`${random.content.trim()}\`. Why is this line necessary for the program to work correctly?`
+    type: "explain",
+    question: "Explain the overall purpose and logic of the code above.",
   };
 }
 
-// ===============================
-// EVALUATE EXPLANATION
-// ===============================
+async function generateNextExplanationQuestion(
+  language,
+  userCode,
+  userAnswer,
+  currentQuestion,
+  explainCount,
+  difficulty = "beginner",
+) {
+  const meaningfulLines = getMeaningfulLines(userCode);
+  const lineList = meaningfulLines
+    .map((l) => `Line ${l.lineNum}: ${l.content.trim()}`)
+    .join("\n");
+
+  const prompt = `Language: ${language}
+Previous Q: ${currentQuestion.question}
+Student's answer: ${userAnswer}
+
+CODE:
+\`\`\`${language}
+${userCode}
+\`\`\`
+
+MEANINGFUL LINES:
+${lineList}
+
+Ask about a DIFFERENT line. Return JSON: {"type": "explain", "question": "..."}`;
+
+  const result = await callAI(
+    prompt,
+    undefined,
+    "generateNextExplanationQuestion",
+  );
+  const parsed = extractJson(result);
+
+  if (
+    parsed?.type === "explain" &&
+    parsed?.question &&
+    validateQuestion(parsed.question, userCode)
+  ) {
+    return { type: "explain", question: parsed.question };
+  }
+
+  const previousLineMatch =
+    currentQuestion.question.match(/\b(?:line)\s+(\d+)\b/i);
+  const previousLineNum = previousLineMatch
+    ? parseInt(previousLineMatch[1])
+    : null;
+  let available = meaningfulLines.filter((l) => l.lineNum !== previousLineNum);
+  if (available.length === 0) available = meaningfulLines;
+  const random = available[Math.floor(Math.random() * available.length)];
+  return {
+    type: "explain",
+    question: `On line ${random.lineNum}: \`${random.content.trim()}\`. Why is this line necessary?`,
+  };
+}
+
 async function evaluateExplanation(language, answer, currentQuestion) {
   const prompt = `Language: ${language}
 Question: ${currentQuestion.question}
 Student's answer: ${answer}
 
-EVALUATION RULES:
-1. The answer is CORRECT if it captures the MAIN IDEA, even if missing minor details.
-2. The answer is INCORRECT only if completely wrong, irrelevant, or critically mistaken.
-3. Feedback must be SHORT (one sentence): start with "Correct" or "Incorrect", then brief reason.
-4. modelAnswer must be COMPLETE but SHORT (2-4 sentences). NEVER use ellipsis ("...").
-
-Return JSON:
+Evaluate if correct. Return JSON:
 {
   "correct": true/false,
-  "feedback": "Short feedback sentence.",
-  "modelAnswer": "Complete concise answer (2-4 sentences)."
+  "feedback": "One sentence starting with Correct/Incorrect.",
+  "modelAnswer": "Complete answer (2-3 sentences)"
 }`;
 
   try {
-    const result = await callAI(prompt, undefined, 'evaluateExplanation');
+    const result = await callAI(prompt, undefined, "evaluateExplanation");
     const parsed = extractJson(result);
-    if (parsed && typeof parsed.correct === 'boolean' && typeof parsed.feedback === 'string') {
-      let modelAnswer = (parsed.modelAnswer || 'No model answer provided.').replace(/\.\.\./g, '.').replace(/\.{3,}/g, '.');
-      if (!modelAnswer.match(/[.!?]$/)) modelAnswer += '.';
+    if (
+      parsed &&
+      typeof parsed.correct === "boolean" &&
+      typeof parsed.feedback === "string"
+    ) {
       return {
         correct: parsed.correct,
-        feedback: parsed.feedback.replace(/\.\.\./g, '.'),
-        modelAnswer
+        feedback: parsed.feedback.replace(/\.\.\./g, "."),
+        modelAnswer: (parsed.modelAnswer || "No model answer.").replace(
+          /\.\.\./g,
+          ".",
+        ),
       };
     }
-    throw new Error('Invalid response');
+    throw new Error("Invalid response");
   } catch (e) {
-    console.error('evaluateExplanation error:', e);
-    return { correct: false, feedback: 'AI is overloaded. Please try again.', modelAnswer: 'No model answer due to system error.' };
+    console.error("evaluateExplanation error:", e);
+    return {
+      correct: false,
+      feedback: "AI is overloaded. Please try again.",
+      modelAnswer: "No model answer due to system error.",
+    };
   }
 }
 
-// ===============================
-// EVALUATE CODE AND EXPLANATIONS (FINAL)
-// ===============================
-async function evaluateCodeAndExplanations(language, code, problemStatement, explainAnswers) {
+async function evaluateCodeAndExplanations(
+  language,
+  code,
+  problemStatement,
+  explainAnswers,
+) {
   const prompt = `Language: ${language}
 Problem: ${problemStatement}
+
 Code:
-\`\`\`
+\`\`\`${language}
 ${code}
 \`\`\`
-Explanation answers:
-${JSON.stringify(explainAnswers, null, 2)}
-Provide an overall evaluation without a numeric score. Return JSON:
+
+Explanations: ${JSON.stringify(explainAnswers, null, 2)}
+
+Evaluate overall performance. Return JSON:
 {
-  "summary": "Summary of observations",
-  "feedback": "Detailed advice or comments",
-  "strengths": ["strength 1", "strength 2"],
-  "weaknesses": ["weakness 1", "weakness 2"]
+  "summary": "2-3 sentence summary",
+  "feedback": "Specific advice",
+  "strengths": ["strength1", "strength2"],
+  "weaknesses": ["weakness1", "weakness2"]
 }`;
 
   try {
-    const result = await callAI(prompt, undefined, 'evaluateCodeAndExplanations');
+    const result = await callAI(
+      prompt,
+      undefined,
+      "evaluateCodeAndExplanations",
+    );
     const parsed = extractJson(result);
-    if (parsed && typeof parsed.summary === 'string') {
-      const clean = (str) => (str || '').replace(/\.\.\./g, '.');
-      const cleanArr = (arr) => (Array.isArray(arr) ? arr.map(s => clean(s)) : []);
+    if (parsed && typeof parsed.summary === "string") {
+      const clean = (str) => (str || "").replace(/\.\.\./g, ".");
+      const cleanArr = (arr) =>
+        Array.isArray(arr) ? arr.map((s) => clean(s)) : [];
       return {
         summary: clean(parsed.summary),
         feedback: clean(parsed.feedback || parsed.summary),
         strengths: cleanArr(parsed.strengths),
-        weaknesses: cleanArr(parsed.weaknesses)
+        weaknesses: cleanArr(parsed.weaknesses),
       };
     }
-    throw new Error('Invalid response');
+    throw new Error("Invalid response");
   } catch (e) {
-    console.error('evaluateCodeAndExplanations error:', e);
-    return { summary: 'Unable to evaluate due to system error.', feedback: 'AI encountered an issue.', strengths: [], weaknesses: [] };
+    console.error("evaluateCodeAndExplanations error:", e);
+    return {
+      summary: "Unable to evaluate due to system error.",
+      feedback: "AI encountered an issue. Please try again.",
+      strengths: [],
+      weaknesses: [],
+    };
   }
 }
 
-// ===============================
-// EVALUATE CODE SUBMISSION
-// ===============================
-async function evaluateCodeSubmission(language, code, problemStatement, expectedOutput = '') {
-  const prompt = `Language: ${language}
-Problem: ${problemStatement}
-Expected output (example): ${expectedOutput}
-
-Student's code:
+async function evaluateCodeSubmission(
+  language,
+  code,
+  problemStatement,
+  expectedOutput = "",
+) {
+  const syntaxPrompt = `Check syntax errors in this ${language} code:
+\`\`\`${language}
+${code}
 \`\`\`
+Return JSON: {"hasSyntaxError": boolean, "feedback": "..."}`;
+
+  try {
+    const syntaxResult = await callAI(
+      syntaxPrompt,
+      undefined,
+      "evaluateCode_syntax",
+    );
+    const syntaxParsed = extractJson(syntaxResult);
+
+    if (syntaxParsed?.hasSyntaxError === true) {
+      return {
+        correct: false,
+        feedback: (syntaxParsed.feedback || "Syntax error detected.").replace(
+          /\.\.\./g,
+          ".",
+        ),
+        modelAnswer: "",
+      };
+    }
+
+    const logicPrompt = `Language: ${language}
+Problem: ${problemStatement}
+Expected output: ${expectedOutput}
+
+Code:
+\`\`\`${language}
 ${code}
 \`\`\`
 
-INSTRUCTIONS:
-1. Check for SYNTAX ERRORS or COMPILATION ERRORS first.
-2. If syntax errors exist, set "correct": false and explain clearly.
-3. If syntax is OK, check if the logic correctly solves the problem.
-4. Provide short feedback (one sentence).
-5. If incorrect, give a corrected version or explain the bug.
-
-Return JSON:
+Check if correct for typical valid inputs. Return JSON:
 {
   "correct": boolean,
-  "feedback": "Short feedback sentence.",
-  "modelAnswer": "Fixed code or explanation (2-3 sentences)."
+  "feedback": "One sentence.",
+  "modelAnswer": "Short fix if wrong (empty if correct)"
 }`;
 
-  try {
-    const result = await callAI(prompt, undefined, 'evaluateCodeSubmission');
-    const parsed = extractJson(result);
-    if (parsed && typeof parsed.correct === 'boolean') {
+    const logicResult = await callAI(
+      logicPrompt,
+      undefined,
+      "evaluateCode_logic",
+    );
+    const logicParsed = extractJson(logicResult);
+
+    if (logicParsed && typeof logicParsed.correct === "boolean") {
       return {
-        correct: parsed.correct,
-        feedback: (parsed.feedback || (parsed.correct ? 'Code is correct.' : 'Code has issues.')).replace(/\.\.\./g, '.'),
-        modelAnswer: (parsed.modelAnswer || '').replace(/\.\.\./g, '.')
+        correct: logicParsed.correct,
+        feedback: (
+          logicParsed.feedback ||
+          (logicParsed.correct ? "Code is correct." : "Logic error.")
+        ).replace(/\.\.\./g, "."),
+        modelAnswer: (logicParsed.modelAnswer || "").replace(/\.\.\./g, "."),
       };
     }
-    throw new Error('Invalid AI response');
+
+    throw new Error("Invalid logic response");
   } catch (e) {
-    console.error('evaluateCodeSubmission error:', e);
-    return { correct: false, feedback: 'Unable to evaluate code due to AI error.', modelAnswer: '' };
+    console.error("evaluateCodeSubmission error:", e);
+    return {
+      correct: false,
+      feedback: "Unable to evaluate code due to AI error.",
+      modelAnswer: "",
+    };
   }
 }
 
