@@ -34,39 +34,112 @@ const groq = new GroqService(
 
 // ========== TOPIC CLASSIFICATION ==========
 const TOPIC_CATEGORIES = {
-  OOP: ['class', 'object', 'oop', 'inheritance', 'polymorphism', 'encapsulation', 'abstraction', 'constructor', 'method', 'property', 'getter', 'setter'],
-  ARRAY: ['array', 'subarray', 'list', 'sort', 'filter', 'map', 'reduce', 'find', 'search', 'binary search', 'merge', 'split', 'contiguous'],
-  STRING: ['string', 'char', 'substring', 'palindrome', 'anagram', 'reverse', 'concatenate', 'regex'],
-  MATH: ['math', 'factorial', 'fibonacci', 'prime', 'gcd', 'lcm', 'sum', 'average', 'statistics'],
-  MATRIX: ['matrix', 'grid', '2d', 'multi-dimensional', 'spiral'],
-  GRAPH: ['graph', 'tree', 'node', 'edge', 'traversal', 'bfs', 'dfs', 'dijkstra', 'path'],
-  LINKED_LIST: ['linked list', 'singly', 'doubly', 'circular', 'node'],
-  DATA_STRUCTURE: ['stack', 'queue', 'heap', 'hash', 'map', 'set', 'dictionary'],
-  CONCURRENCY: ['thread', 'async', 'await', 'promise', 'mutex', 'lock', 'goroutine', 'channel'],
-  INPUT_OUTPUT: ['file', 'io', 'stream', 'read', 'write', 'parse', 'serialize'],
-  GENERAL: []
+  OOP: [
+    "class",
+    "object",
+    "oop",
+    "inheritance",
+    "polymorphism",
+    "encapsulation",
+    "abstraction",
+    "constructor",
+    "method",
+    "property",
+    "getter",
+    "setter",
+  ],
+  ARRAY: [
+    "array",
+    "subarray",
+    "list",
+    "sort",
+    "filter",
+    "map",
+    "reduce",
+    "find",
+    "search",
+    "binary search",
+    "merge",
+    "split",
+    "contiguous",
+  ],
+  STRING: [
+    "string",
+    "char",
+    "substring",
+    "palindrome",
+    "anagram",
+    "reverse",
+    "concatenate",
+    "regex",
+  ],
+  MATH: [
+    "math",
+    "factorial",
+    "fibonacci",
+    "prime",
+    "gcd",
+    "lcm",
+    "sum",
+    "average",
+    "statistics",
+  ],
+  MATRIX: ["matrix", "grid", "2d", "multi-dimensional", "spiral"],
+  GRAPH: [
+    "graph",
+    "tree",
+    "node",
+    "edge",
+    "traversal",
+    "bfs",
+    "dfs",
+    "dijkstra",
+    "path",
+  ],
+  LINKED_LIST: ["linked list", "singly", "doubly", "circular", "node"],
+  DATA_STRUCTURE: [
+    "stack",
+    "queue",
+    "heap",
+    "hash",
+    "map",
+    "set",
+    "dictionary",
+  ],
+  CONCURRENCY: [
+    "thread",
+    "async",
+    "await",
+    "promise",
+    "mutex",
+    "lock",
+    "goroutine",
+    "channel",
+  ],
+  INPUT_OUTPUT: ["file", "io", "stream", "read", "write", "parse", "serialize"],
+  GENERAL: [],
 };
 
 function categorizeTopic(topic) {
   const topicLower = topic.toLowerCase();
   for (const [category, keywords] of Object.entries(TOPIC_CATEGORIES)) {
-    if (keywords.some(keyword => topicLower.includes(keyword))) {
+    if (keywords.some((keyword) => topicLower.includes(keyword))) {
       return category;
     }
   }
-  return 'GENERAL';
+  return "GENERAL";
 }
 
 function isOOPTopic(topic) {
-  return categorizeTopic(topic) === 'OOP';
+  return categorizeTopic(topic) === "OOP";
 }
 
 function isArrayTopic(topic) {
-  return categorizeTopic(topic) === 'ARRAY';
+  return categorizeTopic(topic) === "ARRAY";
 }
 
 function isStringTopic(topic) {
-  return categorizeTopic(topic) === 'STRING';
+  return categorizeTopic(topic) === "STRING";
 }
 
 // ========== RANDOM DATA GENERATORS ==========
@@ -83,8 +156,8 @@ function generateRandomArray(size, min = -99, max = 99) {
 }
 
 function generateRandomString(length = 8) {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let result = '';
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let result = "";
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -93,14 +166,23 @@ function generateRandomString(length = 8) {
 
 function generateRandomObject(keyCount = 3) {
   const obj = {};
-  const keys = ['name', 'age', 'city', 'score', 'value', 'id', 'title', 'count'];
+  const keys = [
+    "name",
+    "age",
+    "city",
+    "score",
+    "value",
+    "id",
+    "title",
+    "count",
+  ];
   for (let i = 0; i < keyCount; i++) {
-    const key = keys[i % keys.length] + (i >= keys.length ? i : '');
+    const key = keys[i % keys.length] + (i >= keys.length ? i : "");
     const values = [
       generateRandomString(6),
       generateRandomNumber(1, 100),
       generateRandomNumber(-50, 50),
-      Math.random() > 0.5 ? 'active' : 'inactive',
+      Math.random() > 0.5 ? "active" : "inactive",
       generateRandomNumber(1, 1000),
     ];
     obj[key] = values[i % values.length];
@@ -119,7 +201,9 @@ function generateRandomMatrix(rows, cols, min = -99, max = 99) {
 // ========== TREE HELPERS ==========
 function computeMaxRootToLeafPathSum(arr) {
   if (!arr || arr.length === 0) return 0;
-  const nodes = arr.map(val => (val === -1 ? null : { val, left: null, right: null }));
+  const nodes = arr.map((val) =>
+    val === -1 ? null : { val, left: null, right: null },
+  );
   if (!nodes[0]) return 0;
   let root = nodes[0];
   let i = 1;
@@ -146,7 +230,7 @@ function computeMaxRootToLeafPathSum(arr) {
 // ========== OOP DATA GENERATORS ==========
 function generateClassInstance(className, language) {
   const instances = {
-    'person': {
+    person: {
       javascript: 'new Person("John Doe", 30, "Software Engineer")',
       python: 'Person("John Doe", 30, "Software Engineer")',
       java: 'new Person("John Doe", 30, "Software Engineer")',
@@ -154,7 +238,7 @@ function generateClassInstance(className, language) {
       cpp: 'Person("John Doe", 30, "Software Engineer")',
       go: 'Person{Name: "John Doe", Age: 30, Role: "Software Engineer"}',
     },
-    'student': {
+    student: {
       javascript: 'new Student("Alice Johnson", 20, "Computer Science", 3.8)',
       python: 'Student("Alice Johnson", 20, "Computer Science", 3.8)',
       java: 'new Student("Alice Johnson", 20, "Computer Science", 3.8)',
@@ -162,7 +246,7 @@ function generateClassInstance(className, language) {
       cpp: 'Student("Alice Johnson", 20, "Computer Science", 3.8)',
       go: 'Student{Name: "Alice Johnson", Age: 20, Major: "Computer Science", GPA: 3.8}',
     },
-    'employee': {
+    employee: {
       javascript: 'new Employee("Bob Smith", 45, "Manager", 75000)',
       python: 'Employee("Bob Smith", 45, "Manager", 75000)',
       java: 'new Employee("Bob Smith", 45, "Manager", 75000)',
@@ -170,7 +254,7 @@ function generateClassInstance(className, language) {
       cpp: 'Employee("Bob Smith", 45, "Manager", 75000)',
       go: 'Employee{Name: "Bob Smith", Age: 45, Role: "Manager", Salary: 75000}',
     },
-    'product': {
+    product: {
       javascript: 'new Product("Laptop", 999.99, "Electronics", 50)',
       python: 'Product("Laptop", 999.99, "Electronics", 50)',
       java: 'new Product("Laptop", 999.99, "Electronics", 50)',
@@ -178,55 +262,59 @@ function generateClassInstance(className, language) {
       cpp: 'Product("Laptop", 999.99, "Electronics", 50)',
       go: 'Product{Name: "Laptop", Price: 999.99, Category: "Electronics", Stock: 50}',
     },
-    'bank_account': {
+    bank_account: {
       javascript: 'new BankAccount("SAVINGS", 5000, "John Doe")',
       python: 'BankAccount("SAVINGS", 5000, "John Doe")',
       java: 'new BankAccount("SAVINGS", 5000, "John Doe")',
       csharp: 'new BankAccount("SAVINGS", 5000, "John Doe")',
       cpp: 'BankAccount("SAVINGS", 5000, "John Doe")',
       go: 'BankAccount{Type: "SAVINGS", Balance: 5000, Owner: "John Doe"}',
-    }
+    },
   };
   const classNameLower = className.toLowerCase();
-  let matchedClass = 'person';
+  let matchedClass = "person";
   for (const [key] of Object.entries(instances)) {
     if (classNameLower.includes(key)) {
       matchedClass = key;
       break;
     }
   }
-  return instances[matchedClass]?.[language] || instances.person[language] || 'new Person()';
+  return (
+    instances[matchedClass]?.[language] ||
+    instances.person[language] ||
+    "new Person()"
+  );
 }
 
 function generateOOPExample(topic, language, difficulty) {
   const topicLower = topic.toLowerCase();
-  let className = 'Person';
+  let className = "Person";
   let properties = [];
   let methods = [];
-  if (topicLower.includes('student') || topicLower.includes('school')) {
-    className = 'Student';
-    properties = ['name', 'age', 'grade', 'major'];
-    methods = ['study', 'takeExam', 'getGPA'];
-  } else if (topicLower.includes('employee') || topicLower.includes('worker')) {
-    className = 'Employee';
-    properties = ['name', 'age', 'role', 'salary', 'department'];
-    methods = ['work', 'getSalary', 'promote'];
-  } else if (topicLower.includes('product') || topicLower.includes('item')) {
-    className = 'Product';
-    properties = ['name', 'price', 'category', 'stock'];
-    methods = ['applyDiscount', 'updateStock', 'getInfo'];
-  } else if (topicLower.includes('bank') || topicLower.includes('account')) {
-    className = 'BankAccount';
-    properties = ['accountNumber', 'balance', 'owner', 'type'];
-    methods = ['deposit', 'withdraw', 'getBalance'];
-  } else if (topicLower.includes('vehicle') || topicLower.includes('car')) {
-    className = 'Vehicle';
-    properties = ['make', 'model', 'year', 'mileage'];
-    methods = ['drive', 'honk', 'getInfo'];
+  if (topicLower.includes("student") || topicLower.includes("school")) {
+    className = "Student";
+    properties = ["name", "age", "grade", "major"];
+    methods = ["study", "takeExam", "getGPA"];
+  } else if (topicLower.includes("employee") || topicLower.includes("worker")) {
+    className = "Employee";
+    properties = ["name", "age", "role", "salary", "department"];
+    methods = ["work", "getSalary", "promote"];
+  } else if (topicLower.includes("product") || topicLower.includes("item")) {
+    className = "Product";
+    properties = ["name", "price", "category", "stock"];
+    methods = ["applyDiscount", "updateStock", "getInfo"];
+  } else if (topicLower.includes("bank") || topicLower.includes("account")) {
+    className = "BankAccount";
+    properties = ["accountNumber", "balance", "owner", "type"];
+    methods = ["deposit", "withdraw", "getBalance"];
+  } else if (topicLower.includes("vehicle") || topicLower.includes("car")) {
+    className = "Vehicle";
+    properties = ["make", "model", "year", "mileage"];
+    methods = ["drive", "honk", "getInfo"];
   } else {
-    className = 'Person';
-    properties = ['name', 'age', 'email'];
-    methods = ['greet', 'updateInfo'];
+    className = "Person";
+    properties = ["name", "age", "email"];
+    methods = ["greet", "updateInfo"];
   }
   const instance = generateClassInstance(className, language);
   return {
@@ -235,44 +323,44 @@ function generateOOPExample(topic, language, difficulty) {
     methods,
     exampleInput: instance,
     exampleOutput: getOOPExampleOutput(className, methods[0], difficulty),
-    expectedType: 'object',
-    description: `Create a ${className} class with properties: ${properties.join(', ')} and methods: ${methods.join(', ')}`
+    expectedType: "object",
+    description: `Create a ${className} class with properties: ${properties.join(", ")} and methods: ${methods.join(", ")}`,
   };
 }
 
 function getOOPExampleOutput(className, method, difficulty) {
   const outputs = {
-    'Student': {
-      'study': 'Student is studying',
-      'takeExam': 'Exam completed with grade: A',
-      'getGPA': '3.8',
+    Student: {
+      study: "Student is studying",
+      takeExam: "Exam completed with grade: A",
+      getGPA: "3.8",
     },
-    'Employee': {
-      'work': 'Employee is working',
-      'getSalary': '75000',
-      'promote': 'Employee promoted to Senior',
+    Employee: {
+      work: "Employee is working",
+      getSalary: "75000",
+      promote: "Employee promoted to Senior",
     },
-    'Product': {
-      'applyDiscount': 'Discount applied. New price: 899.99',
-      'updateStock': 'Stock updated to: 45',
-      'getInfo': 'Laptop - Electronics - $999.99',
+    Product: {
+      applyDiscount: "Discount applied. New price: 899.99",
+      updateStock: "Stock updated to: 45",
+      getInfo: "Laptop - Electronics - $999.99",
     },
-    'BankAccount': {
-      'deposit': 'Deposit successful. New balance: 5500',
-      'withdraw': 'Withdrawal successful. New balance: 4500',
-      'getBalance': '5000',
+    BankAccount: {
+      deposit: "Deposit successful. New balance: 5500",
+      withdraw: "Withdrawal successful. New balance: 4500",
+      getBalance: "5000",
     },
-    'Vehicle': {
-      'drive': 'Vehicle is driving',
-      'honk': 'Beep beep!',
-      'getInfo': 'Toyota Camry 2020',
+    Vehicle: {
+      drive: "Vehicle is driving",
+      honk: "Beep beep!",
+      getInfo: "Toyota Camry 2020",
     },
-    'Person': {
-      'greet': 'Hello, my name is John Doe',
-      'updateInfo': 'Information updated successfully',
-    }
+    Person: {
+      greet: "Hello, my name is John Doe",
+      updateInfo: "Information updated successfully",
+    },
   };
-  return outputs[className]?.[method] || 'Method executed successfully';
+  return outputs[className]?.[method] || "Method executed successfully";
 }
 
 // ========== DATA SIZE BY DIFFICULTY ==========
@@ -283,8 +371,8 @@ const DIFFICULTY_CONFIG = {
     objectKeys: { min: 2, max: 3 },
     matrixSize: { rows: 2, cols: 3 },
     numberRange: { min: -20, max: 20 },
-    description: 'Simple, small dataset',
-    oopComplexity: 'basic'
+    description: "Simple, small dataset",
+    oopComplexity: "basic",
   },
   intermediate: {
     arraySize: { min: 8, max: 12 },
@@ -292,8 +380,8 @@ const DIFFICULTY_CONFIG = {
     objectKeys: { min: 3, max: 5 },
     matrixSize: { rows: 3, cols: 4 },
     numberRange: { min: -50, max: 50 },
-    description: 'Moderate dataset with edge cases',
-    oopComplexity: 'moderate'
+    description: "Moderate dataset with edge cases",
+    oopComplexity: "moderate",
   },
   advanced: {
     arraySize: { min: 12, max: 18 },
@@ -301,13 +389,16 @@ const DIFFICULTY_CONFIG = {
     objectKeys: { min: 5, max: 8 },
     matrixSize: { rows: 4, cols: 5 },
     numberRange: { min: -99, max: 99 },
-    description: 'Large dataset with complex cases',
-    oopComplexity: 'advanced'
-  }
+    description: "Large dataset with complex cases",
+    oopComplexity: "advanced",
+  },
 };
 
 function getDifficultyConfig(difficulty) {
-  return DIFFICULTY_CONFIG[difficulty?.toLowerCase()] || DIFFICULTY_CONFIG.intermediate;
+  return (
+    DIFFICULTY_CONFIG[difficulty?.toLowerCase()] ||
+    DIFFICULTY_CONFIG.intermediate
+  );
 }
 
 // ===================================================
@@ -319,64 +410,87 @@ function computeArrayOutput(topicLower, arr) {
   const sumOf = (a) => a.reduce((s, x) => s + x, 0);
 
   // ── 1. Sort ──────────────────────────────────────────────────────────
-  if (topicLower.includes('sort')) {
-    return { value: JSON.stringify(sortedAsc()), type: 'array' };
+  if (topicLower.includes("sort")) {
+    return { value: JSON.stringify(sortedAsc()), type: "array" };
   }
 
   // ── 2. Reverse ──────────────────────────────────────────────────────
-  if (topicLower.includes('reverse')) {
-    return { value: JSON.stringify([...arr].reverse()), type: 'array' };
+  if (topicLower.includes("reverse")) {
+    return { value: JSON.stringify([...arr].reverse()), type: "array" };
   }
 
   // ── 3. Diff (max - min) ──────────────────────────────────────────
-  if (topicLower.includes('diff') ||
-    (topicLower.includes('range') && !topicLower.includes('arrange'))) {
-    return { value: String(Math.max(...arr) - Math.min(...arr)), type: 'number' };
+  if (
+    topicLower.includes("diff") ||
+    (topicLower.includes("range") && !topicLower.includes("arrange"))
+  ) {
+    return {
+      value: String(Math.max(...arr) - Math.min(...arr)),
+      type: "number",
+    };
   }
 
   // ── 4. Max ──────────────────────────────────────────────────────
-  if (topicLower.includes('max') || topicLower.includes('maximum') ||
-    topicLower.includes('largest')) {
-    return { value: String(Math.max(...arr)), type: 'number' };
+  if (
+    topicLower.includes("max") ||
+    topicLower.includes("maximum") ||
+    topicLower.includes("largest")
+  ) {
+    return { value: String(Math.max(...arr)), type: "number" };
   }
 
   // ── 5. Min ──────────────────────────────────────────────────────
-  if (topicLower.includes('min') || topicLower.includes('minimum') ||
-    topicLower.includes('smallest')) {
-    return { value: String(Math.min(...arr)), type: 'number' };
+  if (
+    topicLower.includes("min") ||
+    topicLower.includes("minimum") ||
+    topicLower.includes("smallest")
+  ) {
+    return { value: String(Math.min(...arr)), type: "number" };
   }
 
   // ── 6. Sum with conditions ────────────────────────────────────────
-  if (topicLower.includes('positive') && topicLower.includes('sum'))
-    return { value: String(sumOf(arr.filter(x => x > 0))), type: 'number' };
-  if (topicLower.includes('positive') && topicLower.includes('count'))
-    return { value: String(arr.filter(x => x > 0).length), type: 'number' };
-  if (topicLower.includes('negative') && topicLower.includes('sum'))
-    return { value: String(sumOf(arr.filter(x => x < 0))), type: 'number' };
-  if (topicLower.includes('negative') && topicLower.includes('count'))
-    return { value: String(arr.filter(x => x < 0).length), type: 'number' };
-  if (topicLower.includes('even') && topicLower.includes('sum'))
-    return { value: String(sumOf(arr.filter(x => x % 2 === 0))), type: 'number' };
-  if (topicLower.includes('even') && topicLower.includes('count'))
-    return { value: String(arr.filter(x => x % 2 === 0).length), type: 'number' };
-  if (topicLower.includes('odd') && topicLower.includes('sum'))
-    return { value: String(sumOf(arr.filter(x => x % 2 !== 0))), type: 'number' };
-  if (topicLower.includes('odd') && topicLower.includes('count'))
-    return { value: String(arr.filter(x => x % 2 !== 0).length), type: 'number' };
+  if (topicLower.includes("positive") && topicLower.includes("sum"))
+    return { value: String(sumOf(arr.filter((x) => x > 0))), type: "number" };
+  if (topicLower.includes("positive") && topicLower.includes("count"))
+    return { value: String(arr.filter((x) => x > 0).length), type: "number" };
+  if (topicLower.includes("negative") && topicLower.includes("sum"))
+    return { value: String(sumOf(arr.filter((x) => x < 0))), type: "number" };
+  if (topicLower.includes("negative") && topicLower.includes("count"))
+    return { value: String(arr.filter((x) => x < 0).length), type: "number" };
+  if (topicLower.includes("even") && topicLower.includes("sum"))
+    return {
+      value: String(sumOf(arr.filter((x) => x % 2 === 0))),
+      type: "number",
+    };
+  if (topicLower.includes("even") && topicLower.includes("count"))
+    return {
+      value: String(arr.filter((x) => x % 2 === 0).length),
+      type: "number",
+    };
+  if (topicLower.includes("odd") && topicLower.includes("sum"))
+    return {
+      value: String(sumOf(arr.filter((x) => x % 2 !== 0))),
+      type: "number",
+    };
+  if (topicLower.includes("odd") && topicLower.includes("count"))
+    return {
+      value: String(arr.filter((x) => x % 2 !== 0).length),
+      type: "number",
+    };
 
   // ── 7. Sum / Total ──────────────────────────────────────────────
-  if (topicLower.includes('sum') || topicLower.includes('total'))
-    return { value: String(sumOf(arr)), type: 'number' };
+  if (topicLower.includes("sum") || topicLower.includes("total"))
+    return { value: String(sumOf(arr)), type: "number" };
 
   // ── 8. Average / Mean ──────────────────────────────────────────
-  if (topicLower.includes('average') || topicLower.includes('mean')) {
+  if (topicLower.includes("average") || topicLower.includes("mean")) {
     const avg = sumOf(arr) / arr.length;
-    return { value: String(Math.round(avg * 100) / 100), type: 'number' };
+    return { value: String(Math.round(avg * 100) / 100), type: "number" };
   }
 
   // ── 9. Count / Length ──────────────────────────────────────────
-  if (topicLower.includes('count') || topicLower.includes('length'))
-    return { value: String(arr.length), type: 'number' };
+  if (topicLower.includes("count") || topicLower.includes("length"))
+    return { value: String(arr.length), type: "number" };
 
   return null;
 }
@@ -450,40 +564,39 @@ function computeSecondMin(arr) {
   return unique[1];
 }
 
-
-function computeStatistics(arr) {
-  return {
-    sum: arr.reduce((sum, num) => sum + num, 0),
-    product: arr.reduce((product, num) => product * num, 1),
-    count: arr.length
-  };
-}
 // ========== GENERATE RANDOM DATA FOR TOPIC ==========
 function generateRandomDataForTopic(topic, difficulty, language) {
   const config = getDifficultyConfig(difficulty);
   const topicLower = topic.toLowerCase();
   const category = categorizeTopic(topic);
-  let exampleInput = '',
-    exampleOutput = '',
-    expectedType = 'mixed',
-    dataDescription = '';
+  let exampleInput = "",
+    exampleOutput = "",
+    expectedType = "mixed",
+    dataDescription = "";
 
   console.log(`\n========== GENERATING DATA FOR TOPIC ==========`);
   console.log(`Topic: ${topic}`);
   console.log(`Category: ${category}`);
   console.log(`Difficulty: ${difficulty}`);
 
-  if (category === 'OOP') {
+  if (category === "OOP") {
     const oopData = generateOOPExample(topic, language, difficulty);
     exampleInput = oopData.exampleInput;
-    expectedType = 'object';
+    expectedType = "object";
     dataDescription = `OOP example: ${oopData.className} class instance`;
     exampleOutput = `// ${oopData.className}.${oopData.methods[0]}() will return appropriate result`;
     console.log(`Generated OOP data for class: ${oopData.className}`);
-  } else if (category === 'ARRAY') {
-    const size = Math.floor(Math.random() * (config.arraySize.max - config.arraySize.min + 1)) + config.arraySize.min;
-    const arr = generateRandomArray(size, config.numberRange.min, config.numberRange.max);
-    expectedType = 'array';
+  } else if (category === "ARRAY") {
+    const size =
+      Math.floor(
+        Math.random() * (config.arraySize.max - config.arraySize.min + 1),
+      ) + config.arraySize.min;
+    const arr = generateRandomArray(
+      size,
+      config.numberRange.min,
+      config.numberRange.max,
+    );
+    expectedType = "array";
     const computed = computeArrayOutput(topicLower, arr);
     if (computed !== null) {
       exampleInput = JSON.stringify(arr);
@@ -497,13 +610,19 @@ function generateRandomDataForTopic(topic, difficulty, language) {
     }
     console.log(`Generated array: ${exampleInput}`);
     console.log(`Computed output: ${exampleOutput}`);
-  } else if (category === 'GRAPH') {
-    const size = difficulty === 'advanced' ? 9 : difficulty === 'intermediate' ? 7 : 5;
+  } else if (category === "GRAPH") {
+    const size =
+      difficulty === "advanced" ? 9 : difficulty === "intermediate" ? 7 : 5;
     const arr = generateRandomArray(size, -20, 40);
     exampleInput = JSON.stringify(arr);
-    expectedType = 'number';
+    expectedType = "number";
     dataDescription = `Binary Tree (level-order, ${size} nodes)`;
-    if (topicLower.includes('path') && (topicLower.includes('sum') || topicLower.includes('maximum') || topicLower.includes('max'))) {
+    if (
+      topicLower.includes("path") &&
+      (topicLower.includes("sum") ||
+        topicLower.includes("maximum") ||
+        topicLower.includes("max"))
+    ) {
       const correctSum = computeMaxRootToLeafPathSum(arr);
       exampleOutput = String(correctSum);
       console.log(`✅ Tree Max Root-to-Leaf Path Sum: ${correctSum}`);
@@ -511,105 +630,132 @@ function generateRandomDataForTopic(topic, difficulty, language) {
       exampleOutput = `// AI will compute tree result`;
     }
     console.log(`Generated tree input: ${exampleInput}`);
-  } else if (category === 'STRING') {
-    const length = Math.floor(Math.random() * (config.stringLength.max - config.stringLength.min + 1)) + config.stringLength.min;
+  } else if (category === "STRING") {
+    const length =
+      Math.floor(
+        Math.random() * (config.stringLength.max - config.stringLength.min + 1),
+      ) + config.stringLength.min;
     let str = generateRandomString(length);
     exampleInput = `"${str}"`;
-    expectedType = 'string';
+    expectedType = "string";
     dataDescription = `String with ${length} characters`;
-    if (topicLower.includes('reverse')) {
-      exampleOutput = `"${str.split('').reverse().join('')}"`;
-    } else if (topicLower.includes('palindrome')) {
+    if (topicLower.includes("reverse")) {
+      exampleOutput = `"${str.split("").reverse().join("")}"`;
+    } else if (topicLower.includes("palindrome")) {
       const half = str.substring(0, Math.floor(str.length / 2));
-      const palindrome = half + str.charAt(Math.floor(str.length / 2)) + half.split('').reverse().join('');
+      const palindrome =
+        half +
+        str.charAt(Math.floor(str.length / 2)) +
+        half.split("").reverse().join("");
       exampleInput = `"${palindrome}"`;
-      exampleOutput = 'true';
-      expectedType = 'boolean';
-    } else if (topicLower.includes('anagram')) {
+      exampleOutput = "true";
+      expectedType = "boolean";
+    } else if (topicLower.includes("anagram")) {
       const str1 = generateRandomString(length);
-      const str2 = str1.split('').sort(() => Math.random() - 0.5).join('');
+      const str2 = str1
+        .split("")
+        .sort(() => Math.random() - 0.5)
+        .join("");
       exampleInput = `["${str1}", "${str2}"]`;
-      exampleOutput = 'true';
-      expectedType = 'boolean';
-      dataDescription = 'Two strings for anagram check';
-    } else if (topicLower.includes('count') || topicLower.includes('frequency')) {
-      const vowels = 'aeiou';
-      const count = str.split('').filter(c => vowels.includes(c.toLowerCase())).length;
+      exampleOutput = "true";
+      expectedType = "boolean";
+      dataDescription = "Two strings for anagram check";
+    } else if (
+      topicLower.includes("count") ||
+      topicLower.includes("frequency")
+    ) {
+      const vowels = "aeiou";
+      const count = str
+        .split("")
+        .filter((c) => vowels.includes(c.toLowerCase())).length;
       exampleOutput = String(count);
-      expectedType = 'number';
+      expectedType = "number";
       dataDescription = `Count vowels in "${str}"`;
     } else {
       exampleOutput = `// AI will compute based on string operation`;
     }
     console.log(`Generated string: ${exampleInput}`);
-  } else if (category === 'MATH') {
-    const num = generateRandomNumber(1, difficulty === 'advanced' ? 15 : 10);
+  } else if (category === "MATH") {
+    const num = generateRandomNumber(1, difficulty === "advanced" ? 15 : 10);
     exampleInput = String(num);
-    expectedType = 'number';
+    expectedType = "number";
     dataDescription = `Number: ${num}`;
-    if (topicLower.includes('factorial')) {
+    if (topicLower.includes("factorial")) {
       let fact = 1;
       for (let i = 2; i <= num; i++) fact *= i;
       exampleOutput = String(fact);
-    } else if (topicLower.includes('fibonacci')) {
+    } else if (topicLower.includes("fibonacci")) {
       let a = 0,
         b = 1;
       for (let i = 2; i <= num; i++) [a, b] = [b, a + b];
       exampleOutput = String(num <= 1 ? num : b);
-    } else if (topicLower.includes('prime')) {
-      const isPrime = num > 1 && !Array.from({ length: Math.sqrt(num) }, (_, i) => i + 2).some(d => num % d === 0);
-      exampleOutput = isPrime ? 'true' : 'false';
-      expectedType = 'boolean';
-    } else if (topicLower.includes('gcd') || topicLower.includes('lcm')) {
+    } else if (topicLower.includes("prime")) {
+      const isPrime =
+        num > 1 &&
+        !Array.from({ length: Math.sqrt(num) }, (_, i) => i + 2).some(
+          (d) => num % d === 0,
+        );
+      exampleOutput = isPrime ? "true" : "false";
+      expectedType = "boolean";
+    } else if (topicLower.includes("gcd") || topicLower.includes("lcm")) {
       const num2 = generateRandomNumber(1, 20);
       exampleInput = `[${num}, ${num2}]`;
-      expectedType = 'number';
+      expectedType = "number";
       dataDescription = `Find GCD/LCM of ${num} and ${num2}`;
-      if (topicLower.includes('gcd')) {
+      if (topicLower.includes("gcd")) {
         let a = num,
           b = num2;
-        while (b) { [a, b] = [b, a % b]; }
+        while (b) {
+          [a, b] = [b, a % b];
+        }
         exampleOutput = String(a);
       } else {
         let a = num,
           b = num2,
           gcd = a;
-        while (b) { [gcd, b] = [b, gcd % b]; }
+        while (b) {
+          [gcd, b] = [b, gcd % b];
+        }
         exampleOutput = String((a * b) / gcd);
       }
     } else {
       exampleOutput = `// AI will compute math result`;
     }
     console.log(`Generated math input: ${exampleInput}`);
-  } else if (category === 'MATRIX') {
-    const rows = config.matrixSize.rows + (difficulty === 'advanced' ? 2 : 0);
-    const cols = config.matrixSize.cols + (difficulty === 'advanced' ? 2 : 0);
-    const matrix = generateRandomMatrix(rows, cols, config.numberRange.min, config.numberRange.max);
+  } else if (category === "MATRIX") {
+    const rows = config.matrixSize.rows + (difficulty === "advanced" ? 2 : 0);
+    const cols = config.matrixSize.cols + (difficulty === "advanced" ? 2 : 0);
+    const matrix = generateRandomMatrix(
+      rows,
+      cols,
+      config.numberRange.min,
+      config.numberRange.max,
+    );
     exampleInput = JSON.stringify(matrix);
-    expectedType = 'array';
+    expectedType = "array";
     dataDescription = `${rows}x${cols} matrix`;
     exampleOutput = `// AI will compute matrix operation result`;
     console.log(`Generated ${rows}x${cols} matrix`);
-  } else if (category === 'DATA_STRUCTURE') {
-    if (topicLower.includes('stack')) {
+  } else if (category === "DATA_STRUCTURE") {
+    if (topicLower.includes("stack")) {
       const stack = generateRandomArray(5, 1, 100);
       exampleInput = `Stack: ${JSON.stringify(stack)}`;
-      expectedType = 'mixed';
-      dataDescription = 'Stack data structure';
-    } else if (topicLower.includes('queue')) {
+      expectedType = "mixed";
+      dataDescription = "Stack data structure";
+    } else if (topicLower.includes("queue")) {
       const queue = generateRandomArray(5, 1, 100);
       exampleInput = `Queue: ${JSON.stringify(queue)}`;
-      expectedType = 'mixed';
-      dataDescription = 'Queue data structure';
-    } else if (topicLower.includes('hash') || topicLower.includes('map')) {
+      expectedType = "mixed";
+      dataDescription = "Queue data structure";
+    } else if (topicLower.includes("hash") || topicLower.includes("map")) {
       const obj = generateRandomObject(4);
       exampleInput = JSON.stringify(obj);
-      expectedType = 'object';
-      dataDescription = 'Hash map / dictionary';
+      expectedType = "object";
+      dataDescription = "Hash map / dictionary";
     } else {
       exampleInput = JSON.stringify(generateRandomArray(5, 1, 50));
-      expectedType = 'array';
-      dataDescription = 'Data structure example';
+      expectedType = "array";
+      dataDescription = "Data structure example";
     }
     exampleOutput = `// AI will compute based on ${topic} operation`;
     console.log(`Generated data structure input: ${exampleInput}`);
@@ -617,8 +763,8 @@ function generateRandomDataForTopic(topic, difficulty, language) {
     const size = Math.min(5, config.arraySize.min);
     const arr = generateRandomArray(size, -20, 20);
     exampleInput = JSON.stringify(arr);
-    expectedType = 'mixed';
-    dataDescription = 'General data';
+    expectedType = "mixed";
+    dataDescription = "General data";
     exampleOutput = `// AI will compute based on ${topic} operation`;
     console.log(`Generated default data: ${exampleInput}`);
   }
@@ -628,7 +774,13 @@ function generateRandomDataForTopic(topic, difficulty, language) {
   console.log(`Data description: ${dataDescription}`);
   console.log(`============================================\n`);
 
-  return { exampleInput, exampleOutput, expectedType, dataDescription, category };
+  return {
+    exampleInput,
+    exampleOutput,
+    expectedType,
+    dataDescription,
+    category,
+  };
 }
 
 // ========== UTILITY ==========
@@ -638,7 +790,13 @@ function getMeaningfulLines(code) {
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
     if (trimmed === "") continue;
-    if (trimmed.startsWith("//") || trimmed.startsWith("#") || trimmed.startsWith("*") || trimmed.startsWith("/*")) continue;
+    if (
+      trimmed.startsWith("//") ||
+      trimmed.startsWith("#") ||
+      trimmed.startsWith("*") ||
+      trimmed.startsWith("/*")
+    )
+      continue;
     if (/^[{}()\[\];,\s]+$/.test(trimmed)) continue;
     meaningful.push({ lineNum: i + 1, content: lines[i] });
   }
@@ -649,7 +807,7 @@ function validateQuestion(question, code) {
   const lines = code.split("\n");
   const maxLine = lines.length;
   const meaningfulLines = getMeaningfulLines(code);
-  const meaningfulLineNumbers = meaningfulLines.map(l => l.lineNum);
+  const meaningfulLineNumbers = meaningfulLines.map((l) => l.lineNum);
   const lineMatches = question.match(/\b(?:dòng|line)\s+(\d+)\b/gi) || [];
   for (const match of lineMatches) {
     const lineNum = parseInt(match.match(/\d+/)[0]);
@@ -667,16 +825,26 @@ function isProblemTooComplex(problemStatement, difficulty, topic = "") {
 }
 
 // ========== CALL AI ==========
-async function callAI(prompt, systemMessage = `You are an AI programming expert. Return valid JSON only. No markdown. No explanation outside JSON.`, feature = "general") {
+async function callAI(
+  prompt,
+  systemMessage = `You are an AI programming expert. Return valid JSON only. No markdown. No explanation outside JSON.`,
+  feature = "general",
+) {
   const requestId = generateRequestId();
   const model = "llama-3.3-70b-versatile";
   logRequest(model, requestId, prompt, 0.2);
   try {
-    const messages = [{ role: "system", content: systemMessage }, { role: "user", content: prompt }];
+    const messages = [
+      { role: "system", content: systemMessage },
+      { role: "user", content: prompt },
+    ];
     const startTime = Date.now();
     const result = await groq.invokeWithRetry(messages);
     const durationMs = Date.now() - startTime;
-    const responseContent = typeof result === "object" ? result.content || JSON.stringify(result) : result;
+    const responseContent =
+      typeof result === "object"
+        ? result.content || JSON.stringify(result)
+        : result;
     logResponse(model, requestId, responseContent, durationMs);
     const usage = groq.getLastUsage();
     let inputTokens = 0,
@@ -691,7 +859,14 @@ async function callAI(prompt, systemMessage = `You are an AI programming expert.
       outputTokens = Math.ceil(responseContent.length / 4);
       totalTokens = inputTokens + outputTokens;
     }
-    logTokenUsage(model, requestId, inputTokens, outputTokens, totalTokens, feature);
+    logTokenUsage(
+      model,
+      requestId,
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      feature,
+    );
     console.log(`\n========== TOKEN USAGE [${feature}] ==========`);
     console.log(`Input tokens: ${inputTokens}`);
     console.log(`Output tokens: ${outputTokens}`);
@@ -708,14 +883,15 @@ async function callAI(prompt, systemMessage = `You are an AI programming expert.
 
 function fallbackResponse(prompt) {
   return JSON.stringify({
-    problemStatement: "Write a function that takes an array of integers and returns the sum.",
+    problemStatement:
+      "Write a function that takes an array of integers and returns the sum.",
     functionSignature: "function sum(arr) { }",
     content: "Sum array elements",
     testCriteria: "Handle empty array",
     exampleInput: "[1, 2, 3]",
     exampleOutput: "6",
     description: "Sum all numbers in array",
-    expectedType: "number"
+    expectedType: "number",
   });
 }
 
@@ -754,14 +930,14 @@ RULES:
 1. The question MUST demonstrate "${topic}" specifically — not generic algorithms.
 2. Code must be valid ${language} syntax.
 3. Difficulty ${difficulty} means:
-   ${difficulty === 'beginner' ? '- simple, <15 lines, basic constructs' : difficulty === 'intermediate' ? '- 15–30 lines, standard patterns' : '- 30–50 lines, optimized, mention complexity'}
+   ${difficulty === "beginner" ? "- simple, <15 lines, basic constructs" : difficulty === "intermediate" ? "- 15–30 lines, standard patterns" : "- 30–50 lines, optimized, mention complexity"}
 4. Choose the appropriate input type for the topic:
    - OOP/class topics → use object instantiation as exampleInput
    - String topics → use a string as exampleInput
    - Graph/Tree/LinkedList → use a structure description
    - Numeric/Array topics → use a number array
    - YOU decide — pick what fits "${topic}" best.
-5. ${difficulty === 'advanced' ? 'Use LARGER datasets (12-18 elements for arrays)' : difficulty === 'intermediate' ? 'Use moderate datasets (8-12 elements)' : 'Use small datasets (5-7 elements)'}
+5. ${difficulty === "advanced" ? "Use LARGER datasets (12-18 elements for arrays)" : difficulty === "intermediate" ? "Use moderate datasets (8-12 elements)" : "Use small datasets (5-7 elements)"}
 6. Use numbers in range ${config.numberRange.min} to ${config.numberRange.max} for numeric data
 7. exampleOutput MUST be the CORRECT result of running functionSignature on exampleInput.
 8. **CRITICAL**: For OOP topics, the exampleInput MUST be a valid object/class instance, NOT an array.
@@ -812,21 +988,37 @@ Return ONLY valid JSON:
     if (!parsed.exampleInput || parsed.exampleInput === "// Example input") {
       parsed.exampleInput = randomData.exampleInput;
     }
-    if (randomData.exampleOutput &&
-      typeof randomData.exampleOutput === 'string' &&
+    if (
+      randomData.exampleOutput &&
+      typeof randomData.exampleOutput === "string" &&
       !randomData.exampleOutput.includes("AI will compute") &&
       !randomData.exampleOutput.trim().startsWith("//") &&
-      !randomData.exampleOutput.includes("will return appropriate result")) {
+      !randomData.exampleOutput.includes("will return appropriate result")
+    ) {
       parsed.exampleOutput = randomData.exampleOutput;
     } else {
-      if (!parsed.exampleOutput || parsed.exampleOutput.includes("//") || parsed.exampleOutput.includes("compute")) {
-        parsed.exampleOutput = computeFallbackOutput(topic, randomData.exampleInput, difficulty);
+      if (
+        !parsed.exampleOutput ||
+        parsed.exampleOutput.includes("//") ||
+        parsed.exampleOutput.includes("compute")
+      ) {
+        parsed.exampleOutput = computeFallbackOutput(
+          topic,
+          randomData.exampleInput,
+          difficulty,
+        );
       }
     }
     if (!parsed.expectedType) {
       parsed.expectedType = randomData.expectedType;
     }
-    const fixed = validateAndFixQuestion(parsed, topic, language, difficulty, randomData);
+    const fixed = validateAndFixQuestion(
+      parsed,
+      topic,
+      language,
+      difficulty,
+      randomData,
+    );
     return fixed;
   }
   return extractJson(fallbackResponse("coding problem"));
@@ -835,32 +1027,32 @@ Return ONLY valid JSON:
 // ========== TOPIC SPECIFIC REQUIREMENTS ==========
 function getTopicSpecificRequirements(topic, difficulty, category) {
   const topicLower = topic.toLowerCase();
-  if (category === 'OOP') {
+  if (category === "OOP") {
     return `- Create a class with appropriate properties and methods
-- ${difficulty === 'advanced' ? 'Use inheritance and polymorphism' : difficulty === 'intermediate' ? 'Use encapsulation and methods' : 'Basic class with constructor and methods'}
+- ${difficulty === "advanced" ? "Use inheritance and polymorphism" : difficulty === "intermediate" ? "Use encapsulation and methods" : "Basic class with constructor and methods"}
 - ExampleInput MUST be a class instance, NOT an array
 - Use proper OOP principles`;
   }
-  if (category === 'ARRAY') {
+  if (category === "ARRAY") {
     return `- Work with arrays/lists
-- ${difficulty === 'advanced' ? 'Handle large datasets with duplicates and edge cases' : 'Handle basic edge cases'}`;
+- ${difficulty === "advanced" ? "Handle large datasets with duplicates and edge cases" : "Handle basic edge cases"}`;
   }
-  if (category === 'GRAPH') {
+  if (category === "GRAPH") {
     return `- Work with trees/graphs
-- ${difficulty === 'advanced' ? 'Complex tree operations like path sum, traversal' : 'Basic tree operations'}
+- ${difficulty === "advanced" ? "Complex tree operations like path sum, traversal" : "Basic tree operations"}
 - Input is a binary tree represented as level-order array (-1 = null)`;
   }
-  if (category === 'STRING') {
+  if (category === "STRING") {
     return `- Work with strings
-- ${difficulty === 'advanced' ? 'Handle complex string operations with edge cases' : 'Basic string manipulation'}`;
+- ${difficulty === "advanced" ? "Handle complex string operations with edge cases" : "Basic string manipulation"}`;
   }
-  if (category === 'MATH') {
+  if (category === "MATH") {
     return `- Mathematical computation
-- ${difficulty === 'advanced' ? 'Complex mathematical operations' : 'Basic math operations'}`;
+- ${difficulty === "advanced" ? "Complex mathematical operations" : "Basic math operations"}`;
   }
-  if (category === 'MATRIX') {
+  if (category === "MATRIX") {
     return `- Work with 2D arrays/matrices
-- ${difficulty === 'advanced' ? 'Complex matrix operations' : 'Basic matrix operations'}`;
+- ${difficulty === "advanced" ? "Complex matrix operations" : "Basic matrix operations"}`;
   }
   return `- Demonstrate ${topic} concepts
 - Handle edge cases appropriately
@@ -872,24 +1064,35 @@ function computeFallbackOutput(topic, input, difficulty) {
   try {
     const topicLower = topic.toLowerCase();
     const category = categorizeTopic(topic);
-    if (category === 'OOP') return getOOPFallbackOutput(topic);
+    if (category === "OOP") return getOOPFallbackOutput(topic);
     let parsedInput;
-    try { parsedInput = JSON.parse(input); } catch {
-      if (input.startsWith('"') && input.endsWith('"')) parsedInput = input.slice(1, -1);
+    try {
+      parsedInput = JSON.parse(input);
+    } catch {
+      if (input.startsWith('"') && input.endsWith('"'))
+        parsedInput = input.slice(1, -1);
       else parsedInput = input;
     }
     if (Array.isArray(parsedInput)) {
       const result = computeArrayOutput(topicLower, parsedInput);
       if (result !== null) return result.value;
-      if (category === 'GRAPH' && topicLower.includes('path') && topicLower.includes('sum')) {
+      if (
+        category === "GRAPH" &&
+        topicLower.includes("path") &&
+        topicLower.includes("sum")
+      ) {
         return String(computeMaxRootToLeafPathSum(parsedInput));
       }
     }
-    if (typeof parsedInput === 'string') {
-      if (topicLower.includes('reverse')) return `"${parsedInput.split('').reverse().join('')}"`;
-      if (topicLower.includes('length') || topicLower.includes('count')) return String(parsedInput.length);
-      const vowelCount = parsedInput.split('').filter(c => 'aeiou'.includes(c.toLowerCase())).length;
-      if (topicLower.includes('vowel')) return String(vowelCount);
+    if (typeof parsedInput === "string") {
+      if (topicLower.includes("reverse"))
+        return `"${parsedInput.split("").reverse().join("")}"`;
+      if (topicLower.includes("length") || topicLower.includes("count"))
+        return String(parsedInput.length);
+      const vowelCount = parsedInput
+        .split("")
+        .filter((c) => "aeiou".includes(c.toLowerCase())).length;
+      if (topicLower.includes("vowel")) return String(vowelCount);
     }
     return `// AI will compute the correct output`;
   } catch (e) {
@@ -900,44 +1103,60 @@ function computeFallbackOutput(topic, input, difficulty) {
 
 function getOOPFallbackOutput(topic) {
   const topicLower = topic.toLowerCase();
-  if (topicLower.includes('student')) return 'Student instance created with name, age, grade, major';
-  if (topicLower.includes('employee')) return 'Employee instance created with name, age, role, salary';
-  if (topicLower.includes('product')) return 'Product instance created with name, price, category, stock';
-  if (topicLower.includes('bank') || topicLower.includes('account')) return 'BankAccount instance created with accountNumber, balance, owner, type';
-  if (topicLower.includes('vehicle') || topicLower.includes('car')) return 'Vehicle instance created with make, model, year, mileage';
-  return 'Class instance created successfully';
+  if (topicLower.includes("student"))
+    return "Student instance created with name, age, grade, major";
+  if (topicLower.includes("employee"))
+    return "Employee instance created with name, age, role, salary";
+  if (topicLower.includes("product"))
+    return "Product instance created with name, price, category, stock";
+  if (topicLower.includes("bank") || topicLower.includes("account"))
+    return "BankAccount instance created with accountNumber, balance, owner, type";
+  if (topicLower.includes("vehicle") || topicLower.includes("car"))
+    return "Vehicle instance created with make, model, year, mileage";
+  return "Class instance created successfully";
 }
 
 // ========== VALIDATE AND FIX QUESTION ==========
-
-function validateAndFixQuestion(parsed, topic, language, difficulty, randomData = null) {
+function validateAndFixQuestion(
+  parsed,
+  topic,
+  language,
+  difficulty,
+  randomData = null,
+) {
   const fixed = { ...parsed };
-
   const category = categorizeTopic(topic);
 
-  const ps = (fixed.problemStatement || '').toLowerCase();
-  const fn = (fixed.functionSignature || '').toLowerCase().replace(/\s+/g, '');
-
-  // ================== 1. VALIDATE BASIC FIELDS ==================
-
-  if (!fixed.problemStatement || fixed.problemStatement === "Problem not provided") {
-    fixed.problemStatement = getFallbackProblemStatement(topic, language, difficulty);
+  // 1. Validate problemStatement
+  if (
+    !fixed.problemStatement ||
+    fixed.problemStatement === "Problem not provided"
+  ) {
+    fixed.problemStatement = getFallbackProblemStatement(
+      topic,
+      language,
+      difficulty,
+    );
   }
-
-  if (!fixed.functionSignature || fixed.functionSignature === "// Function signature here") {
+  // 2. Validate functionSignature
+  if (
+    !fixed.functionSignature ||
+    fixed.functionSignature === "// Function signature here"
+  ) {
     fixed.functionSignature = getFallbackSignature(language, topic, category);
   }
-
+  // 3. Validate exampleInput
   if (!fixed.exampleInput || fixed.exampleInput === "// Example input") {
     fixed.exampleInput = getFallbackExampleInput(language, topic, category);
   }
-
-  const hasValidComputedOutput = randomData &&
-    typeof randomData.exampleOutput === 'string' &&
+  // 4. Validate exampleOutput (có thể ghi đè sau)
+  const hasValidComputedOutput =
+    randomData &&
+    randomData.exampleOutput &&
+    typeof randomData.exampleOutput === "string" &&
     !randomData.exampleOutput.includes("AI will compute") &&
     !randomData.exampleOutput.trim().startsWith("//") &&
     !randomData.exampleOutput.includes("will return appropriate result");
-
   if (hasValidComputedOutput) {
     fixed.exampleOutput = randomData.exampleOutput;
   } else if (
@@ -947,134 +1166,151 @@ function validateAndFixQuestion(parsed, topic, language, difficulty, randomData 
   ) {
     fixed.exampleOutput = getFallbackExampleOutput(topic, category);
   }
-
+  // 5. Validate testCriteria
   if (!fixed.testCriteria) {
     fixed.testCriteria = getFallbackTestCriteria(topic, difficulty);
   }
-
+  // 6. Validate description
   if (!fixed.description) {
     fixed.description = fixed.problemStatement.substring(0, 100);
   }
-
+  // 7. Ensure content exists
   fixed.content = fixed.problemStatement;
-
-  // ================== 2. SPECIAL CASE: STATISTICS (TÁCH RIÊNG) ==================
-
-  if (
-    fn.includes('calculatestatistics') ||
-    (ps.includes('sum') && ps.includes('product') && ps.includes('count'))
-  ) {
-    let inputArr = [];
-    try {
-      inputArr = JSON.parse(fixed.exampleInput || '[]');
-    } catch {
-      inputArr = [];
-    }
-
-    const stats = computeStatistics(inputArr);
-
-    fixed.exampleOutput = JSON.stringify(stats);
-    fixed.expectedType = 'object';
-
-    return fixed; // 🔥 STOP HERE
-  }
-
-  // ================== 3. ARRAY LOGIC (CHỈ ARRAY THUẦN) ==================
-
-  let inputArr = [];
-  try {
-    inputArr = JSON.parse(fixed.exampleInput || '[]');
-  } catch {
-    inputArr = [];
-  }
-
-  if (category === 'ARRAY' && Array.isArray(inputArr)) {
-
-    // ===== EMPTY ARRAY =====
-    if (inputArr.length === 0) {
-      if (fn.includes('maxsubarraysum')) {
-        fixed.exampleOutput = '0';
-        fixed.expectedType = 'number';
-      } else if (fn.includes('findsubarraysums')) {
-        fixed.exampleOutput = '[]';
-        fixed.expectedType = 'array';
-      } else {
-        fixed.exampleOutput = '[]';
-        fixed.expectedType = 'array';
-      }
-    }
-
-    // ===== NORMAL ARRAY =====
-    else {
-
-      if (
-        fn.includes('findsubarraywithmaxsum') ||
-        (ps.includes('subarray') && ps.includes('maximum sum'))
-      ) {
-        const sub = computeMaxSubarrayArray(inputArr);
-        fixed.exampleOutput = JSON.stringify(sub);
-        fixed.expectedType = 'array';
-      }
-
-      else if (
-        fn.includes('maxsubarraysum') ||
-        (ps.includes('maximum sum') && !ps.includes('subarray'))
-      ) {
-        const sum = computeMaxSubarraySum(inputArr);
-        fixed.exampleOutput = String(sum);
-        fixed.expectedType = 'number';
-      }
-
-      else if (
-        fn.includes('findsubarraysums')
-      ) {
-        const sums = computeAllSubarraySums(inputArr);
-        fixed.exampleOutput = JSON.stringify(sums);
-        fixed.expectedType = 'array';
-      }
-
-      else if (
-        fn.includes('findsecondmaxandmin')
-      ) {
-        const [max2, min2] = computeSecondMaxAndMin(inputArr);
-
-        fixed.exampleOutput = JSON.stringify(
-          max2 !== null && min2 !== null ? [max2, min2] : [null, null]
-        );
-        fixed.expectedType = 'array';
-      }
-
-      else if (fn.includes('findsecondmax')) {
-        const val = computeSecondMax(inputArr);
-        fixed.exampleOutput = JSON.stringify(val !== null ? [val] : [-1]);
-        fixed.expectedType = 'array';
-      }
-
-      else if (fn.includes('findsecondmin')) {
-        const val = computeSecondMin(inputArr);
-        fixed.exampleOutput = JSON.stringify(val !== null ? [val] : [-1]);
-        fixed.expectedType = 'array';
-      }
-    }
-  }
-
-  // ================== 4. OOP HANDLING ==================
-
-  if (
-    category === 'OOP' &&
-    fixed.exampleInput &&
-    fixed.exampleInput.startsWith('[')
-  ) {
-    const oopData = generateOOPExample(topic, language, difficulty);
-    fixed.exampleInput = oopData.exampleInput;
-    fixed.expectedType = 'object';
-  }
-
-  // ================== 5. FINAL FALLBACK TYPE ==================
-
+  // 8. Add expectedType if missing
   if (!fixed.expectedType) {
     fixed.expectedType = inferExpectedType(fixed.exampleOutput);
   }
+  // 9. For OOP topics, ensure exampleInput is not an array
+  if (
+    category === "OOP" &&
+    fixed.exampleInput &&
+    fixed.exampleInput.startsWith("[")
+  ) {
+    const oopData = generateOOPExample(topic, language, difficulty);
+    fixed.exampleInput = oopData.exampleInput;
+    fixed.expectedType = "object";
+  }
+
+  // ========== XỬ LÝ CÁC BÀI TOÁN PHỨC TẠP (dựa trên tên hàm hoặc problemStatement) ==========
+  if (category === "ARRAY" && fixed.problemStatement) {
+    const ps = fixed.problemStatement.toLowerCase();
+    const fn = (fixed.functionSignature || "")
+      .toLowerCase()
+      .replace(/\s+/g, "");
+
+    let inputArr;
+    try {
+      inputArr = JSON.parse(fixed.exampleInput);
+    } catch (e) {
+      /* bỏ qua */
+    }
+
+    if (Array.isArray(inputArr) && inputArr.length > 0) {
+      // 1. findSubarrayWithMaxSum - trả về mảng con
+      if (
+        fn.includes("findsubarraywithmaxsum") ||
+        (ps.includes("subarray") && ps.includes("maximum sum"))
+      ) {
+        const sub = computeMaxSubarrayArray(inputArr);
+        fixed.exampleOutput = JSON.stringify(sub);
+        fixed.expectedType = "array";
+        console.log(`[FIX] findSubarrayWithMaxSum: ${fixed.exampleOutput}`);
+      }
+      // 2. maxSubarraySum - trả về tổng
+      else if (
+        fn.includes("maxsubarraysum") ||
+        (ps.includes("maximum sum") && !ps.includes("return the subarray"))
+      ) {
+        const sum = computeMaxSubarraySum(inputArr);
+        fixed.exampleOutput = String(sum);
+        fixed.expectedType = "number";
+        console.log(`[FIX] maxSubarraySum: ${fixed.exampleOutput}`);
+      }
+      // 3. findSubarraySums - trả về mảng tất cả tổng
+      else if (
+        fn.includes("findsubarraysums") ||
+        (ps.includes("subarray") &&
+          ps.includes("sum") &&
+          !ps.includes("maximum") &&
+          !ps.includes("max"))
+      ) {
+        const sums = computeAllSubarraySums(inputArr);
+        fixed.exampleOutput = JSON.stringify(sums);
+        fixed.expectedType = "array";
+        console.log(`[FIX] findSubarraySums: ${fixed.exampleOutput}`);
+      }
+      // 4. findSecondMaxAndMin - trả về [secondMax, secondMin]
+      else if (
+        fn.includes("findsecondmaxandmin") ||
+        (ps.includes("second") && ps.includes("max") && ps.includes("min"))
+      ) {
+        const [secondMax, secondMin] = computeSecondMaxAndMin(inputArr);
+        if (secondMax !== null && secondMin !== null) {
+          fixed.exampleOutput = JSON.stringify([secondMax, secondMin]);
+        } else {
+          fixed.exampleOutput = "[null, null]";
+        }
+        fixed.expectedType = "array";
+        console.log(`[FIX] findSecondMaxAndMin: ${fixed.exampleOutput}`);
+      }
+      // 5. findSecondMax - trả về [secondMax]
+      else if (
+        fn.includes("findsecondmax") &&
+        !fn.includes("findsecondmaxandmin")
+      ) {
+        const secondMax = computeSecondMax(inputArr);
+        if (secondMax !== null) {
+          fixed.exampleOutput = JSON.stringify([secondMax]);
+        } else {
+          fixed.exampleOutput = JSON.stringify([-1]);
+        }
+        fixed.expectedType = "array";
+        console.log(`[FIX] findSecondMax: ${fixed.exampleOutput}`);
+      }
+      // 6. findSecondMin - trả về [secondMin]
+      else if (fn.includes("findsecondmin")) {
+        const secondMin = computeSecondMin(inputArr);
+        if (secondMin !== null) {
+          fixed.exampleOutput = JSON.stringify([secondMin]);
+        } else {
+          fixed.exampleOutput = JSON.stringify([-1]);
+        }
+        fixed.expectedType = "array";
+        console.log(`[FIX] findSecondMin: ${fixed.exampleOutput}`);
+      }
+    } else if (Array.isArray(inputArr) && inputArr.length === 0) {
+      // Xử lý mảng rỗng
+      if (
+        fn.includes("findsubarraywithmaxsum") ||
+        (ps.includes("subarray") && ps.includes("maximum sum"))
+      ) {
+        fixed.exampleOutput = "[]";
+        fixed.expectedType = "array";
+      } else if (
+        fn.includes("maxsubarraysum") ||
+        (ps.includes("maximum sum") && !ps.includes("return the subarray"))
+      ) {
+        fixed.exampleOutput = "0";
+        fixed.expectedType = "number";
+      } else if (
+        fn.includes("findsubarraysums") ||
+        (ps.includes("subarray") &&
+          ps.includes("sum") &&
+          !ps.includes("maximum"))
+      ) {
+        fixed.exampleOutput = "[]";
+        fixed.expectedType = "array";
+      } else if (
+        fn.includes("findsecondmax") ||
+        fn.includes("findsecondmin") ||
+        fn.includes("findsecondmaxandmin")
+      ) {
+        fixed.exampleOutput = JSON.stringify([-1]);
+        fixed.expectedType = "array";
+      }
+    }
+  }
+  // ================================================
 
   return fixed;
 }
@@ -1085,8 +1321,8 @@ function inferExpectedType(exampleOutput) {
   if (trimmed === "true" || trimmed === "false") return "boolean";
   if (trimmed === "null") return "null";
   if (trimmed === "undefined") return "undefined";
-  if (trimmed.startsWith('[') && trimmed.endsWith(']')) return "array";
-  if (trimmed.startsWith('{') && trimmed.endsWith('}')) return "object";
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) return "array";
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) return "object";
   if (trimmed.startsWith("'") && trimmed.endsWith("'")) return "string";
   if (trimmed.startsWith('"') && trimmed.endsWith('"')) return "string";
   if (!isNaN(parseFloat(trimmed))) return "number";
@@ -1105,7 +1341,7 @@ function getFallbackProblemStatement(topic, language, difficulty) {
 
 function getFallbackSignature(language, topic, category) {
   const cleanTopic = topic.toLowerCase().replace(/\s+/g, "_");
-  if (category === 'OOP') {
+  if (category === "OOP") {
     const signatures = {
       javascript: `class ${cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1)} {\n  constructor() { /* implementation */ }\n}`,
       python: `class ${cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1)}:\n    def __init__(self):\n        pass`,
@@ -1129,19 +1365,33 @@ function getFallbackSignature(language, topic, category) {
 
 function getFallbackExampleInput(language, topic, category) {
   const topicLower = topic.toLowerCase();
-  if (category === 'OOP') return generateOOPExample(topic, language, 'intermediate').exampleInput;
-  if (category === 'GRAPH') return "[1, 2, 3, 4, 5, 6, 7]";
-  if (topicLower.includes("array") || topicLower === "arrays") return "[1, 2, 3, 4, 5]";
-  if (topicLower.includes("string") || topicLower === "strings") return "'hello world'";
-  if (topicLower.includes("object") || topicLower === "objects") return "{name: 'John', age: 30}";
-  if (topicLower.includes("math") || topicLower.includes("factorial") || topicLower.includes("fibonacci")) return "5";
+  if (category === "OOP")
+    return generateOOPExample(topic, language, "intermediate").exampleInput;
+  if (category === "GRAPH") return "[1, 2, 3, 4, 5, 6, 7]";
+  if (topicLower.includes("array") || topicLower === "arrays")
+    return "[1, 2, 3, 4, 5]";
+  if (topicLower.includes("string") || topicLower === "strings")
+    return "'hello world'";
+  if (topicLower.includes("object") || topicLower === "objects")
+    return "{name: 'John', age: 30}";
+  if (
+    topicLower.includes("math") ||
+    topicLower.includes("factorial") ||
+    topicLower.includes("fibonacci")
+  )
+    return "5";
   return "// Example usage";
 }
 
 function getFallbackExampleOutput(topic, category) {
   const topicLower = topic.toLowerCase();
-  if (category === 'OOP') return getOOPFallbackOutput(topic);
-  if (category === 'GRAPH' && topicLower.includes('path') && topicLower.includes('sum')) return "20";
+  if (category === "OOP") return getOOPFallbackOutput(topic);
+  if (
+    category === "GRAPH" &&
+    topicLower.includes("path") &&
+    topicLower.includes("sum")
+  )
+    return "20";
   if (topicLower.includes("sum") || topicLower.includes("total")) return "15";
   if (topicLower.includes("max")) return "10";
   if (topicLower.includes("min")) return "1";
@@ -1164,11 +1414,21 @@ function getFallbackTestCriteria(topic, difficulty) {
 }
 
 // ========== CÁC HÀM GIẢI THÍCH (có fix số dòng) ==========
-async function generateExplanationQuestion(language, userCode, originalQuestion, difficulty = "beginner", askedLineNumbers = []) {
+async function generateExplanationQuestion(
+  language,
+  userCode,
+  originalQuestion,
+  difficulty = "beginner",
+  askedLineNumbers = [],
+) {
   const meaningfulLines = getMeaningfulLines(userCode);
-  let availableLines = meaningfulLines.filter(l => !askedLineNumbers.includes(l.lineNum));
+  let availableLines = meaningfulLines.filter(
+    (l) => !askedLineNumbers.includes(l.lineNum),
+  );
   if (availableLines.length === 0) availableLines = meaningfulLines;
-  const lineList = availableLines.map(l => `Line ${l.lineNum}: ${l.content.trim()}`).join("\n");
+  const lineList = availableLines
+    .map((l) => `Line ${l.lineNum}: ${l.content.trim()}`)
+    .join("\n");
   const prompt = `Language: ${language}
 Difficulty: ${difficulty}
 
@@ -1185,28 +1445,54 @@ Pick ONE line from above. Ask what it does and why it's needed. Quote the exact 
 Return JSON: {"type": "explain", "question": "...", "lineNumber": line_number}`;
   const result = await callAI(prompt, undefined, "generateExplanationQuestion");
   const parsed = extractJson(result);
-  if (parsed?.type === "explain" && parsed?.question && parsed?.lineNumber && validateQuestion(parsed.question, userCode)) {
+  if (
+    parsed?.type === "explain" &&
+    parsed?.question &&
+    parsed?.lineNumber &&
+    validateQuestion(parsed.question, userCode)
+  ) {
     if (!parsed.question.includes(parsed.lineNumber)) {
       parsed.question = `On line ${parsed.lineNumber}: ${parsed.question}`;
     }
-    return { type: "explain", question: parsed.question, lineNumber: parsed.lineNumber };
+    return {
+      type: "explain",
+      question: parsed.question,
+      lineNumber: parsed.lineNumber,
+    };
   }
   if (availableLines.length > 0) {
-    const random = availableLines[Math.floor(Math.random() * availableLines.length)];
+    const random =
+      availableLines[Math.floor(Math.random() * availableLines.length)];
     return {
       type: "explain",
       question: `On line ${random.lineNum}: \`${random.content.trim()}\`. What does this line do and why is it needed?`,
       lineNumber: random.lineNum,
     };
   }
-  return { type: "explain", question: "Explain the overall purpose and logic of the code above.", lineNumber: null };
+  return {
+    type: "explain",
+    question: "Explain the overall purpose and logic of the code above.",
+    lineNumber: null,
+  };
 }
 
-async function generateNextExplanationQuestion(language, userCode, userAnswer, currentQuestion, explainCount, difficulty = "beginner", askedLineNumbers = []) {
+async function generateNextExplanationQuestion(
+  language,
+  userCode,
+  userAnswer,
+  currentQuestion,
+  explainCount,
+  difficulty = "beginner",
+  askedLineNumbers = [],
+) {
   const meaningfulLines = getMeaningfulLines(userCode);
-  let availableLines = meaningfulLines.filter(l => !askedLineNumbers.includes(l.lineNum));
+  let availableLines = meaningfulLines.filter(
+    (l) => !askedLineNumbers.includes(l.lineNum),
+  );
   if (availableLines.length === 0) availableLines = meaningfulLines;
-  const lineList = availableLines.map(l => `Line ${l.lineNum}: ${l.content.trim()}`).join("\n");
+  const lineList = availableLines
+    .map((l) => `Line ${l.lineNum}: ${l.content.trim()}`)
+    .join("\n");
   const prompt = `Language: ${language}
 Previous Q: ${currentQuestion.question}
 Student's answer: ${userAnswer}
@@ -1222,23 +1508,41 @@ ${lineList}
 Ask about a DIFFERENT line.
 **YOUR QUESTION MUST START WITH "On line X: " WHERE X IS THE LINE NUMBER.**
 Return JSON: {"type": "explain", "question": "...", "lineNumber": line_number}`;
-  const result = await callAI(prompt, undefined, "generateNextExplanationQuestion");
+  const result = await callAI(
+    prompt,
+    undefined,
+    "generateNextExplanationQuestion",
+  );
   const parsed = extractJson(result);
-  if (parsed?.type === "explain" && parsed?.question && parsed?.lineNumber && validateQuestion(parsed.question, userCode)) {
+  if (
+    parsed?.type === "explain" &&
+    parsed?.question &&
+    parsed?.lineNumber &&
+    validateQuestion(parsed.question, userCode)
+  ) {
     if (!parsed.question.includes(parsed.lineNumber)) {
       parsed.question = `On line ${parsed.lineNumber}: ${parsed.question}`;
     }
-    return { type: "explain", question: parsed.question, lineNumber: parsed.lineNumber };
+    return {
+      type: "explain",
+      question: parsed.question,
+      lineNumber: parsed.lineNumber,
+    };
   }
   if (availableLines.length > 0) {
-    const random = availableLines[Math.floor(Math.random() * availableLines.length)];
+    const random =
+      availableLines[Math.floor(Math.random() * availableLines.length)];
     return {
       type: "explain",
       question: `On line ${random.lineNum}: \`${random.content.trim()}\`. Why is this line necessary?`,
       lineNumber: random.lineNum,
     };
   }
-  return { type: "explain", question: "Explain a different aspect of your code.", lineNumber: null };
+  return {
+    type: "explain",
+    question: "Explain a different aspect of your code.",
+    lineNumber: null,
+  };
 }
 
 async function evaluateExplanation(language, answer, currentQuestion) {
@@ -1255,21 +1559,37 @@ Evaluate if correct. Return JSON:
   try {
     const result = await callAI(prompt, undefined, "evaluateExplanation");
     const parsed = extractJson(result);
-    if (parsed && typeof parsed.correct === "boolean" && typeof parsed.feedback === "string") {
+    if (
+      parsed &&
+      typeof parsed.correct === "boolean" &&
+      typeof parsed.feedback === "string"
+    ) {
       return {
         correct: parsed.correct,
         feedback: parsed.feedback.replace(/\.\.\./g, "."),
-        modelAnswer: (parsed.modelAnswer || "No model answer.").replace(/\.\.\./g, "."),
+        modelAnswer: (parsed.modelAnswer || "No model answer.").replace(
+          /\.\.\./g,
+          ".",
+        ),
       };
     }
     throw new Error("Invalid response");
   } catch (e) {
     console.error("evaluateExplanation error:", e);
-    return { correct: false, feedback: "AI is overloaded. Please try again.", modelAnswer: "No model answer due to system error." };
+    return {
+      correct: false,
+      feedback: "AI is overloaded. Please try again.",
+      modelAnswer: "No model answer due to system error.",
+    };
   }
 }
 
-async function evaluateCodeAndExplanations(language, code, problemStatement, explainAnswers) {
+async function evaluateCodeAndExplanations(
+  language,
+  code,
+  problemStatement,
+  explainAnswers,
+) {
   const prompt = `Language: ${language}
 Problem: ${problemStatement}
 
@@ -1288,11 +1608,16 @@ Evaluate overall performance. Return JSON:
   "weaknesses": ["weakness1", "weakness2"]
 }`;
   try {
-    const result = await callAI(prompt, undefined, "evaluateCodeAndExplanations");
+    const result = await callAI(
+      prompt,
+      undefined,
+      "evaluateCodeAndExplanations",
+    );
     const parsed = extractJson(result);
     if (parsed && typeof parsed.summary === "string") {
       const clean = (str) => (str || "").replace(/\.\.\./g, ".");
-      const cleanArr = (arr) => Array.isArray(arr) ? arr.map(s => clean(s)) : [];
+      const cleanArr = (arr) =>
+        Array.isArray(arr) ? arr.map((s) => clean(s)) : [];
       return {
         summary: clean(parsed.summary),
         feedback: clean(parsed.feedback || parsed.summary),
@@ -1303,21 +1628,42 @@ Evaluate overall performance. Return JSON:
     throw new Error("Invalid response");
   } catch (e) {
     console.error("evaluateCodeAndExplanations error:", e);
-    return { summary: "Unable to evaluate due to system error.", feedback: "AI encountered an issue. Please try again.", strengths: [], weaknesses: [] };
+    return {
+      summary: "Unable to evaluate due to system error.",
+      feedback: "AI encountered an issue. Please try again.",
+      strengths: [],
+      weaknesses: [],
+    };
   }
 }
 
-async function evaluateCodeSubmission(language, code, problemStatement, expectedOutput = "") {
+async function evaluateCodeSubmission(
+  language,
+  code,
+  problemStatement,
+  expectedOutput = "",
+) {
   const syntaxPrompt = `Check syntax errors in this ${language} code:
 \`\`\`${language}
 ${code}
 \`\`\`
 Return JSON: {"hasSyntaxError": boolean, "feedback": "..."}`;
   try {
-    const syntaxResult = await callAI(syntaxPrompt, undefined, "evaluateCode_syntax");
+    const syntaxResult = await callAI(
+      syntaxPrompt,
+      undefined,
+      "evaluateCode_syntax",
+    );
     const syntaxParsed = extractJson(syntaxResult);
     if (syntaxParsed?.hasSyntaxError === true) {
-      return { correct: false, feedback: (syntaxParsed.feedback || "Syntax error detected.").replace(/\.\.\./g, "."), modelAnswer: "" };
+      return {
+        correct: false,
+        feedback: (syntaxParsed.feedback || "Syntax error detected.").replace(
+          /\.\.\./g,
+          ".",
+        ),
+        modelAnswer: "",
+      };
     }
     const logicPrompt = `Language: ${language}
 Problem: ${problemStatement}
@@ -1334,27 +1680,38 @@ Check if correct for typical valid inputs. Return JSON:
   "feedback": "One sentence.",
   "modelAnswer": "Short fix if wrong (empty if correct)"
 }`;
-    const logicResult = await callAI(logicPrompt, undefined, "evaluateCode_logic");
+    const logicResult = await callAI(
+      logicPrompt,
+      undefined,
+      "evaluateCode_logic",
+    );
     const logicParsed = extractJson(logicResult);
     if (logicParsed && typeof logicParsed.correct === "boolean") {
       return {
         correct: logicParsed.correct,
-        feedback: (logicParsed.feedback || (logicParsed.correct ? "Code is correct." : "Logic error.")).replace(/\.\.\./g, "."),
+        feedback: (
+          logicParsed.feedback ||
+          (logicParsed.correct ? "Code is correct." : "Logic error.")
+        ).replace(/\.\.\./g, "."),
         modelAnswer: (logicParsed.modelAnswer || "").replace(/\.\.\./g, "."),
       };
     }
     throw new Error("Invalid logic response");
   } catch (e) {
     console.error("evaluateCodeSubmission error:", e);
-    return { correct: false, feedback: "Unable to evaluate code due to AI error.", modelAnswer: "" };
+    return {
+      correct: false,
+      feedback: "Unable to evaluate code due to AI error.",
+      modelAnswer: "",
+    };
   }
 }
 
 // ========== FORMAT CODE WITH LINE NUMBERS ==========
 function formatCodeWithLineNumbers(code) {
   if (!code) return "";
-  const lines = code.split('\n');
-  return lines.map((line, index) => `${index + 1}: ${line}`).join('\n');
+  const lines = code.split("\n");
+  return lines.map((line, index) => `${index + 1}: ${line}`).join("\n");
 }
 
 // ========== EXPORTS ==========
@@ -1388,5 +1745,4 @@ module.exports = {
   computeSecondMaxAndMin,
   computeSecondMax,
   computeSecondMin,
-  computeStatistics,
 };

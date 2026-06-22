@@ -423,7 +423,7 @@ const startInterview = async (req, res) => {
 
     const normalizedLanguage = normalizeLanguage(language);
     const sessionId = uuidv4();
-    
+
     const question = await llmProvider.generateCodeQuestion(
       normalizedLanguage,
       domain,
@@ -449,7 +449,10 @@ const startInterview = async (req, res) => {
       difficulty,
       currentQuestion: {
         ...question,
-        problemStatement: question.problemStatement || question.description || "Problem statement not provided",
+        problemStatement:
+          question.problemStatement ||
+          question.description ||
+          "Problem statement not provided",
         type: "code",
         answered: false,
       },
