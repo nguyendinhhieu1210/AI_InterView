@@ -1,3 +1,4 @@
+// src/pages/WelcomePage.jsx
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -18,6 +19,13 @@ import {
   BarChart3,
 } from "lucide-react";
 
+// Import Base Components
+import { BaseButton } from "../components/base/BaseButton";
+import { BaseCard } from "../components/base/BaseCard";
+import { BaseBadge } from "../components/base/BaseBadge";
+import { BaseDropdown, DropdownItem } from "../components/base/BaseDropdown";
+
+// Import existing components
 import { StartInterviewModal } from "../components/StartInterviewModal";
 import { UploadCV } from "../components/UploadCV";
 import { AIFeedback } from "../components/AIFeedback";
@@ -188,7 +196,6 @@ export default function WelcomePage() {
     if (!authLoading && !isAuthenticated) navigate("/login");
   }, [authLoading, isAuthenticated, navigate]);
 
-  // Sửa thành:
   useEffect(() => {
     if (user) fetchActivities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -327,10 +334,10 @@ export default function WelcomePage() {
       {/* Loading Overlay */}
       {isLoggingOut && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center">
-          <div className="bg-card rounded-2xl p-8 shadow-soft text-center animate-fadeIn">
+          <BaseCard className="p-8 text-center">
             <div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-text font-medium">{texts.logout}...</p>
-          </div>
+          </BaseCard>
         </div>
       )}
 
@@ -350,76 +357,84 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 focus:outline-none group"
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-800 group-hover:ring-primary/30 transition-all">
-                <span className="text-white font-semibold text-base">
-                  {avatarLetter}
-                </span>
-              </div>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-semibold text-text">{displayName}</p>
-                <p className="text-xs text-muted">{user.email}</p>
-              </div>
-              <ChevronDown
-                className={`w-4 h-4 text-muted transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 animate-fadeIn overflow-hidden">
-                <div className="py-1">
-                  {[
-                    { icon: User, label: texts.yourProfile, path: "/profile" },
-                    {
-                      icon: Settings,
-                      label: texts.settings,
-                      path: "/settings",
-                    },
-                    {
-                      icon: HelpCircle,
-                      label: texts.helpSupport,
-                      path: "/help",
-                    },
-                    {
-                      icon: FileText,
-                      label: texts.interviewHistory,
-                      path: "/history",
-                    },
-                  ].map((item) => (
-                    <button
-                      key={item.path}
-                      onClick={() => {
-                        setDropdownOpen(false);
-                        navigate(item.path);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <item.icon className="w-4 h-4 text-primary" />{" "}
-                      {item.label}
-                    </button>
-                  ))}
+          <BaseDropdown
+            ref={dropdownRef}
+            isOpen={dropdownOpen}
+            onToggle={() => setDropdownOpen(!dropdownOpen)}
+            align="right"
+            trigger={
+              <div className="flex items-center gap-2 focus:outline-none group">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-800 group-hover:ring-primary/30 transition-all">
+                  <span className="text-white font-semibold text-base">
+                    {avatarLetter}
+                  </span>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                <button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" /> {texts.logout}
-                </button>
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-semibold text-text">
+                    {displayName}
+                  </p>
+                  <p className="text-xs text-muted">{user.email}</p>
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 text-muted transition-transform duration-200 ${
+                    dropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
               </div>
-            )}
-          </div>
+            }
+          >
+            <DropdownItem
+              icon={<User className="w-4 h-4" />}
+              onClick={() => {
+                setDropdownOpen(false);
+                navigate("/profile");
+              }}
+            >
+              {texts.yourProfile}
+            </DropdownItem>
+            <DropdownItem
+              icon={<Settings className="w-4 h-4" />}
+              onClick={() => {
+                setDropdownOpen(false);
+                navigate("/settings");
+              }}
+            >
+              {texts.settings}
+            </DropdownItem>
+            <DropdownItem
+              icon={<HelpCircle className="w-4 h-4" />}
+              onClick={() => {
+                setDropdownOpen(false);
+                navigate("/help");
+              }}
+            >
+              {texts.helpSupport}
+            </DropdownItem>
+            <DropdownItem
+              icon={<FileText className="w-4 h-4" />}
+              onClick={() => {
+                setDropdownOpen(false);
+                navigate("/history");
+              }}
+            >
+              {texts.interviewHistory}
+            </DropdownItem>
+            <div className="border-t border-border my-1"></div>
+            <DropdownItem
+              icon={<LogOut className="w-4 h-4" />}
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="text-error hover:bg-error/10"
+            >
+              {texts.logout}
+            </DropdownItem>
+          </BaseDropdown>
         </div>
       </header>
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 py-8 animate-fadeIn">
         {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-primary/10 via-secondary/5 to-primary/10 rounded-2xl p-6 mb-8 border border-border">
+        <BaseCard gradient className="p-6 mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-text mb-1">
@@ -440,15 +455,12 @@ export default function WelcomePage() {
               </div>
             </div>
           </div>
-        </div>
+        </BaseCard>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {statsCards.map((stat, idx) => (
-            <div
-              key={idx}
-              className="bg-card rounded-2xl p-6 shadow-soft border border-border hover:shadow-lg transition-all"
-            >
+            <BaseCard key={idx} hover className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted mb-1">{stat.label}</p>
@@ -460,66 +472,70 @@ export default function WelcomePage() {
                   <stat.icon className={`w-6 h-6 ${stat.color}`} />
                 </div>
               </div>
-            </div>
+            </BaseCard>
           ))}
         </div>
 
-        {/* Today's Activity Card - WITH FULL EFFECTS */}
-        <div className="relative rounded-2xl shadow-soft overflow-hidden mb-10 bg-card border border-border transition-all duration-300 hover:shadow-lg group">
+        {/* Today's Activity Card */}
+        <BaseCard
+          className="relative overflow-hidden p-6 md:p-7 mb-10 group"
+          hover
+        >
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 group-hover:animate-pulse"></div>
-          <div className="p-6 md:p-7">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-sm ring-1 ring-blue-200/50 dark:ring-blue-700/30">
-                  <Target className="w-5 h-5 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold text-text">
-                  {texts.todaySessions}
-                </h3>
+
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-sm ring-1 ring-blue-200/50 dark:ring-blue-700/30">
+                <Target className="w-5 h-5 text-primary" />
               </div>
-              <div className="px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-full">
-                <p className="text-sm font-bold text-primary dark:text-primary/90">
-                  {todayStats.total} {texts.total}
+              <h3 className="text-xl font-bold text-text">
+                {texts.todaySessions}
+              </h3>
+            </div>
+            <BaseBadge variant="primary" rounded>
+              {todayStats.total} {texts.total}
+            </BaseBadge>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {todaySessionsCard.map((item, idx) => (
+              <div
+                key={idx}
+                className={`rounded-xl p-4 ${item.bgColor} border-l-4 text-center hover:scale-105 transition-all duration-200`}
+                style={{ borderLeftColor: item.borderColor }}
+              >
+                <div className="flex justify-center mb-2">
+                  <div className="p-2 rounded-lg bg-white dark:bg-gray-800/50">
+                    <item.icon className={`w-5 h-5 ${item.color}`} />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-text">
+                  {historyLoading ? "..." : item.value}
+                </p>
+                <p className="text-xs text-muted mt-1 font-medium">
+                  {item.label}
                 </p>
               </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {todaySessionsCard.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`rounded-xl p-4 ${item.bgColor} border-l-4 text-center hover:scale-105 transition-all duration-200`}
-                  style={{ borderLeftColor: item.borderColor }}
-                >
-                  <div className="flex justify-center mb-2">
-                    <div className="p-2 rounded-lg bg-white dark:bg-gray-800/50">
-                      <item.icon className={`w-5 h-5 ${item.color}`} />
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold text-text">
-                    {historyLoading ? "..." : item.value}
-                  </p>
-                  <p className="text-xs text-muted mt-1 font-medium">
-                    {item.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-5 pt-4 text-center border-t border-border">
-              <p
-                className={`text-sm font-semibold flex items-center justify-center gap-2 ${todayStats.total > 0 ? "text-success" : "text-muted"}`}
-              >
-                <Award className="w-4 h-4" />
-                {todayStats.total > 0 ? texts.keepGoing : texts.restDay}
-              </p>
-            </div>
+            ))}
           </div>
-        </div>
+
+          <div className="mt-5 pt-4 text-center border-t border-border">
+            <p
+              className={`text-sm font-semibold flex items-center justify-center gap-2 ${
+                todayStats.total > 0 ? "text-success" : "text-muted"
+              }`}
+            >
+              <Award className="w-4 h-4" />
+              {todayStats.total > 0 ? texts.keepGoing : texts.restDay}
+            </p>
+          </div>
+        </BaseCard>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Performance Chart */}
           <div className="lg:col-span-2">
-            <div className="bg-card rounded-2xl border border-border p-6 shadow-soft">
+            <BaseCard className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-5 h-5 text-primary" />
                 <h3 className="text-lg font-semibold text-text">
@@ -527,13 +543,13 @@ export default function WelcomePage() {
                 </h3>
               </div>
               <PerformanceTrendChart />
-            </div>
+            </BaseCard>
           </div>
 
           {/* Right Column - Actions & Calendar & Feedback */}
           <div className="space-y-6">
             {/* Quick Actions */}
-            <div className="bg-card rounded-2xl border border-border p-6 shadow-soft">
+            <BaseCard className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Zap className="w-5 h-5 text-yellow-500" />
                 <h3 className="text-lg font-semibold text-text">
@@ -541,43 +557,51 @@ export default function WelcomePage() {
                 </h3>
               </div>
               <div className="space-y-3">
-                <button
+                <BaseButton
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  leftIcon={<MessageCircle className="w-4 h-4" />}
                   onClick={() => setIsModalOpen(true)}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-secondary text-white rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                 >
-                  <MessageCircle className="w-4 h-4" />
                   {texts.startNewInterview}
-                </button>
+                </BaseButton>
 
+                {/* UploadCV đã dùng BaseButton bên trong */}
                 <UploadCV onUploadSuccess={handleCVUploadSuccess} />
 
-                <button
+                <BaseButton
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 border-0 shadow-purple-500/30"
+                  leftIcon={<Zap className="w-4 h-4" />}
                   onClick={() => navigate("/live-coding")}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                 >
-                  <Zap className="w-4 h-4" />
                   {texts.codingInterview}
-                </button>
+                </BaseButton>
 
-                <button
+                <BaseButton
+                  variant="outline"
+                  size="lg"
+                  fullWidth
+                  leftIcon={<FileText className="w-4 h-4" />}
                   onClick={() => navigate("/history")}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                 >
-                  <FileText className="w-4 h-4" />
                   {texts.interviewHistory}
-                </button>
+                </BaseButton>
               </div>
-            </div>
+            </BaseCard>
 
             {/* Activity Calendar */}
-            <div className="bg-card rounded-2xl border border-border shadow-soft">
+            <BaseCard>
               <ActivityCalendar sessions={activities} />
-            </div>
+            </BaseCard>
 
             {/* AI Feedback */}
-            <div className="bg-card rounded-2xl border border-border shadow-soft overflow-hidden">
+            <BaseCard>
               <AIFeedback />
-            </div>
+            </BaseCard>
           </div>
         </div>
       </main>

@@ -4,46 +4,33 @@ const llmProvider = require("../services/liveCoding/llmProvider");
 const sessionStore = require("../services/liveCoding/sessionStore");
 const { v4: uuidv4 } = require("uuid");
 
-// ========== LANGUAGE MAPPING (hỗ trợ nhiều cách viết) ==========
+// ========== LANGUAGE MAPPING ==========
 const LANGUAGE_MAPPING = {
-  // Java
   java: "java",
   Java: "java",
-
-  // Python
   python: "python",
   py: "python",
   Python: "python",
-
-  // JavaScript
   javascript: "javascript",
   js: "javascript",
   JavaScript: "javascript",
-
-  // TypeScript
   typescript: "javascript",
   ts: "javascript",
   TypeScript: "javascript",
-
-  // C++
   cpp: "cpp",
   "c++": "cpp",
   "C++": "cpp",
   Cpp: "cpp",
-
-  // C#
   csharp: "csharp",
   "c#": "csharp",
   "C#": "csharp",
   CSharp: "csharp",
-
-  // Go
   go: "go",
   golang: "go",
   Go: "go",
 };
 
-// ========== STATIC DATA - COMPLETE ==========
+// ========== STATIC DATA ==========
 const languageDomains = {
   java: ["OOP", "DSA", "Concurrency", "Collections", "Streams"],
   python: ["OOP", "DSA", "Functional Programming", "Decorators", "Generators"],
@@ -84,9 +71,7 @@ const languageDomains = {
   ],
 };
 
-// Domain Topics cho từng ngôn ngữ - ĐẦY ĐỦ
 const domainTopics = {
-  // ========== JAVA ==========
   java: {
     OOP: [
       "Inheritance",
@@ -130,8 +115,6 @@ const domainTopics = {
       "Optional",
     ],
   },
-
-  // ========== PYTHON ==========
   python: {
     OOP: [
       "Classes",
@@ -171,8 +154,6 @@ const domainTopics = {
       "Iterators",
     ],
   },
-
-  // ========== JAVASCRIPT ==========
   javascript: {
     OOP: [
       "Prototypes",
@@ -199,8 +180,6 @@ const domainTopics = {
     ],
     Closures: ["Lexical Scoping", "Private Variables", "Modules", "IIFE"],
   },
-
-  // ========== C++ ==========
   cpp: {
     OOP: [
       "Classes",
@@ -249,8 +228,6 @@ const domainTopics = {
       "Rvalue References",
     ],
   },
-
-  // ========== C# ==========
   csharp: {
     OOP: [
       "Classes",
@@ -305,8 +282,6 @@ const domainTopics = {
     ],
     Indexers: ["Indexers", "Overload Indexers", "Multi-dimensional Indexers"],
   },
-
-  // ========== GO ==========
   go: {
     Concurrency: [
       "Goroutines",
@@ -366,7 +341,7 @@ const domainTopics = {
 // ========== PURE HELPERS ==========
 const normalizeLanguage = (language) => {
   const normalized = LANGUAGE_MAPPING[language?.toLowerCase()];
-  return normalized || "javascript"; // default to javascript
+  return normalized || "javascript";
 };
 
 const getDomainsForLanguage = (language) => {
@@ -377,16 +352,12 @@ const getDomainsForLanguage = (language) => {
 const getTopicsForDomain = (language, domain) => {
   const normalized = normalizeLanguage(language);
   const domains = domainTopics[normalized];
-
   if (domains && domains[domain]) return domains[domain];
-
-  // Fallback domains nếu không tìm thấy
   const fallbacks = {
     OOP: ["Classes", "Inheritance", "Polymorphism", "Encapsulation"],
     DSA: ["Arrays", "Lists", "Stacks", "Queues", "Sorting", "Searching"],
     Basic: ["Variables", "Functions", "Loops", "Conditionals"],
   };
-
   return (
     fallbacks[domain] || [
       "Basic Syntax",
@@ -443,10 +414,16 @@ const startInterview = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Normalize language
-    const normalizedLanguage = normalizeLanguage(language);
+    console.log(`\n========== STARTING INTERVIEW ==========`);
+    console.log(`Language: ${language}`);
+    console.log(`Domain: ${domain}`);
+    console.log(`Topic: ${topicName}`);
+    console.log(`Difficulty: ${difficulty}`);
+    console.log(`=========================================\n`);
 
+    const normalizedLanguage = normalizeLanguage(language);
     const sessionId = uuidv4();
+
     const question = await llmProvider.generateCodeQuestion(
       normalizedLanguage,
       domain,
@@ -454,10 +431,19 @@ const startInterview = async (req, res) => {
       difficulty,
     );
 
+    // Log kết quả
+    console.log(`\n========== QUESTION GENERATED ==========`);
+    console.log(`Problem: ${question.problemStatement?.substring(0, 100)}...`);
+    console.log(`Signature: ${question.functionSignature}`);
+    console.log(`Example Input: ${question.exampleInput}`);
+    console.log(`Example Output: ${question.exampleOutput}`);
+    console.log(`Expected Type: ${question.expectedType}`);
+    console.log(`=========================================\n`);
+
     const sessionData = {
       userId: req.user.id,
-      language: normalizedLanguage, // Lưu language đã chuẩn hóa
-      originalLanguage: language, // Giữ lại original để hiển thị
+      language: normalizedLanguage,
+      originalLanguage: language,
       domain,
       topic: topicName,
       difficulty,
@@ -480,7 +466,7 @@ const startInterview = async (req, res) => {
     sessionStore.setSession(sessionId, sessionData);
     res.status(201).json({ sessionId, question: sessionData.currentQuestion });
   } catch (error) {
-    console.error(error);
+    console.error("Start interview error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -539,12 +525,14 @@ const submitCode = async (req, res) => {
     };
     session.explainAnswers = [];
     session.explainCount = 0;
+    session.askedLineNumbers = []; // Reset cho vòng giải thích mới
 
     const explainQuestion = await llmProvider.generateExplanationQuestion(
       session.language,
       code,
       session.currentQuestion,
       session.difficulty,
+      session.askedLineNumbers,
     );
 
     session.currentQuestion = {
@@ -586,6 +574,10 @@ const submitExplanation = async (req, res) => {
         .json({ error: "This question has already been answered" });
     }
 
+    if (!session.askedLineNumbers) {
+      session.askedLineNumbers = [];
+    }
+
     let evalResult;
     try {
       evalResult = await llmProvider.evaluateExplanation(
@@ -606,12 +598,24 @@ const submitExplanation = async (req, res) => {
       });
     }
 
+    // ĐƠN GIẢN: Lưu line number đã hỏi vào mảng
+    const currentLineNumber = session.currentQuestion.lineNumber;
+    if (
+      currentLineNumber &&
+      !session.askedLineNumbers.includes(currentLineNumber)
+    ) {
+      session.askedLineNumbers.push(currentLineNumber);
+    }
+
+    console.log(`[DEBUG] Asked lines: ${session.askedLineNumbers.join(", ")}`);
+
     session.explainAnswers.push({
       question: session.currentQuestion.question,
       answer,
       isCorrect: evalResult.correct,
       feedback: cleanText(evalResult.feedback),
       modelAnswer: cleanText(evalResult.modelAnswer),
+      lineNumber: currentLineNumber,
     });
     session.explainCount++;
     session.currentQuestion.answered = true;
@@ -626,28 +630,31 @@ const submitExplanation = async (req, res) => {
           session.currentQuestion,
           session.explainCount,
           session.difficulty,
+          session.askedLineNumbers, // Truyền mảng line numbers đã hỏi cho AI
         );
       } catch (err) {
         console.error("AI generateNextExplanationQuestion error:", err);
-        nextExplain = {
-          type: "explain",
-          question: "Explain a different aspect of your code.",
-        };
+        nextExplain = null;
       }
 
-      session.currentQuestion = {
-        ...nextExplain,
-        type: "explain",
-        answered: false,
-      };
-      sessionStore.setSession(sessionId, session);
+      if (nextExplain && nextExplain.lineNumber) {
+        session.currentQuestion = {
+          ...nextExplain,
+          type: "explain",
+          answered: false,
+        };
+        sessionStore.setSession(sessionId, session);
 
-      return res.json({
-        correct: evalResult.correct,
-        feedback: cleanText(evalResult.feedback),
-        modelAnswer: cleanText(evalResult.modelAnswer),
-        nextQuestion: session.currentQuestion,
-      });
+        return res.json({
+          correct: evalResult.correct,
+          feedback: cleanText(evalResult.feedback),
+          modelAnswer: cleanText(evalResult.modelAnswer),
+          nextQuestion: session.currentQuestion,
+        });
+      } else {
+        // Nếu AI không tạo được câu hỏi mới, kết thúc vòng
+        session.explainCount = MAX_EXPLAIN;
+      }
     }
 
     // Final evaluation
@@ -708,6 +715,7 @@ const submitExplanation = async (req, res) => {
     session.explainAnswers = [];
     session.explainCount = 0;
     session.currentCodeSubmission = null;
+    session.askedLineNumbers = [];
     sessionStore.setSession(sessionId, session);
 
     res.json({
@@ -744,12 +752,19 @@ const nextCodeQuestion = async (req, res) => {
     session.explainAnswers = [];
     session.explainCount = 0;
     session.currentCodeSubmission = null;
+    session.askedLineNumbers = [];
 
     const newCodeQuestion = await llmProvider.generateCodeQuestion(
       session.language,
       session.domain,
       session.topic,
       session.difficulty,
+      [],
+      { singleCall: true },
+    );
+
+    const codeWithLines = llmProvider.formatCodeWithLineNumbers(
+      newCodeQuestion.functionSignature || newCodeQuestion.problemStatement,
     );
 
     session.currentQuestion = {
@@ -758,6 +773,7 @@ const nextCodeQuestion = async (req, res) => {
         newCodeQuestion.problemStatement ||
         newCodeQuestion.description ||
         "Problem statement not provided",
+      codeWithLines: codeWithLines,
       type: "code",
       answered: false,
     };
@@ -778,7 +794,6 @@ const getLastEvaluation = async (req, res) => {
       userId: req.user.id,
     });
     if (!session) return res.status(404).json({ error: "Session not found" });
-
     const lastEntry = session.codeHistory[session.codeHistory.length - 1];
     if (!lastEntry || !lastEntry.evaluation) {
       return res.json({ evaluation: null, message: "No evaluation yet" });
@@ -797,7 +812,6 @@ const getSessionHistory = async (req, res) => {
       userId: req.user.id,
     });
     if (!session) return res.status(404).json({ error: "Session not found" });
-
     res.json({
       sessionId: session.id,
       language: session.language,
@@ -818,7 +832,6 @@ const getSessionList = async (req, res) => {
     const sessions = await LiveCodingSession.find({ userId: req.user.id })
       .sort({ createdAt: -1 })
       .lean();
-
     const history = sessions.map((session) => ({
       id: session.id,
       language: session.language,
@@ -829,7 +842,6 @@ const getSessionList = async (req, res) => {
       updatedAt: session.updatedAt,
       totalQuestions: session.codeHistory?.length || 0,
     }));
-
     res.json({ success: true, history });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -843,11 +855,9 @@ const getSessionDetail = async (req, res) => {
       id: sessionId,
       userId: req.user.id,
     }).lean();
-
     if (!session) {
       return res.status(404).json({ success: false, session: null });
     }
-
     return res.json({
       success: true,
       session: {
@@ -868,7 +878,7 @@ const getSessionDetail = async (req, res) => {
   }
 };
 
-// ========== ADMIN CONTROLLERS (giữ nguyên) ==========
+// ========== ADMIN CONTROLLERS ==========
 const getAllCodingSessions = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -876,7 +886,6 @@ const getAllCodingSessions = async (req, res) => {
     let skip = (page - 1) * (parseInt(limit) || 10);
     let usePagination = true;
 
-    // Nếu limit là 'all' hoặc '0' => lấy toàn bộ, không phân trang
     if (limit === "all" || limit === "0") {
       usePagination = false;
       limit = null;
@@ -887,7 +896,6 @@ const getAllCodingSessions = async (req, res) => {
     }
 
     const { search, language, difficulty, fromDate, toDate } = req.query;
-
     let query = {};
 
     if (search) {
@@ -911,7 +919,6 @@ const getAllCodingSessions = async (req, res) => {
     }
 
     const total = await LiveCodingSession.countDocuments(query);
-
     let sessionsQuery = LiveCodingSession.find(query).sort({ createdAt: -1 });
     if (usePagination) {
       sessionsQuery = sessionsQuery.skip(skip).limit(limit);
@@ -930,7 +937,6 @@ const getAllCodingSessions = async (req, res) => {
             ? session.codeHistory[session.codeHistory.length - 1]?.evaluation
                 ?.summary || "N/A"
             : "N/A";
-
         return {
           id: session.id,
           userId: session.userId,
@@ -948,7 +954,6 @@ const getAllCodingSessions = async (req, res) => {
       }),
     );
 
-    // Thống kê toàn bộ (không bị ảnh hưởng bởi phân trang)
     const totalSessions = await LiveCodingSession.countDocuments();
     const uniqueUsers = await LiveCodingSession.distinct("userId");
     const languagesStats = await LiveCodingSession.aggregate([
@@ -983,16 +988,13 @@ const getCodingSessionByIdForAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     const session = await LiveCodingSession.findOne({ id }).lean();
-
     if (!session) {
       return res.status(404).json({ message: "Coding session not found" });
     }
-
     const User = require("../models/User");
     const user = await User.findById(session.userId).select(
       "fullName email userName",
     );
-
     const codeHistory = (session.codeHistory || []).map((entry, idx) => ({
       index: idx + 1,
       code: entry.code,
@@ -1006,7 +1008,6 @@ const getCodingSessionByIdForAdmin = async (req, res) => {
         weaknesses: entry.evaluation?.weaknesses || [],
       },
     }));
-
     res.json({
       success: true,
       session: {
@@ -1033,11 +1034,9 @@ const deleteCodingSessionById = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await LiveCodingSession.findOneAndDelete({ id });
-
     if (!result) {
       return res.status(404).json({ message: "Coding session not found" });
     }
-
     res.json({ success: true, message: "Coding session deleted successfully" });
   } catch (error) {
     console.error("Delete coding session error:", error);

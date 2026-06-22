@@ -1,3 +1,4 @@
+// frontend/src/pages/Dashboard/Dashboard.jsx
 import { useState, useEffect, useCallback } from "react";
 import api from "../../services/api";
 import {
@@ -162,6 +163,7 @@ export default function Dashboard() {
     adaptive: 0,
     coding: 0,
     tokens: 0,
+    totalTokens: 0,
     today: 0,
   });
   const [dailySessions, setDaily] = useState({ labels: [], counts: [] });
@@ -239,7 +241,21 @@ export default function Dashboard() {
       const statsRes = await api.get("/users/admin/users/stats");
       setStats(statsRes.data);
 
-      // 2. Fetch all admin endpoints with ?limit=all
+      // 2. Fetch token usage từ file log
+      let todayTokens = 0;
+      let totalTokensAllTime = 0;
+      try {
+        const tokenRes = await api.get("/admin/tokens/today");
+        todayTokens = tokenRes.data?.todayTokens || 0;
+        totalTokensAllTime = tokenRes.data?.totalTokensAllTime || 0;
+      } catch (tokenErr) {
+        console.warn("Không thể lấy token từ file log:", tokenErr);
+        // Fallback: lấy từ statsRes nếu có
+        todayTokens = statsRes.data?.totalTokens || 0;
+        totalTokensAllTime = statsRes.data?.totalTokens || 0;
+      }
+
+      // 3. Fetch all admin endpoints with ?limit=all
       const [ivRes, cvRes, adRes, lcRes] = await Promise.allSettled([
         api.get("/interview/admin/interviews?limit=all"),
         api.get("/cv/admin/sessions?limit=all"),
@@ -282,14 +298,13 @@ export default function Dashboard() {
         ...codingSessions.filter(isToday),
       ].length;
 
-      const totalTokens = statsRes.data.totalTokens || 0;
-
       setTotals({
         interview: interviewSessions.length,
         cv: cvSessions.length,
         adaptive: adaptiveSessions.length,
         coding: codingSessions.length,
-        tokens: totalTokens,
+        tokens: todayTokens,
+        totalTokens: totalTokensAllTime,
         today: totalToday,
       });
 
@@ -572,6 +587,7 @@ export default function Dashboard() {
 
   const maxSessions = topUsers[0]?.count ?? 1;
 
+  // KPI Cards - Đã bỏ Tokens Used và thay bằng Tokens Used Today
   const kpiCards = [
     {
       icon: Users,
@@ -600,7 +616,7 @@ export default function Dashboard() {
       iconColor: "#854F0B",
       value: totals.adaptive,
       label: "Adaptive Interview",
-    }, // Thêm Adaptive
+    },
     {
       icon: Code,
       iconBg: "#EAF3DE",
@@ -613,7 +629,7 @@ export default function Dashboard() {
       iconBg: "#FAECE7",
       iconColor: "#993C1D",
       value: totals.tokens,
-      label: "Tokens Used",
+      label: "Tokens Used Today",
       suffix: " tokens",
     },
     {
@@ -670,7 +686,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* KPI Cards - 7 cards now */}
+      {/* KPI Cards - 7 cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
         {kpiCards.map((c, i) => (
           <KpiCard key={i} {...c} />

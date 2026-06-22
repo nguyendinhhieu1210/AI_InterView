@@ -1,543 +1,727 @@
-// services/liveCoding/questionGuidance.js - COMPLETE FIXED VERSION WITH DIFFICULTY
 
-// ========== 1. MAP TOPIC -> CATEGORY với STYLE ==========
-const TOPIC_CATEGORY = {
-  Arrays: { category: "array_basic", style: "function" },
-  Lists: { category: "linear_ds", style: "function" },
-  Tuples: { category: "linear_ds", style: "function" },
-  Sorting: { category: "algorithm", style: "function" },
-  Searching: { category: "algorithm", style: "function" },
-  "Higher-order Functions": { category: "functional", style: "function" },
-  "Pure Functions": { category: "functional", style: "function" },
-  Currying: { category: "functional", style: "function" },
-  "Error Handling": { category: "error_handling", style: "function" },
-  Packages: { category: "error_handling", style: "function" },
-  Inheritance: { category: "oop_inheritance", style: "class" },
-  Polymorphism: { category: "oop_inheritance", style: "class" },
-  Encapsulation: { category: "oop_encapsulation", style: "class" },
-  "Private Variables": { category: "oop_encapsulation", style: "class" },
-  Abstraction: { category: "oop_abstraction", style: "class" },
-  Interfaces: { category: "oop_abstraction", style: "class" },
-  Classes: { category: "oop_basic", style: "class" },
-  Prototypes: { category: "oop_basic", style: "class" },
-  "Magic Methods": { category: "oop_basic", style: "class" },
-  List: { category: "linear_ds", style: "auto" },
-  Queue: { category: "linear_ds", style: "auto" },
-  Stacks: { category: "linear_ds", style: "auto" },
-  Queues: { category: "linear_ds", style: "auto" },
-  Iterators: { category: "linear_ds", style: "auto" },
-  Dictionaries: { category: "hashmap_ds", style: "auto" },
-  Sets: { category: "hashmap_ds", style: "auto" },
-  Set: { category: "hashmap_ds", style: "auto" },
-  Map: { category: "hashmap_ds", style: "auto" },
-  "Linked Lists": { category: "linked_list", style: "auto" },
-  Trees: { category: "tree_graph", style: "auto" },
-  Graphs: { category: "tree_graph", style: "auto" },
-  "Smart Pointers": { category: "cpp_smart_pointers", style: "class" },
-  "Move Semantics": { category: "cpp_move", style: "function" },
-  RAII: { category: "cpp_raii", style: "class" },
-  Templates: { category: "cpp_templates", style: "function" },
-  STL: { category: "cpp_stl", style: "function" },
-  "Virtual Functions": { category: "cpp_virtual", style: "class" },
-  Events: { category: "csharp_events", style: "class" },
-  Properties: { category: "csharp_properties", style: "class" },
-  Indexers: { category: "csharp_indexers", style: "class" },
-  Delegates: { category: "csharp_delegates", style: "function" },
-  LINQ: { category: "csharp_linq", style: "functional_builtin" },
-  "async/await": { category: "csharp_async", style: "async" },
-  Goroutines: { category: "go_goroutines", style: "conceptual" },
-  Channels: { category: "go_channels", style: "conceptual" },
-  Select: { category: "go_select", style: "conceptual" },
-  WaitGroups: { category: "go_waitgroups", style: "conceptual" },
-  Context: { category: "go_context", style: "conceptual" },
-  defer: { category: "go_defer", style: "function" },
-  Threads: { category: "concurrency", style: "conceptual" },
-  Runnable: { category: "concurrency", style: "conceptual" },
-  Synchronized: { category: "concurrency", style: "conceptual" },
-  Locks: { category: "concurrency", style: "conceptual" },
-  Executors: { category: "concurrency", style: "conceptual" },
-  Lambda: { category: "functional", style: "functional_builtin" },
-  Lambdas: { category: "functional", style: "functional_builtin" },
-  Filter: { category: "functional", style: "functional_builtin" },
-  Reduce: { category: "functional", style: "functional_builtin" },
-  "Filter/Map/Reduce": { category: "functional", style: "functional_builtin" },
-  "Stream API": { category: "functional", style: "functional_builtin" },
-  Collectors: { category: "functional", style: "functional_builtin" },
-  Decorators: { category: "decorators", style: "decorator" },
-  "Function Decorators": { category: "decorators", style: "decorator" },
-  "Class Decorators": { category: "decorators", style: "decorator" },
-  Functools: { category: "decorators", style: "decorator" },
-  Yield: { category: "generators", style: "generator" },
-  "Generator Expressions": { category: "generators", style: "generator" },
-  "Lazy Evaluation": { category: "generators", style: "generator" },
-  Callbacks: { category: "async", style: "async" },
-  Promises: { category: "async", style: "async" },
-  "Async/Await": { category: "async", style: "async" },
-  "Event Loop": { category: "async", style: "async" },
-  Selectors: { category: "dom", style: "dom" },
-  Events: { category: "dom", style: "dom" },
-  "Dynamic Rendering": { category: "dom", style: "dom" },
-  Closures: { category: "closures", style: "closure" },
-  "Lexical Scoping": { category: "closures", style: "closure" },
-  Modules: { category: "closures", style: "closure" },
+// ========== TOPIC GUIDANCE ==========
+function getTopicGuidance(topic, language, difficulty) {
+  const topicLower = topic.toLowerCase();
+
+  let guidance = `TOPIC: ${topic} in ${language}\n`;
+  guidance += `DIFFICULTY: ${difficulty.toUpperCase()}\n\n`;
+
+  // ===== OBJECT (OOP) - ENHANCED =====
+  if (isOOPTopic(topic)) {
+    const oopType = getOOPType(topic);
+    guidance += getOOPGuidance(oopType, difficulty);
+  }
+  // ===== ARRAYS =====
+  else if (topicLower.includes("array") || topicLower.includes("list")) {
+    guidance += getArrayGuidance(difficulty);
+  }
+  // ===== SORTING =====
+  else if (topicLower.includes("sort") || topicLower.includes("sorting")) {
+    guidance += getSortingGuidance(difficulty);
+  }
+  // ===== QUEUE =====
+  else if (topicLower.includes("queue")) {
+    guidance += getQueueGuidance();
+  }
+  // ===== STACK =====
+  else if (topicLower.includes("stack")) {
+    guidance += getStackGuidance();
+  }
+  // ===== STRINGS =====
+  else if (topicLower.includes("string")) {
+    guidance += getStringGuidance();
+  }
+  // ===== MATH =====
+  else if (topicLower.includes("math") || topicLower.includes("factorial") || 
+           topicLower.includes("fibonacci") || topicLower.includes("prime")) {
+    guidance += getMathGuidance(difficulty);
+  }
+  // ===== COLLECTIONS =====
+  else if (topicLower.includes("collection") || topicLower.includes("list") || 
+           topicLower.includes("arraylist") || topicLower.includes("linkedlist")) {
+    guidance += getCollectionsGuidance(difficulty);
+  }
+  // ===== DEFAULT =====
+  else {
+    guidance += getDefaultGuidance(topic, language, difficulty);
+  }
+
+  guidance += `\n========== EXAMPLE ==========\n${getExampleBasedOnTopic(topic, difficulty)}\n`;
+  return guidance;
+}
+
+// ========== OOP HELPERS ==========
+function isOOPTopic(topic) {
+  const t = topic.toLowerCase();
+  const oopKeywords = [
+    "class", "oop", "inheritance", "object", "private", "encapsulation",
+    "abstract", "polymorphism", "interface", "override", "subclass",
+    "shape", "vehicle", "animal", "employee", "bank", "account"
+  ];
+  return oopKeywords.some(k => t.includes(k));
+}
+
+function getOOPType(topic) {
+  const t = topic.toLowerCase();
+  if (t.includes("abstract")) return "abstract";
+  if (t.includes("interface")) return "interface";
+  if (t.includes("polymorphism")) return "polymorphism";
+  if (t.includes("inheritance") || t.includes("extends") || t.includes("subclass")) return "inheritance";
+  if (t.includes("encapsulation") || t.includes("private")) return "encapsulation";
+  if (t.includes("shape") || t.includes("vehicle") || t.includes("animal")) return "hierarchy";
+  return "basic";
+}
+
+function getOOPGuidance(oopType, difficulty) {
+  const base = `
+This problem focuses on OBJECT-ORIENTED PROGRAMMING (OOP).
+
+WHAT TO IMPLEMENT:
+• Classes with private fields, constructors, and methods
+• Demonstrate OOP principles: Encapsulation, Inheritance, Polymorphism, Abstraction
+• Methods should validate inputs and return meaningful results
+
+INPUT: constructor arguments + method calls
+OUTPUT: string representation of object state or method result
+
+═══════════════════════════════════════════════════════════
+🔷 OOP PRINCIPLES
+═══════════════════════════════════════════════════════════`;
+
+  const details = {
+    abstract: `
+🔷 ABSTRACT CLASS:
+• Defined with 'abstract' keyword
+• Contains abstract methods (no implementation) and concrete methods
+• Cannot be instantiated directly
+• Must be extended by concrete subclasses
+• Provides common structure for subclasses
+
+EXAMPLE:
+abstract class Vehicle {
+  protected double speed;
+  protected double time;
+  
+  public Vehicle(double speed, double time) {
+    if (speed <= 0 || time <= 0) 
+      throw new IllegalArgumentException("Speed and time must be positive");
+    this.speed = speed;
+    this.time = time;
+  }
+  
+  public abstract double calculateDistance();
+}
+
+class Car extends Vehicle {
+  public Car(double speed, double time) {
+    super(speed, time);
+  }
+  @Override
+  public double calculateDistance() {
+    return speed * time;
+  }
+}`,
+
+    interface: `
+🔷 INTERFACE:
+• Defined with 'interface' keyword
+• All methods are implicitly public and abstract (until Java 8)
+• Can have default and static methods (Java 8+)
+• A class can implement multiple interfaces
+• Defines a contract for implementing classes
+
+EXAMPLE:
+interface Drawable {
+  void draw();
+  default void print() {
+    System.out.println("Printing...");
+  }
+}
+
+interface Moveable {
+  void move(int distance);
+}
+
+class Circle implements Drawable, Moveable {
+  private double radius;
+  
+  public Circle(double radius) {
+    if (radius <= 0) throw new IllegalArgumentException();
+    this.radius = radius;
+  }
+  
+  @Override
+  public void draw() {
+    System.out.println("Drawing Circle with radius " + radius);
+  }
+  
+  @Override
+  public void move(int distance) {
+    System.out.println("Moving Circle " + distance + " units");
+  }
+}`,
+
+    polymorphism: `
+🔄 POLYMORPHISM:
+• Method Overriding: Subclasses provide specific implementation of parent methods
+• Runtime Polymorphism: Parent reference, child object
+• Method Overloading: Multiple methods with same name, different parameters
+• Enables writing code that works with objects of multiple types
+
+EXAMPLE:
+Shape shape1 = new Circle(5);       // Parent reference, child object
+Shape shape2 = new Rectangle(4, 6); // Parent reference, child object
+
+// Polymorphic behavior - each calculates its own area
+double total = shape1.calculateArea() + shape2.calculateArea();
+
+// Vehicle example:
+Vehicle[] vehicles = {
+  new Car(50, 2),    // Car calculateDistance() = speed * time
+  new Truck(40, 3)   // Truck calculateDistance() = speed * time
 };
+// Total = 50*2 + 40*3 = 220`,
 
-// ========== 2. HÀM XÁC ĐỊNH STYLE ==========
+    inheritance: `
+🔗 INHERITANCE:
+• Use 'extends' keyword to create subclass (IS-A relationship)
+• Subclass inherits all public/protected members from parent
+• Use 'super' to call parent constructor/methods
+• Can override methods with @Override annotation
+
+EXAMPLE:
+class Animal {
+  protected String name;
+  public Animal(String name) { 
+    if (name == null) throw new IllegalArgumentException();
+    this.name = name; 
+  }
+  public void speak() { System.out.println("..."); }
+}
+
+class Dog extends Animal {
+  private String breed;
+  public Dog(String name, String breed) {
+    super(name);
+    this.breed = breed;
+  }
+  @Override
+  public void speak() { 
+    System.out.println("Woof!"); 
+  }
+}`,
+
+    encapsulation: `
+📦 ENCAPSULATION:
+• Use 'private' keyword for fields (data hiding)
+• Provide public getters and setters (controlled access)
+• Validate data in setters/constructors
+• Hide implementation details from outside
+
+EXAMPLE:
+class Person {
+  private String name;      // private field
+  private int age;          // private field
+  
+  public Person(String name, int age) {
+    if (name == null || name.isEmpty()) 
+      throw new IllegalArgumentException("Name cannot be empty");
+    if (age < 0) 
+      throw new IllegalArgumentException("Age cannot be negative");
+    this.name = name;
+    this.age = age;
+  }
+  
+  public String getName() { return name; }
+  public int getAge() { return age; }
+  public void setAge(int age) {
+    if (age < 0) throw new IllegalArgumentException("Invalid age");
+    this.age = age;
+  }
+}`,
+
+    hierarchy: `
+🔷 CLASS HIERARCHY:
+• Base class with common attributes and methods
+• Subclasses add specific attributes and methods
+• Method overriding for specialized behavior
+• Polymorphic collections (parent type array with child objects)
+
+EXAMPLE:
+class Shape {
+  public double getArea() { return 0; }
+}
+
+class Circle extends Shape {
+  private double radius;
+  public Circle(double radius) {
+    if (radius <= 0) throw new IllegalArgumentException();
+    this.radius = radius;
+  }
+  @Override
+  public double getArea() {
+    return Math.PI * radius * radius;
+  }
+}`,
+
+    basic: `
+📦 BASIC OOP:
+• Class with private fields
+• Constructor with validation
+• Getter and setter methods
+• toString() or display method
+
+EXAMPLE:
+class Person {
+  private String name;
+  private int age;
+  
+  public Person(String name, int age) {
+    if (name == null || name.isEmpty()) 
+      throw new IllegalArgumentException("Name cannot be empty");
+    if (age < 0) 
+      throw new IllegalArgumentException("Age cannot be negative");
+    this.name = name;
+    this.age = age;
+  }
+  
+  public String greet() {
+    return "Hello, I'm " + name + ", " + age + " years old";
+  }
+}`
+  };
+
+  const scope = {
+    beginner: `DIFFICULTY SCOPE (BEGINNER):
+• Single class with basic encapsulation
+• Simple constructor and methods
+• Basic validation
+• No inheritance or polymorphism
+• ~15-20 lines of code`,
+
+    intermediate: `DIFFICULTY SCOPE (INTERMEDIATE):
+• Multiple classes with inheritance
+• Method overriding
+• Abstract classes OR interfaces
+• Proper validation and error handling
+• Basic polymorphism
+• ~25-35 lines of code`,
+
+    advanced: `DIFFICULTY SCOPE (ADVANCED):
+• Complex hierarchy with abstract classes AND interfaces
+• Multiple inheritance via interfaces
+• Full polymorphism with collections
+• Advanced design patterns
+• Comprehensive error handling
+• ~40-60 lines of code`
+  };
+
+  return `${base}\n${details[oopType] || details.basic}\n\n${scope[difficulty] || scope.intermediate}`;
+}
+
+// ========== OTHER GUIDANCE FUNCTIONS ==========
+function getArrayGuidance(difficulty) {
+  return `This problem focuses on ARRAY manipulation.
+
+WHAT TO IMPLEMENT:
+• A function that takes an integer array and returns a computed result
+• Operations: sum, max, min, or difference depending on the problem
+
+INPUT: int[] arr
+OUTPUT: integer (or array for transformations)
+
+DIFFICULTY SCOPE (${difficulty}):
+${difficulty === "beginner" ? "• Simple operation (sum, max, min)\n• Small array, no edge cases required" :
+  difficulty === "intermediate" ? "• Moderate operation (max-min, second max)\n• Handle empty array and single element" :
+  "• Complex operation (subarray, difference)\n• Handle all edge cases, optimized solution"}`;
+}
+
+function getSortingGuidance(difficulty) {
+  return `This problem focuses on SORTING algorithms.
+
+WHAT TO IMPLEMENT:
+• Sort an integer array in ascending order using a specific algorithm
+
+INPUT: int[] arr
+OUTPUT: int[] (sorted array)
+
+ALGORITHM BY DIFFICULTY:
+${difficulty === "beginner" ? "• Bubble Sort or Insertion Sort — O(n²)" :
+  difficulty === "intermediate" ? "• Quick Sort — O(n log n) average" :
+  "• Merge Sort or Heap Sort — O(n log n)"}`;
+}
+
+function getQueueGuidance() {
+  return `This problem focuses on QUEUE (FIFO) operations.
+
+WHAT TO IMPLEMENT:
+• Process a Queue<Integer> and return a result (max, sum, etc.)
+• Use only Queue API: offer(), poll(), peek()
+• The original queue must remain unchanged after the call
+
+INPUT: Queue<Integer>
+OUTPUT: integer`;
+}
+
+function getStackGuidance() {
+  return `This problem focuses on STACK (LIFO) operations.
+
+WHAT TO IMPLEMENT:
+• Process a Stack<Integer> and return a result (top element, sum, etc.)
+• Use only Stack API: push(), pop(), peek()
+• The original stack must remain unchanged after the call
+
+INPUT: Stack<Integer>
+OUTPUT: integer or Integer (nullable)`;
+}
+
+function getStringGuidance() {
+  return `This problem focuses on STRING manipulation.
+
+WHAT TO IMPLEMENT:
+• A function that takes a String and returns a processed result
+• Operations: palindrome check, reverse, vowel count, etc.
+
+INPUT: String s
+OUTPUT: boolean / String / integer depending on the operation`;
+}
+
+function getMathGuidance(difficulty) {
+  return `This problem focuses on MATHEMATICAL computation.
+
+WHAT TO IMPLEMENT:
+• A function that takes an integer and returns a computed value
+• Operations: factorial, Fibonacci, prime check, etc.
+
+INPUT: int n
+OUTPUT: long / boolean depending on operation
+
+EDGE CASES: handle 0, 1, and negative inputs explicitly`;
+}
+
+function getCollectionsGuidance(difficulty) {
+  return `This problem focuses on JAVA COLLECTIONS Framework.
+
+WHAT TO IMPLEMENT:
+• Work with List interface (ArrayList or LinkedList)
+• Convert array to List using Arrays.asList() or similar
+• Use Collection methods: add(), remove(), size(), etc.
+
+INPUT: int[] arr or specific Collection type
+OUTPUT: integer or boolean depending on the operation
+
+DIFFICULTY SCOPE (${difficulty}):
+${difficulty === "beginner" ? "• Simple operations: count, sum, average\n• Basic List conversion and iteration" :
+  difficulty === "intermediate" ? "• Filtering and aggregation: sum of even numbers, count above average\n• Handle edge cases like empty list" :
+  "• Complex operations: sublist conditions, optimized algorithms\n• Advanced list manipulation"}`;
+}
+
+function getDefaultGuidance(topic, language, difficulty) {
+  return `This problem focuses on: ${topic}
+
+WHAT TO IMPLEMENT:
+• A function that solves the described problem
+• Follow ${language} best practices and handle edge cases
+
+INPUT / OUTPUT: as specified in the problem statement`;
+}
+
+// ========== EXAMPLE BASED ON TOPIC ==========
+function getExampleBasedOnTopic(topic, difficulty) {
+  const t = topic.toLowerCase();
+  const d = difficulty.toLowerCase();
+
+  // OOP examples
+  if (isOOPTopic(t)) {
+    const oopType = getOOPType(t);
+    const examples = {
+      abstract: {
+        beginner: 'Input: new Dog("Buddy")\nOutput: "Woof!"',
+        intermediate: 'Input: new Shape[]{ new Circle(5), new Rectangle(4, 6) }\nOutput: 102.54',
+        advanced: 'Input: new Vehicle[]{ new Car(50, 2), new Truck(40, 3) }\nOutput: 220.0'
+      },
+      interface: {
+        beginner: 'Input: new Document("Hello World")\nOutput: "Hello World"',
+        intermediate: 'Input: new Payable[]{ new Employee(60000), new Freelancer(50, 40) }\nOutput: 7000.0',
+        advanced: 'Input: new Circle(5)\nOutput: "Drawing Circle with radius 5.0"'
+      },
+      polymorphism: {
+        beginner: 'Input: new Animal[]{ new Dog(), new Cat() }\nOutput: "Woof! Meow!"',
+        intermediate: 'Input: new Shape[]{ new Circle(5), new Rectangle(4, 6) }\nOutput: 102.54',
+        advanced: 'Input: new Animal[]{ new Dog(), new Cat(), new Cow() }\nOutput: "Woof! Meow! Moo!"'
+      },
+      inheritance: {
+        beginner: 'Input: new Car("Toyota", 2020, "Camry")\nOutput: "Toyota (2020) - Camry"',
+        intermediate: 'Input: new Manager("Alice", 75000, "IT", 5000)\nOutput: "Employee: Alice, Salary: $75000.0, Department: IT, Bonus: $5000.0"',
+        advanced: 'Input: new SavingsAccount("SAV-123", "John Doe", 1000, 0.05)\nOutput: "Account: SAV-123 | Owner: John Doe | Balance: 1050.00"'
+      },
+      basic: {
+        beginner: 'Input: new Person("John", 30)\nOutput: "Hello, I\'m John, 30 years old"',
+        intermediate: 'Input: new Person("Jane", 25)\nOutput: "Hello, I\'m Jane, 25 years old"',
+        advanced: 'Input: new Person("Bob", 40)\nOutput: "Hello, I\'m Bob, 40 years old"'
+      }
+    };
+    return examples[oopType]?.[d] || examples.basic.intermediate;
+  }
+
+  // Non-OOP examples
+  if (t.includes("sort") || t.includes("sorting")) {
+    if (d === "advanced") return "Input: [10, -20, 30, -40, 50, 60, -70, 80, -90, 95, -5, 25]\nOutput: [-90, -70, -40, -20, -5, 10, 25, 30, 50, 60, 80, 95]";
+    if (d === "intermediate") return "Input: [10, -20, 30, -40, 50, 60, -70, 80]\nOutput: [-70, -40, -20, 10, 30, 50, 60, 80]";
+    return "Input: [10, -20, 30, -40, 50]\nOutput: [-40, -20, 10, 30, 50]";
+  }
+
+  if (t.includes("array")) {
+    if (d === "advanced") return "Input: [10, -20, 30, -40, 50, 60, -70, 80, -90, 95]\nOutput: 185";
+    if (d === "intermediate") return "Input: [10, 20, -30, 40, -50, 15, 5]\nOutput: 40";
+    return "Input: [10, 20, 30, 40, 50]\nOutput: 150";
+  }
+
+  if (t.includes("queue")) return "Input: Queue containing [-8, 10, -2, 74, 46]\nOutput: 74";
+  if (t.includes("stack")) return "Input: Stack with top = 89\nOutput: 89";
+  if (t.includes("string")) return 'Input: "A man, a plan, a canal: Panama"\nOutput: true';
+  if (t.includes("fibonacci")) return "Input: 10\nOutput: 55";
+  if (t.includes("factorial")) return "Input: 5\nOutput: 120";
+  if (t.includes("prime")) return "Input: 7\nOutput: true";
+
+  return "Input: as specified\nOutput: as specified";
+}
+
+// ========== CONSTRAINTS FOR DISPLAY ==========
+function getConstraintsForDisplay(topic, difficulty) {
+  const t = topic.toLowerCase();
+  const d = difficulty.toLowerCase();
+
+  // OOP constraints
+  if (isOOPTopic(t)) {
+    const oopType = getOOPType(t);
+    const baseConstraints = [
+      "Use private fields (encapsulation - data hiding)",
+      "Validate constructor inputs (throw exception for invalid values)",
+      "Use appropriate access modifiers (private, protected, public)"
+    ];
+
+    const specificConstraints = {
+      abstract: [
+        "Create at least one abstract method in the abstract class",
+        "Extend the abstract class in concrete subclasses",
+        "Implement all abstract methods in concrete subclasses",
+        "Cannot instantiate abstract class directly"
+      ],
+      interface: [
+        "Define an interface with abstract methods",
+        "Implement the interface using 'implements' keyword",
+        "A class can implement multiple interfaces",
+        "Use default methods if needed (Java 8+)"
+      ],
+      polymorphism: [
+        "Override at least one method in subclasses with @Override",
+        "Use polymorphism (parent reference, child object)",
+        "Runtime method binding based on object type"
+      ],
+      inheritance: [
+        "Use inheritance with 'extends' keyword",
+        "Call parent constructor using 'super()'",
+        "Access parent members using 'super' when needed",
+        "Demonstrate IS-A relationship"
+      ],
+      hierarchy: [
+        "Create a base class with common attributes",
+        "Create subclasses that extend the base class",
+        "Override methods in subclasses for specific behavior",
+        "Use polymorphism with arrays or collections"
+      ],
+      basic: [
+        "Class with private fields and getters/setters",
+        "Constructor with validation",
+        "toString() or display method",
+        "Clean encapsulation of data"
+      ]
+    };
+
+    return [...baseConstraints, ...(specificConstraints[oopType] || specificConstraints.basic)];
+  }
+
+  // Non-OOP constraints
+  if (t.includes("sort") || t.includes("sorting")) {
+    const algo = d === "advanced" ? "Merge Sort or Heap Sort — O(n log n)" :
+      d === "intermediate" ? "Quick Sort — O(n log n) average" :
+      "Bubble Sort or Insertion Sort — O(n²)";
+    return [
+      `Implement ${algo}`,
+      "Sort in ascending order",
+      "Return the sorted array",
+      "Handle empty array (return empty)"
+    ];
+  }
+
+  if (t.includes("array") || t.includes("list")) {
+    const base = [
+      "Return the computed result as an integer",
+      "Handle empty array (throw exception or return 0)",
+    ];
+    if (d !== "beginner") base.push("Handle single-element array");
+    if (d === "advanced") base.push("Optimized solution preferred");
+    return base;
+  }
+
+  if (t.includes("queue")) {
+    return [
+      "Use Queue interface with LinkedList",
+      "Only use Queue API: offer(), poll(), peek()",
+      "Queue must remain unchanged after the call",
+      "Throw an exception if the queue is empty"
+    ];
+  }
+
+  if (t.includes("stack")) {
+    return [
+      "Use Java's Stack class",
+      "Only use Stack API: push(), pop(), peek()",
+      "Stack must remain unchanged after the call",
+      "Return null if the stack is empty"
+    ];
+  }
+
+  if (t.includes("string")) {
+    return [
+      "Handle empty string (return appropriate default)",
+      "For palindrome: ignore case and non-alphanumeric characters",
+      "Return the correct type (boolean / String / integer)"
+    ];
+  }
+
+  if (t.includes("math") || t.includes("factorial") || t.includes("fibonacci") || t.includes("prime")) {
+    const base = [
+      "Handle n = 0 and n = 1 explicitly",
+      "Throw exception for invalid input (e.g., negative n where not allowed)",
+      "Return the correct type (long / boolean)"
+    ];
+    if (t.includes("fibonacci")) base.push("Use memoization for O(n) time");
+    if (t.includes("prime")) base.push("Check up to sqrt(n) for efficiency");
+    return base;
+  }
+
+  return [
+    "Handle edge cases appropriately",
+    "Follow best practices for the language",
+    "Return the correct type"
+  ];
+}
+
+// ========== LANGUAGE GUIDANCE ==========
+function getLanguageGuidance(language) {
+  const guidances = {
+    javascript: `JAVASCRIPT RULES:
+• Use ES6+ syntax (const, let, arrow functions)
+• Use array methods (map, filter, reduce) where appropriate
+• Private fields: use # prefix
+• Queue: array + shift/push; Stack: array + push/pop
+• Classes: use 'class', 'extends', 'super'
+• Abstract: use new.target to check
+• Interfaces: use TypeScript or JSDoc`,
+
+    python: `PYTHON RULES:
+• Python 3, follow PEP 8
+• Use type hints
+• Queue: collections.deque; Stack: list (append/pop)
+• Private: __ prefix (name mangling)
+• Abstract classes: use ABC and @abstractmethod from abc module
+• Interfaces: use ABC or protocols`,
+
+    java: `JAVA RULES:
+• Proper class structure with generics
+• Queue: java.util.Queue implemented by LinkedList — use offer(), poll(), peek()
+• Stack: java.util.Stack — use push(), pop(), peek()
+• Use private keyword for encapsulation
+• Abstract classes: use 'abstract' keyword, can have abstract methods
+• Interfaces: use 'interface' keyword, use 'implements' to implement
+• Inheritance: use 'extends' keyword, call 'super()' in constructor
+• Polymorphism: parent reference, child object`,
+
+    csharp: `C# RULES:
+• Proper class structure
+• Queue: System.Collections.Generic.Queue<T>
+• Stack: System.Collections.Generic.Stack<T>
+• Use private keyword; leverage LINQ where appropriate
+• Abstract classes: use 'abstract' keyword
+• Interfaces: use 'interface' keyword, use ':' to implement
+• Inheritance: use ':' and 'base' keyword`,
+
+    cpp: `C++ RULES:
+• C++17 features
+• Queue: std::queue; Stack: std::stack; Array: std::vector
+• Use private: access specifier
+• Abstract classes: use 'virtual' and '= 0' for pure virtual
+• Interfaces: use abstract class with all pure virtual methods`,
+
+    go: `GO RULES:
+• Go 1.20+
+• Proper error handling
+• Structs with methods; private fields use lowercase names
+• Interfaces: use 'interface' keyword, implicit implementation
+• No inheritance, use composition and embedding`
+  };
+
+  return guidances[language] || `${language.toUpperCase()} RULES:\n• Write idiomatic code\n• Follow standard naming conventions`;
+}
+
+// ========== DOMAIN NOTE ==========
+function getDomainNote(domain) {
+  const notes = {
+    "DSA": "Focus on algorithm correctness and efficiency.",
+    "OOP": "Focus on object-oriented design principles including Abstraction, Encapsulation, Inheritance, and Polymorphism.",
+    "Object": "Focus on object-oriented design principles including Abstraction, Encapsulation, Inheritance, and Polymorphism.",
+    "Concurrency": "Focus on thread safety and synchronization.",
+    "Async": "Focus on asynchronous patterns and error handling.",
+    "Functional Programming": "Focus on immutability, pure functions, and patterns like currying.",
+    "Data Structures": "Focus on correct data structure implementation.",
+    "Algorithms": "Focus on algorithm efficiency and correctness."
+  };
+  return notes[domain] || `Focus on ${domain} concepts.`;
+}
+
+// ========== GET TOPIC STYLE ==========
 function getTopicStyle(topic, language, difficulty) {
-  const topicInfo = TOPIC_CATEGORY[topic];
-  if (!topicInfo) return { style: "function", category: "default" };
+  const t = topic.toLowerCase();
 
-  let { style, category } = topicInfo;
+  let style = "function";
+  let category = "default";
 
-  if (style === "auto") {
-    const lang = language.toLowerCase();
-    if (["java", "csharp", "cpp"].includes(lang)) {
-      style = "class";
-    } else if (["python", "javascript", "typescript"].includes(lang)) {
-      style = difficulty === "beginner" ? "function" : "class";
-    } else if (lang === "go") {
-      style = "function";
-    } else {
-      style = "function";
-    }
+  if (isOOPTopic(t)) {
+    style = "class";
+    category = "oop";
+  } else if (t.includes("queue") || t.includes("stack") || t.includes("linked") || 
+             t.includes("tree") || t.includes("graph")) {
+    style = "function";
+    category = "data_structure";
+  } else if (t.includes("array") || t.includes("list") || t.includes("collection")) {
+    category = "array";
+  } else if (t.includes("string")) {
+    category = "string";
+  } else if (t.includes("math") || t.includes("factorial") || t.includes("fibonacci") || 
+             t.includes("prime")) {
+    category = "math";
   }
 
   return { style, category };
 }
 
-// ========== 3. CONCURRENCY/ASYNC TOPICS ==========
-const CONCURRENCY_ASYNC_TOPICS = new Set([
-  "Threads",
-  "Runnable",
-  "Synchronized",
-  "Locks",
-  "Executors",
-  "Async/Await",
-  "Event Loop",
-  "Promises",
-  "Callbacks",
-  "Goroutines",
-  "Channels",
-  "Select",
-  "WaitGroups",
-  "Context",
-]);
-
+// ========== IS CONCURRENCY/ASYNC ==========
 function isConcurrencyOrAsyncTopic(topic) {
-  return CONCURRENCY_ASYNC_TOPICS.has(topic);
+  const keywords = ["Threads", "Runnable", "Synchronized", "Locks", "Executors",
+                    "Async/Await", "Promises", "Callbacks", "Goroutines", "Channels"];
+  return keywords.some(k => topic.toLowerCase().includes(k.toLowerCase()));
 }
 
-// ========== 4. TEMPLATES THEO STYLE ==========
-const STYLE_TEMPLATES = {
-  function: `
-REQUIRED STRUCTURE — FUNCTION-BASED:
-- Implement as a SINGLE function (or static method in Java/C#/C++).
-- Input: receive all data as arguments.
-- Output: return value directly.
-- DO NOT create a class wrapper.
-- DO NOT require instantiation before calling.`,
-
-  class: `
-REQUIRED STRUCTURE — CLASS-BASED:
-- Implement as a CLASS with constructor, fields, and methods.
-- State maintained between method calls.
-- Methods modify/query instance state.`,
-
-  conceptual: `
-REQUIRED STRUCTURE — CONCEPTUAL/SIMULATED:
-- This is a CONCEPTUAL exercise, not real execution.
-- Implement a SINGLE-THREADED simulation.
-- Output must be 100% deterministic.`,
-
-  functional_builtin: `
-REQUIRED STRUCTURE — FUNCTIONAL STYLE:
-- MUST use built-in functional methods (map, filter, reduce, streams).
-- DO NOT use manual loops for transformation.
-- Prefer method chaining and declarative style.`,
-
-  decorator: `
-REQUIRED STRUCTURE — DECORATOR PATTERN (Python):
-- Define decorator function using @ syntax.
-- Decorator wraps another function to add behavior.`,
-
-  generator: `
-REQUIRED STRUCTURE — GENERATOR (Python):
-- Define generator function using "yield" keyword.
-- Returns generator object, not list.
-- Values produced lazily on-demand.`,
-
-  async: `
-REQUIRED STRUCTURE — ASYNC PATTERN:
-- Use async/await or Promise syntax.
-- All async operations resolve immediately for determinism.`,
-
-  dom: `
-REQUIRED STRUCTURE — DOM SIMULATION:
-- Model DOM as plain JS objects/arrays.
-- No real browser DOM.`,
-
-  closure: `
-REQUIRED STRUCTURE — CLOSURE:
-- Outer function returns inner function(s).
-- Inner functions retain access to outer variables.
-- Demonstrate state preservation.`,
-};
-
-// ========== 5. CATEGORY TEMPLATES (cũ) ==========
-const CATEGORY_TEMPLATES = {
-  array_basic: `
-TOPIC FOCUS — ARRAY OPERATIONS:
-- Work with array input, produce single value or new array.
-- Common tasks: find max/min, sum, filter, map, search, reverse.
-- Edge cases: empty array, single element, duplicates.
-- DO NOT require object instantiation - use static/standalone function.`,
-
-  linear_ds: `
-TOPIC FOCUS — {TOPIC}:
-- {TOPIC} is a fundamental data structure.
-- {STYLE_DESCRIPTION}
-- Operations should be typical for this structure.
-- Handle empty state appropriately.`,
-
-  hashmap_ds: `
-TOPIC FOCUS — {TOPIC}:
-- Work with key-value pairs or unique elements.
-- {STYLE_DESCRIPTION}
-- Show insertion, lookup, deletion operations.
-- Handle non-existent keys appropriately.`,
-
-  linked_list: `
-TOPIC FOCUS — LINKED LISTS:
-- Implement node-based linked structure.
-- {STYLE_DESCRIPTION}
-- Required operations: insert, delete, traverse/search.
-- Handle head/tail edge cases.`,
-
-  tree_graph: `
-TOPIC FOCUS — {TOPIC} (SIMPLIFIED):
-- Keep structure small (max 5-7 nodes for trees, 4 nodes for graphs).
-- ONE simple operation: insert, search, or single traversal.
-- {STYLE_DESCRIPTION}`,
-
-  algorithm: `
-TOPIC FOCUS — {TOPIC} ALGORITHM:
-- Implement the algorithm MANUALLY (not using built-in).
-- {STYLE_DESCRIPTION}
-- State order/criteria explicitly.`,
-
-  oop_inheritance: `
-TOPIC FOCUS — {TOPIC}:
-- Parent class with common behavior, child class extends.
-- Child must override at least one method.
-- {STYLE_DESCRIPTION}
-- Show polymorphism via parent reference to child instance.`,
-
-  oop_encapsulation: `
-TOPIC FOCUS — {TOPIC}:
-- Private fields with public getters/setters.
-- Validation in setters (reject invalid values).
-- {STYLE_DESCRIPTION}`,
-
-  oop_abstraction: `
-TOPIC FOCUS — {TOPIC}:
-- Abstract class or interface with method declarations.
-- Concrete class implementing all abstract methods.
-- {STYLE_DESCRIPTION}`,
-
-  oop_basic: `
-TOPIC FOCUS — {TOPIC}:
-- Single class with constructor and 2-3 meaningful methods.
-- {STYLE_DESCRIPTION}`,
-
-  concurrency: `
-TOPIC FOCUS — {TOPIC} (CONCEPTUAL):
-- Single-threaded simulation of concurrency concept.
-- {STYLE_DESCRIPTION}
-- Output must be deterministic, no real threading.`,
-
-  functional: `
-TOPIC FOCUS — {TOPIC}:
-- {STYLE_DESCRIPTION}
-- Prefer declarative over imperative approach.
-- Avoid side effects when possible.`,
-
-  error_handling: `
-TOPIC FOCUS — {TOPIC}:
-- Handle error cases explicitly (invalid input, edge conditions).
-- {STYLE_DESCRIPTION}
-- Show both success and error paths.`,
-
-  cpp_smart_pointers: `
-TOPIC FOCUS — SMART POINTERS (C++):
-- Use std::unique_ptr, std::shared_ptr, or std::weak_ptr.
-- Demonstrate automatic memory management.
-- No raw new/delete.`,
-
-  cpp_move: `
-TOPIC FOCUS — MOVE SEMANTICS (C++):
-- Implement move constructor and move assignment.
-- Use std::move appropriately.
-- Show resource transfer without copying.`,
-
-  cpp_raii: `
-TOPIC FOCUS — RAII (C++):
-- Resource acquisition is initialization.
-- Constructor acquires resource, destructor releases.
-- Use for file handles, locks, memory.`,
-
-  cpp_templates: `
-TOPIC FOCUS — TEMPLATES (C++):
-- Write generic code using template parameters.
-- Can be function templates or class templates.
-- Show type safety and code reuse.`,
-
-  cpp_stl: `
-TOPIC FOCUS — STL (C++):
-- Use Standard Template Library containers/algorithms.
-- Examples: vector, map, sort, find, accumulate.
-- Prefer STL over manual implementation.`,
-
-  cpp_virtual: `
-TOPIC FOCUS — VIRTUAL FUNCTIONS (C++):
-- Base class with virtual methods.
-- Derived class overrides with 'override' keyword.
-- Demonstrate polymorphism via base pointer/reference.`,
-
-  csharp_events: `
-TOPIC FOCUS — EVENTS (C#):
-- Define event using EventHandler or custom delegate.
-- Subscribe/unsubscribe using += and -=.
-- Raise event with null check.`,
-
-  csharp_properties: `
-TOPIC FOCUS — PROPERTIES (C#):
-- Use auto-properties or full properties.
-- get/set accessors with validation.
-- Computed properties, required/init keywords.`,
-
-  csharp_indexers: `
-TOPIC FOCUS — INDEXERS (C#):
-- Implement this[] syntax for class.
-- Support integer or string keys.
-- Can be overloaded and multi-dimensional.`,
-
-  csharp_delegates: `
-TOPIC FOCUS — DELEGATES (C#):
-- Use Func, Action, or custom delegates.
-- Pass methods as parameters.
-- Combine delegates (multicast).`,
-
-  csharp_linq: `
-TOPIC FOCUS — LINQ (C#):
-- Use query syntax or method syntax.
-- Operations: Where, Select, GroupBy, OrderBy, Join.
-- Deferred execution vs immediate.`,
-
-  csharp_async: `
-TOPIC FOCUS — ASYNC/AWAIT (C#):
-- Use async Task<T> pattern.
-- Await async operations.
-- Handle CancellationToken.`,
-
-  go_goroutines: `
-TOPIC FOCUS — GOROUTINES (Go):
-- Use 'go' keyword to launch goroutine.
-- Demonstrate concurrent execution.
-- No shared memory - use channels for communication.`,
-
-  go_channels: `
-TOPIC FOCUS — CHANNELS (Go):
-- Create channels with make(chan Type).
-- Send/receive with <- operator.
-- Buffered vs unbuffered channels.`,
-
-  go_select: `
-TOPIC FOCUS — SELECT (Go):
-- Use select to wait on multiple channel operations.
-- Handle timeout with time.After.
-- Default case for non-blocking.`,
-
-  go_waitgroups: `
-TOPIC FOCUS — WAITGROUPS (Go):
-- Use sync.WaitGroup to wait for goroutines.
-- Add(), Done(), Wait() methods.
-- Ensure all goroutines complete.`,
-
-  go_context: `
-TOPIC FOCUS — CONTEXT (Go):
-- Use context for cancellation and deadlines.
-- Propagate context through function calls.
-- Handle ctx.Done() signal.`,
-
-  go_defer: `
-TOPIC FOCUS — DEFER (Go):
-- Use defer for cleanup operations.
-- LIFO order execution.
-- Common uses: close files, unlock mutexes.`,
-
-  default: `
-TOPIC FOCUS — {TOPIC}:
-- Problem must be directly about "{TOPIC}".
-- {STYLE_DESCRIPTION}
-- Ensure solution matches difficulty level.`,
-};
-
-// ========== 6. HÀM CHÍNH (có thêm difficulty guide) ==========
-function getTopicGuidance(topic, language, difficulty = "intermediate") {
-  const { style, category } = getTopicStyle(topic, language, difficulty);
-
-  let shortStyleDesc = "";
-  if (style === "function") {
-    shortStyleDesc =
-      "Implement as a SINGLE function (or static method), NOT a class wrapper.";
-  } else if (style === "class") {
-    shortStyleDesc =
-      "Implement as a CLASS with constructor, fields, and methods.";
-  } else if (style === "conceptual") {
-    shortStyleDesc =
-      "Implement as a CONCEPTUAL simulation (deterministic, no real execution).";
-  } else if (style === "functional_builtin") {
-    shortStyleDesc =
-      "MUST use map/filter/reduce or stream methods. No manual loops.";
-  } else {
-    shortStyleDesc = `Use ${style} style as appropriate for ${topic}.`;
-  }
-
-  let categoryTemplate =
-    CATEGORY_TEMPLATES[category] || CATEGORY_TEMPLATES.default;
-
-  let guidance = categoryTemplate
-    .replace(/\{TOPIC\}/g, topic)
-    .replace(/\{STYLE_DESCRIPTION\}/g, shortStyleDesc);
-
-  // Special case for arrays in Java/C#/C++
-  if (
-    category === "array_basic" &&
-    ["java", "csharp", "cpp"].includes(language.toLowerCase())
-  ) {
-    guidance += `
-IMPORTANT: Use STATIC method, NOT instance method on a wrapper class.
-Good: "public static int findMax(int[] arr)"
-Bad: "new ArrayManipulator().findMax(arr)"`;
-  }
-
-  // ========== THÊM HƯỚNG DẪN THEO DIFFICULTY ==========
-  let diffGuide = "";
-  if (difficulty === "beginner") {
-    diffGuide = `
-BEGINNER LEVEL GUIDELINES:
-- Keep solution simple (max 15 lines).
-- Use basic constructs: loops, conditionals, simple functions.
-- No recursion unless extremely trivial.
-- Provide clear, runnable code.
-- Do not require deep algorithmic knowledge.`;
-  } else if (difficulty === "intermediate") {
-    diffGuide = `
-INTERMEDIATE LEVEL GUIDELINES:
-- Solution length 15-30 lines.
-- May include a class with few methods or recursion.
-- Handle edge cases (empty input, nulls).
-- Reasonable efficiency, but not necessarily optimal.
-- Expected to demonstrate understanding of the topic.`;
-  } else if (difficulty === "advanced") {
-    diffGuide = `
-ADVANCED LEVEL GUIDELINES:
-- Solution length 30-50 lines.
-- May use inheritance, generics, concurrency simulation, functional patterns.
-- Must handle all edge cases robustly.
-- Optimize for time/space (e.g., O(n log n) instead of O(n²)).
-- Provide complexity analysis in comments.
-- Production-quality code.`;
-  }
-
-  return guidance + diffGuide;
-}
-
-// ========== 7. LANGUAGE GUIDANCE ==========
-const LANGUAGE_GUIDANCE = {
-  java: `
-JAVA SYNTAX RULES:
-- Methods: "public static ReturnType methodName(ParamType param)"
-- Classes: "public class Name { private fields; public constructor; public methods; }"
-- Arrays: "int[] arr" or "String[] arr"
-- Generics: "class Name<T>", "List<String>"
-- Use standard library where appropriate.`,
-
-  python: `
-PYTHON SYNTAX RULES:
-- Functions: "def func_name(param: type) -> return_type:"
-- Classes: "class Name: def __init__(self): ..."
-- Type hints encouraged but optional.
-- Use list, dict, set built-ins.
-- Decorators: "@decorator_name" above function.`,
-
-  javascript: `
-JAVASCRIPT SYNTAX RULES:
-- Functions: "function name(param) { return ... }" or "const name = (param) => ..."
-- Classes: "class Name { constructor() { ... } method() { ... } }"
-- Use const/let, avoid var.
-- Async: "async function fetch() { await ... }"`,
-
-  cpp: `
-C++ SYNTAX RULES:
-- Functions: "ReturnType functionName(const vector<Type>& param)"
-- Classes: "class Name { private: fields; public: constructor; methods; };"
-- Smart pointers: "auto ptr = make_unique<Type>()"
-- Move: "Type(Type&& other) noexcept : data(other.data) { other.data = nullptr; }"
-- Use std::vector, std::string, not raw arrays.`,
-
-  csharp: `
-C# SYNTAX RULES:
-- Methods: "public static ReturnType MethodName(ParamType param)"
-- Classes: "public class Name { private fields; public constructor; public methods; }"
-- Properties: "public int MyProperty { get; set; }"
-- Events: "public event EventHandler MyEvent;"
-- Async: "public async Task<int> GetDataAsync() { await ... }"
-- LINQ: "var result = list.Where(x => x > 0).Select(x => x * 2);"`,
-
-  go: `
-GO SYNTAX RULES:
-- Functions: "func FuncName(param Type) ReturnType"
-- Methods: "func (r ReceiverType) MethodName() ReturnType"
-- No classes - use structs with methods.
-- Goroutines: "go funcName()"
-- Channels: "ch := make(chan int)"
-- Defer: "defer file.Close()"
-- Multiple returns: "func find(arr []int) (int, error)"`,
-};
-
-function getLanguageGuidance(language) {
-  const key = (language || "").toLowerCase().trim();
-  return (
-    LANGUAGE_GUIDANCE[key] ||
-    `
-${language.toUpperCase()} SYNTAX RULES:
-- All code must be syntactically correct, idiomatic ${language}.
-- Follow standard naming conventions for ${language}.`
-  );
-}
-
-// ========== 8. DOMAIN GUIDANCE ==========
-const DOMAIN_NOTE = {
-  Concurrency: `NOTE: All concurrency problems are CONCEPTUAL simulations. No real threading/parallelism.`,
-  Async: `NOTE: Async problems resolve immediately for deterministic output.`,
-  "DOM Manipulation": `NOTE: No real browser DOM - model as plain JS objects/arrays.`,
-  DSA: `NOTE: Focus on algorithm correctness, not fancy syntax.`,
-  OOP: `NOTE: Use proper encapsulation, inheritance, or abstraction as specified.`,
-  STL: `NOTE: Prefer STL algorithms over manual loops when possible.`,
-  LINQ: `NOTE: Use LINQ for query operations, not manual loops.`,
-};
-
-function getDomainNote(domain) {
-  return DOMAIN_NOTE[domain] || "";
-}
-
-// ========== 9. EXPORTS ==========
 module.exports = {
   getTopicGuidance,
   getLanguageGuidance,
   getDomainNote,
   isConcurrencyOrAsyncTopic,
-  TOPIC_CATEGORY,
   getTopicStyle,
-};
+  getConstraintsForDisplay,
+  isOOPTopic,
+  getOOPType,
+  getOOPGuidance
+}; 
