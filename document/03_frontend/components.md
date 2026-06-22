@@ -278,11 +278,20 @@ Hỗ trợ & FAQ:
 - Quản lý các phiên phỏng vấn dựa trên CV.
 - Cho phép admin xem danh sách các CV đã được tải lên và điểm số phỏng vấn của từng người dùng.
 
-### 🚧 Các Trang Đang Triển Khai (Sprint 9)
-- `CodingSessions.jsx`: Theo dõi các bài thi Live Coding.
-- `AdaptiveSessions.jsx`: Quản lý các phiên phỏng vấn Adaptive.
-- `SystemLogs.jsx`: Nhật ký hoạt động hệ thống.
-- `Settings.jsx`: Cài đặt chung cho trang Admin.
+### 💻 Live Coding Sessions Management
+**File:** `Pages/admin/CodingSessions.jsx`
+- Quản lý và theo dõi các bài thi Live Coding của người dùng.
+- Xem chi tiết code đã nộp, đánh giá của AI, và lịch sử thực thi.
+
+### 🤖 Adaptive Interview Sessions Management
+**File:** `Pages/admin/AdaptiveSessions.jsx`
+- Quản lý các phiên phỏng vấn Adaptive (câu hỏi thích ứng theo độ khó).
+- Theo dõi toàn bộ lịch sử trò chuyện và đánh giá chi tiết từng câu trả lời.
+
+### ⚙️ System Logs & Settings
+**File:** `Pages/admin/SystemLogs.jsx`, `Pages/admin/Settings.jsx`
+- `SystemLogs`: Xem nhật ký hoạt động hệ thống.
+- `Settings`: Cài đặt chung cho trang Admin.
 
 ---
 

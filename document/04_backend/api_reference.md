@@ -1165,6 +1165,38 @@ Xóa CV session khỏi hệ thống.
 
 ---
 
+### 10.4 Quản lý Adaptive Sessions
+
+#### GET `/api/adaptive/admin/sessions`
+
+Lấy danh sách toàn bộ các phiên phỏng vấn thích ứng (Adaptive) của tất cả người dùng trên hệ thống.
+
+#### GET `/api/adaptive/admin/session/:sessionId`
+
+Xem thông tin chi tiết một phiên phỏng vấn thích ứng cụ thể (bao gồm lịch sử chat, đánh giá, roadmap).
+
+#### DELETE `/api/adaptive/admin/session/:sessionId`
+
+Xóa bản ghi phỏng vấn thích ứng khỏi hệ thống.
+
+---
+
+### 10.5 Quản lý Live Coding Sessions
+
+#### GET `/api/live-coding/admin/sessions`
+
+Lấy danh sách toàn bộ các phiên Live Coding của tất cả người dùng trên hệ thống.
+
+#### GET `/api/live-coding/admin/sessions/:id`
+
+Xem chi tiết lịch sử một phiên Live Coding cụ thể (bao gồm toàn bộ code nộp, lịch sử Q&A giải thích, test criteria).
+
+#### DELETE `/api/live-coding/admin/sessions/:id`
+
+Xóa phiên Live Coding khỏi hệ thống.
+
+---
+
 ## 11. HTTP Status Codes
 
 | Code | Ý Nghĩa                                          |

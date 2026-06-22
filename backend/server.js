@@ -13,6 +13,7 @@ const weaknessRoutes = require("./routes/weaknessRoutes");
 const cvRoutes = require("./routes/cv");
 const adaptiveRoutes = require("./routes/adaptiveInterviewRoutes");
 const liveCodingRoutes = require("./routes/liveCodingRoutes");
+const adminTokenRoutes = require("./routes/admin/tokenRoutes");
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use("/api/weakness", weaknessRoutes);
 app.use("/api/activity", require("./routes/activityRoutes")); // ✅ chứa /calendar rồi
 app.use("/api/adaptive", adaptiveRoutes);
 app.use("/api/live-coding", liveCodingRoutes);
+app.use("/api/admin/tokens", adminTokenRoutes);
 
 // ================= HEALTH =================
 app.get("/health", (req, res) => {

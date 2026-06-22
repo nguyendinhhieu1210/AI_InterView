@@ -16,78 +16,115 @@ const {
   generateRequestId,
 } = require("../../utils/aiLogger");
 
-// FIX: Rút gọn prompt ~35% token so với bản cũ, giữ nguyên accuracy
-// Trước: ~800 tokens system message, sau: ~520 tokens
-const CV_EXTRACTION_PROMPT = `You are a CV parser. Extract the candidate's full name and ONLY technical skills.
+// ─── PROMPT ───────────────────────────────────────────────────────────────────
+// Thay đổi so với bản cũ:
+//   1. Định nghĩa rõ từng category bằng ví dụ cụ thể → LLM không nhầm chỗ
+//   2. "theory" có IMPORTANT note → không bị bỏ trống
+//   3. integrations chỉ là external AI/payment API → chặn nodemailer, monaco
+//   4. Yêu cầu scan toàn bộ CV kể cả phần project description
+const CV_EXTRACTION_PROMPT = `You are a CV parser. Extract the candidate's full name and ALL technical skills from the CV.
 
-INCLUDE: Programming languages, frameworks, databases, DevOps tools, technical concepts (REST API, GraphQL, OOP, etc.), real-time tech (WebSocket, SSE, Kafka).
+CATEGORY RULES — assign each skill to exactly one category:
 
-EXCLUDE: OTP, 2FA, verification, soft skills, hobbies (football, music, reading), activities (hackathon, workshop), generic terms without specific tech.
+"frontend"     → UI languages & frameworks: HTML, HTML5, CSS, CSS3, JavaScript, TypeScript, React.js, Next.js, Vue.js, Angular, Tailwind CSS, Redux, Sass
+"backend"      → server runtimes, frameworks, protocols, auth libs: Node.js, Express.js, NestJS, WebSocket, REST API, GraphQL, JWT, bcrypt, OAuth
+"database"     → databases & ORMs: MongoDB, MySQL, PostgreSQL, SQL Server, Redis, Mongoose, Prisma, Sequelize
+"devops"       → infrastructure, CI/CD, cloud, deployment tools: Git, GitHub, Docker, Kubernetes, GitHub Actions, CI/CD, Vercel, Render, Netlify, AWS, Postman, Nginx
+"integrations" → ONLY external AI/LLM/payment/map APIs: Google Gemini API, Groq, OpenAI API, Stripe, Twilio, Mapbox
+"theory"       → CS principles and software engineering concepts. IMPORTANT: always check the CV for these and extract them: OOP, SOLID, DSA, Clean Code, Design Patterns, MVC, Microservices, TDD, System Design, Algorithms, Data Structures, Agile, Scrum
 
-Return ONLY this JSON (no extra text):
+EXCLUDE: soft skills, hobbies, email clients, text editors, UI component names, npm utility packages (nodemailer, axios, lodash, monaco-editor, etc.)
+
+IMPORTANT:
+- Extract ALL skills mentioned anywhere in the CV, including skill sections, project descriptions, and experience
+- "theory" must never be empty if the CV mentions OOP / SOLID / DSA / Clean Code / algorithms
+
+Return ONLY valid JSON (no markdown, no explanation):
 {
-  "fullName": "string (max 50 chars, or 'Candidate')",
+  "fullName": "string",
   "skills": {
-    "frontend": ["React.js", "Next.js", ...],
-    "backend": ["Node.js", "Python", "MongoDB", "WebSocket", ...],
-    "theory": ["OOP", "SOLID", "Clean Code", ...],
-    "devops": ["Docker", "Git", "AWS", ...]
+    "frontend": [],
+    "backend": [],
+    "database": [],
+    "devops": [],
+    "integrations": [],
+    "theory": []
   }
-}
+}`;
 
-Rules:
-- Normalize names: "reactjs"→"React.js", "node.js"→"Node.js", "springboot"→"Spring Boot"
-- If category unclear, put in "backend"
-- Non-technical skills: OMIT completely`;
-
+// ─── NON-TECH FILTER ──────────────────────────────────────────────────────────
 const NON_TECH_KEYWORDS = [
-  "otp",
-  "ot p",
-  "o t p",
-  "2fa",
-  "two factor",
-  "verification",
-  "football",
-  "running",
-  "reading",
-  "interests",
-  "activities",
-  "hackathon",
-  "participated",
-  "organized",
-  "team-based",
-  "workshop",
-  "soft skill",
-  "communication",
-  "leadership",
-  "problem solving",
-  "hobbies",
-  "music",
-  "cooking",
-  "travel",
-  "stockfish",
+  "soft skill", "communication", "leadership", "problem solving",
+  "hobbies", "football", "music", "cooking", "travel",
+  "team-based", "participated", "organized",
 ];
 
 function isNonTechnical(skill) {
-  const lower = skill.toLowerCase();
-  return NON_TECH_KEYWORDS.some((keyword) => lower.includes(keyword));
+  const lower = skill.toLowerCase().trim();
+  return NON_TECH_KEYWORDS.some((kw) =>
+    lower === kw || lower.startsWith(kw + " ") || lower.endsWith(" " + kw)
+  );
 }
 
+// ─── INTEGRATIONS BLACKLIST ───────────────────────────────────────────────────
+// npm utility packages & local tools bị LLM hay nhét nhầm vào integrations
+const INTEGRATIONS_BLACKLIST = new Set([
+  "nodemailer", "axios", "lodash", "moment", "dayjs", "uuid",
+  "monaco editor", "monaco-editor", "codemirror",
+  "multer", "sharp", "jimp", "cheerio", "puppeteer",
+  "jsonwebtoken", "passport", "passport.js",
+  "socket.io", "stockfish",
+]);
+
+// ─── NORMALIZE ────────────────────────────────────────────────────────────────
+const NORMALIZE_MAP = [
+  [/^jwt$/i,                        "JWT"],
+  [/^bcrypt$/i,                     "bcrypt"],
+  [/^\s*web\s*socket\s*$/i,         "WebSocket"],
+  [/^\s*sse\s*$/i,                  "SSE"],
+  [/^html\s*5?$/i,                  "HTML5"],
+  [/^css\s*3?$/i,                   "CSS3"],
+  [/^restful?\s*api[s]?$/i,         "RESTful APIs"],
+  [/^ci\s*\/?\s*cd$/i,              "CI/CD"],
+  [/^github\s*actions$/i,           "GitHub Actions"],
+  [/^sql\s*server$/i,               "SQL Server"],
+  [/^next\.?js$/i,                  "Next.js"],
+  [/^react\.?js$/i,                 "React.js"],
+  [/^node\.?js$/i,                  "Node.js"],
+  [/^express\.?js$/i,               "Express.js"],
+  [/^tailwind(\s*css)?$/i,          "Tailwind CSS"],
+  [/^mongo\s*db$/i,                 "MongoDB"],
+  [/^spring\s*boot$/i,              "Spring Boot"],
+  [/^google\s*gemini(\s*api)?$/i,   "Google Gemini API"],
+  [/^(dsa|data\s*structures?\s*(&|and)\s*algorithms?)$/i, "DSA"],
+  [/^oop$/i,                        "OOP"],
+  [/^solid$/i,                      "SOLID"],
+  [/^clean\s*code$/i,               "Clean Code"],
+];
+
+function normalizeSkill(skill) {
+  for (const [pattern, replacement] of NORMALIZE_MAP) {
+    if (pattern.test(skill)) return replacement;
+  }
+  return skill;
+}
+
+// ─── FILTER ───────────────────────────────────────────────────────────────────
+const VALID_CATEGORIES = ["frontend", "backend", "database", "devops", "integrations", "theory"];
+
 function filterSkills(skillsObj) {
-  const cleaned = { frontend: [], backend: [], theory: [], devops: [] };
-  for (const category of ["frontend", "backend", "theory", "devops"]) {
+  const cleaned = { frontend: [], backend: [], database: [], devops: [], integrations: [], theory: [] };
+
+  for (const category of VALID_CATEGORIES) {
     const list = skillsObj[category] || [];
     for (let skill of list) {
       if (typeof skill !== "string") continue;
       let trimmed = skill.trim();
       if (trimmed.length < 2) continue;
       if (isNonTechnical(trimmed)) continue;
+      if (category === "integrations" && INTEGRATIONS_BLACKLIST.has(trimmed.toLowerCase())) continue;
 
-      if (/^jwt$/i.test(trimmed)) trimmed = "JWT";
-      if (/^bcrypt$/i.test(trimmed)) trimmed = "bcrypt";
-      if (/^\s*web\s*socket\s*$/i.test(trimmed)) trimmed = "WebSocket";
-      if (/^\s*sse\s*$/i.test(trimmed)) trimmed = "SSE";
-
+      trimmed = normalizeSkill(trimmed);
       cleaned[category].push(trimmed);
     }
     cleaned[category] = [...new Set(cleaned[category])].sort();
@@ -95,18 +132,18 @@ function filterSkills(skillsObj) {
   return cleaned;
 }
 
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
 async function analyzeCVSkills(cvText) {
   const requestId = generateRequestId();
   const modelName = "llama-3.3-70b-versatile";
-  const temperature = 0.2;
+  const temperature = 0.1; // giảm từ 0.2 → 0.1 để output ổn định hơn
 
   const fixed = fixBrokenText(cvText);
   const directName = extractNameDirectly(fixed);
   const cleanedText = fixed.replace(/\s+/g, " ").trim();
 
-  // FIX: giảm từ 4000 xuống 3000 chars — CV thực tế không cần nhiều hơn
-  // để list skills, tiết kiệm thêm ~150-200 input tokens mỗi request
-  const truncated = cleanedText.slice(0, 3000);
+  // Tăng từ 3000 → 4000 để không bị truncate mất phần Projects (hay chứa theory skills)
+  const truncated = cleanedText.slice(0, 4000);
 
   const systemMsg = new SystemMessage(CV_EXTRACTION_PROMPT);
   const userMsg = new HumanMessage(`CV:\n${truncated}`);
@@ -124,58 +161,37 @@ async function analyzeCVSkills(cvText) {
   );
   const timeoutMs = 45000;
 
+  const emptyFallback = {
+    fullName: directName || "Candidate",
+    skills: { frontend: [], backend: [], database: [], devops: [], integrations: [], theory: [] },
+  };
+
   let rawResponse;
   try {
     const aiPromise = groqService.invokeWithRetry(messages);
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(
-        () => reject(new Error(`CV_TIMEOUT after ${timeoutMs}ms`)),
-        timeoutMs,
-      ),
+      setTimeout(() => reject(new Error(`CV_TIMEOUT after ${timeoutMs}ms`)), timeoutMs)
     );
     rawResponse = await Promise.race([aiPromise, timeoutPromise]);
+
     const duration = Date.now() - startTime;
     logResponse(modelName, requestId, rawResponse, duration);
 
     if (typeof groqService.getLastUsage === "function") {
       const usage = groqService.getLastUsage();
       if (usage) {
-        const inputTokens =
-          usage.input_tokens ?? usage.promptTokens ?? usage.prompt_tokens ?? 0;
-        const outputTokens =
-          usage.output_tokens ??
-          usage.completionTokens ??
-          usage.completion_tokens ??
-          0;
-        const totalTokens =
-          usage.total_tokens ?? usage.totalTokens ?? inputTokens + outputTokens;
-        logTokenUsage(
-          modelName,
-          requestId,
-          inputTokens,
-          outputTokens,
-          totalTokens,
-          "parseCV",
-        );
+        const inputTokens  = usage.input_tokens  ?? usage.promptTokens     ?? usage.prompt_tokens     ?? 0;
+        const outputTokens = usage.output_tokens ?? usage.completionTokens ?? usage.completion_tokens ?? 0;
+        const totalTokens  = usage.total_tokens  ?? usage.totalTokens      ?? inputTokens + outputTokens;
+        logTokenUsage(modelName, requestId, inputTokens, outputTokens, totalTokens, "parseCV");
       }
     }
   } catch (err) {
     const duration = Date.now() - startTime;
-    if (err.message && err.message.includes("TIMEOUT")) {
-      logTimeout(modelName, requestId, timeoutMs);
-    } else {
-      logError(
-        modelName,
-        requestId,
-        err,
-        `analyzeCVSkills failed after ${duration}ms`,
-      );
-    }
+    if (err.message?.includes("TIMEOUT")) logTimeout(modelName, requestId, timeoutMs);
+    else logError(modelName, requestId, err, `analyzeCVSkills failed after ${duration}ms`);
     console.error("AI extraction failed, using empty fallback", err);
-    return {
-      fullName: directName || "Candidate",
-      skills: { frontend: [], backend: [], theory: [], devops: [] },
-    };
+    return emptyFallback;
   }
 
   let parsed;
@@ -183,10 +199,7 @@ async function analyzeCVSkills(cvText) {
     parsed = await safeParseJson(rawResponse);
   } catch (err) {
     console.error("JSON parse error, using empty fallback", err);
-    return {
-      fullName: directName || "Candidate",
-      skills: { frontend: [], backend: [], theory: [], devops: [] },
-    };
+    return emptyFallback;
   }
 
   const fullName =
@@ -194,17 +207,19 @@ async function analyzeCVSkills(cvText) {
       ? normalizeName(parsed.fullName)
       : directName || "Candidate";
 
-  const rawSkills = parsed.skills || {};
-  const filtered = filterSkills(rawSkills);
+  const filtered = filterSkills(parsed.skills || {});
 
-  const resultSkills = {
-    frontend: uniqueCaseInsensitive(filtered.frontend),
-    backend: uniqueCaseInsensitive(filtered.backend),
-    theory: uniqueCaseInsensitive(filtered.theory),
-    devops: uniqueCaseInsensitive(filtered.devops),
+  return {
+    fullName,
+    skills: {
+      frontend:     uniqueCaseInsensitive(filtered.frontend),
+      backend:      uniqueCaseInsensitive(filtered.backend),
+      database:     uniqueCaseInsensitive(filtered.database),
+      devops:       uniqueCaseInsensitive(filtered.devops),
+      integrations: uniqueCaseInsensitive(filtered.integrations),
+      theory:       uniqueCaseInsensitive(filtered.theory),
+    },
   };
-
-  return { fullName, skills: resultSkills };
 }
 
 module.exports = { analyzeCVSkills };

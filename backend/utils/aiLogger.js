@@ -1,10 +1,11 @@
-const fs = require('fs');
-const path = require('path');
+// backend/utils/aiLogger.js
+const fs = require("fs");
+const path = require("path");
 
 // Log tập trung vào backend/logs/ — không phụ thuộc vào vị trí file aiLogger.js
-const LOG_DIR = path.join(__dirname, '..', 'logs');
-const logFilePath = path.join(LOG_DIR, 'ai.log');
-const tokenLogPath = path.join(LOG_DIR, 'token_usage.log');
+const LOG_DIR = path.join(__dirname, "..", "logs");
+const logFilePath = path.join(LOG_DIR, "ai.log");
+const tokenLogPath = path.join(LOG_DIR, "token_usage.log");
 
 // Tạo thư mục logs/ nếu chưa có (chạy 1 lần lúc khởi động)
 if (!fs.existsSync(LOG_DIR)) {
@@ -14,17 +15,17 @@ if (!fs.existsSync(LOG_DIR)) {
 const getTimestamp = () => new Date().toISOString();
 
 const writeJsonLog = (targetFile, logObject) => {
-  const logLine = JSON.stringify(logObject) + '\n';
+  const logLine = JSON.stringify(logObject) + "\n";
   fs.appendFile(targetFile, logLine, (err) => {
-    if (err) console.error('Lỗi ghi log JSON:', err);
+    if (err) console.error("Lỗi ghi log JSON:", err);
   });
 };
 
 const logRequest = (model, requestId, prompt, temperature) => {
   writeJsonLog(logFilePath, {
     timestamp: getTimestamp(),
-    level: 'INFO',
-    type: 'REQUEST',
+    level: "INFO",
+    type: "REQUEST",
     model,
     requestId,
     temperature,
@@ -35,20 +36,23 @@ const logRequest = (model, requestId, prompt, temperature) => {
 const logResponse = (model, requestId, responseText, durationMs) => {
   writeJsonLog(logFilePath, {
     timestamp: getTimestamp(),
-    level: 'INFO',
-    type: 'RESPONSE',
+    level: "INFO",
+    type: "RESPONSE",
     model,
     requestId,
     durationMs,
-    responsePreview: (typeof responseText === 'string' ? responseText : JSON.stringify(responseText)).substring(0, 200),
+    responsePreview: (typeof responseText === "string"
+      ? responseText
+      : JSON.stringify(responseText)
+    ).substring(0, 200),
   });
 };
 
-const logError = (model, requestId, error, context = '') => {
+const logError = (model, requestId, error, context = "") => {
   writeJsonLog(logFilePath, {
     timestamp: getTimestamp(),
-    level: 'ERROR',
-    type: 'ERROR',
+    level: "ERROR",
+    type: "ERROR",
     model,
     requestId,
     context,
@@ -62,8 +66,8 @@ const logError = (model, requestId, error, context = '') => {
 const logTimeout = (model, requestId, timeoutMs) => {
   writeJsonLog(logFilePath, {
     timestamp: getTimestamp(),
-    level: 'WARN',
-    type: 'TIMEOUT',
+    level: "WARN",
+    type: "TIMEOUT",
     model,
     requestId,
     timeoutMs,
@@ -74,30 +78,47 @@ const logTimeout = (model, requestId, timeoutMs) => {
 const logRateLimit = (model, requestId, retryAfter, error) => {
   writeJsonLog(logFilePath, {
     timestamp: getTimestamp(),
-    level: 'WARN',
-    type: 'RATE_LIMIT',
+    level: "WARN",
+    type: "RATE_LIMIT",
     model,
     requestId,
-    retryAfter: retryAfter || 'unknown',
+    retryAfter: retryAfter || "unknown",
     errorMessage: error?.message,
   });
 };
 
-const logTokenUsage = (model, requestId, inputTokens, outputTokens, totalTokens, feature = 'general') => {
-  writeJsonLog(tokenLogPath, {
+// Cập nhật logTokenUsage để thêm userId và email
+const logTokenUsage = (
+  model,
+  requestId,
+  inputTokens,
+  outputTokens,
+  totalTokens,
+  feature = "general",
+  userId = null,
+  email = null,
+) => {
+  const logObject = {
     timestamp: getTimestamp(),
-    level: 'INFO',
-    type: 'TOKEN_USAGE',
+    level: "INFO",
+    type: "TOKEN_USAGE",
     feature,
     model,
     requestId,
     inputTokens,
     outputTokens,
     totalTokens,
-  });
+  };
+
+  // Chỉ thêm userId và email nếu có
+  if (userId) logObject.userId = userId;
+  if (email) logObject.email = email;
+
+  writeJsonLog(tokenLogPath, logObject);
 };
 
-const generateRequestId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
+const generateRequestId = () =>
+  `${Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
 
 module.exports = {
   logRequest,
