@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Send,
   Loader2,
@@ -17,33 +17,39 @@ import {
   Award,
   CircleUser,
   Zap,
-} from "lucide-react";
-import api from "../services/api";
-import InterviewReportModal from "../components/InterviewReportModal";
-import { useAuth } from "../contexts/AuthContext";
-import confetti from "canvas-confetti";
+} from 'lucide-react';
 
-const TOTAL_QUESTIONS = 5; // Đã sửa từ 8 xuống 5
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
+
+import api from '../services/api';
+import InterviewReportModal from '../components/InterviewReportModal';
+import { useAuth } from '../contexts/AuthContext';
+import confetti from 'canvas-confetti';
+
+const TOTAL_QUESTIONS = 5;
 
 export default function AdaptiveInterviewPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { topic, difficulty } = location.state || {
-    topic: "React",
-    difficulty: "medium",
+    topic: 'React',
+    difficulty: 'medium',
   };
   const { isAuthenticated, user, updateActivity } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) navigate("/login", { replace: true });
+    if (!isAuthenticated) navigate('/login', { replace: true });
   }, [isAuthenticated, navigate]);
 
-  const [step, setStep] = useState("preparation");
+  const [step, setStep] = useState('preparation');
   const [ready, setReady] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [sessionId, setSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
@@ -57,42 +63,42 @@ export default function AdaptiveInterviewPage() {
   const inputRef = useRef(null);
   const isFinishedRef = useRef(false);
 
-  const displayName = user?.fullName || user?.userName || user?.email || "User";
-  const answeredCount = messages.filter((m) => m.role === "user").length;
+  const displayName = user?.fullName || user?.userName || user?.email || 'User';
+  const answeredCount = messages.filter((m) => m.role === 'user').length;
   const progressPercent = (answeredCount / TOTAL_QUESTIONS) * 100;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
-    if (step === "chat" && !isFinished && !loading && !isAnalyzing) {
+    if (step === 'chat' && !isFinished && !loading && !isAnalyzing) {
       inputRef.current?.focus();
     }
   }, [step, isFinished, loading, isAnalyzing]);
 
   useEffect(() => {
-    if (step === "preparation" && ready && countdown > 0) {
+    if (step === 'preparation' && ready && countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
     }
-    if (step === "preparation" && ready && countdown === 0) {
+    if (step === 'preparation' && ready && countdown === 0) {
       startAdaptiveSession();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, ready, countdown]);
 
   const startAdaptiveSession = async () => {
-    setStep("chat");
+    setStep('chat');
     setLoading(true);
     setError(null);
     updateActivity();
     try {
-      const res = await api.post("/adaptive/start", { topic, difficulty });
+      const res = await api.post('/adaptive/start', { topic, difficulty });
       setSessionId(res.data.sessionId);
       setMessages([
         {
-          role: "assistant",
+          role: 'assistant',
           content: res.data.firstQuestion,
           timestamp: new Date().toISOString(),
         },
@@ -100,13 +106,13 @@ export default function AdaptiveInterviewPage() {
     } catch (err) {
       console.error(err);
       setError(
-        "Failed to start interview. Please check your connection and try again.",
+        'Failed to start interview. Please check your connection and try again.'
       );
       setMessages([
         {
-          role: "system",
+          role: 'system',
           content:
-            "⚠️ Unable to start the interview. Please refresh the page or try again later.",
+            '⚠️ Unable to start the interview. Please refresh the page or try again later.',
           timestamp: new Date().toISOString(),
         },
       ]);
@@ -126,20 +132,20 @@ export default function AdaptiveInterviewPage() {
       return;
 
     const userAnswer = input.trim();
-    setInput("");
+    setInput('');
     updateActivity();
 
     setMessages((prev) => [
       ...prev,
       {
-        role: "user",
+        role: 'user',
         content: userAnswer,
         timestamp: new Date().toISOString(),
       },
     ]);
 
     const currentAnswerCount =
-      messages.filter((m) => m.role === "user").length + 1;
+      messages.filter((m) => m.role === 'user').length + 1;
     const isLastAnswer = currentAnswerCount === TOTAL_QUESTIONS;
 
     if (isLastAnswer) {
@@ -151,7 +157,7 @@ export default function AdaptiveInterviewPage() {
     setError(null);
 
     try {
-      const response = await api.post("/adaptive/answer", {
+      const response = await api.post('/adaptive/answer', {
         sessionId,
         answer: userAnswer,
       });
@@ -162,7 +168,7 @@ export default function AdaptiveInterviewPage() {
         if (finalScoreValue === undefined || finalScoreValue === null) {
           const scores = response.data.conversation
             .filter(
-              (msg) => msg.role === "user" && typeof msg.score === "number",
+              (msg) => msg.role === 'user' && typeof msg.score === 'number'
             )
             .map((msg) => msg.score);
           finalScoreValue = scores.length
@@ -170,7 +176,7 @@ export default function AdaptiveInterviewPage() {
             : 5;
           finalScoreValue = Math.min(
             10,
-            Math.max(0, parseFloat(finalScoreValue.toFixed(1))),
+            Math.max(0, parseFloat(finalScoreValue.toFixed(1)))
           );
         }
         setFinalScore(finalScoreValue);
@@ -190,7 +196,7 @@ export default function AdaptiveInterviewPage() {
         setTimeout(() => {
           setIsAnalyzing(false);
           setIsFinished(true);
-          setStep("finished");
+          setStep('finished');
           setShowReportModal(true);
         }, 1000);
         return;
@@ -200,7 +206,7 @@ export default function AdaptiveInterviewPage() {
         setMessages((prev) => [
           ...prev,
           {
-            role: "assistant",
+            role: 'assistant',
             content: response.data.nextQuestion,
             timestamp: new Date().toISOString(),
           },
@@ -209,16 +215,16 @@ export default function AdaptiveInterviewPage() {
       }
     } catch (err) {
       console.error(err);
-      let errorMsg = "Failed to process your answer. Please try again.";
-      if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+      let errorMsg = 'Failed to process your answer. Please try again.';
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
         errorMsg =
-          "The AI is taking too long to respond. Please try again in a moment.";
+          'The AI is taking too long to respond. Please try again in a moment.';
       }
       setError(errorMsg);
       setMessages((prev) => [
         ...prev,
         {
-          role: "system",
+          role: 'system',
           content: `⚠️ ${errorMsg}`,
           timestamp: new Date().toISOString(),
         },
@@ -233,7 +239,7 @@ export default function AdaptiveInterviewPage() {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendAnswer();
     }
@@ -241,12 +247,12 @@ export default function AdaptiveInterviewPage() {
 
   const resetInterview = () => {
     isFinishedRef.current = false;
-    setStep("preparation");
+    setStep('preparation');
     setReady(false);
     setCountdown(3);
     setSessionId(null);
     setMessages([]);
-    setInput("");
+    setInput('');
     setLoading(false);
     setIsAnalyzing(false);
     setIsFinished(false);
@@ -256,27 +262,27 @@ export default function AdaptiveInterviewPage() {
     setDetailedReport(null);
   };
 
-  const getDifficultyBadgeClass = () => {
+  const getDifficultyVariant = () => {
     switch (difficulty) {
-      case "easy":
-        return "bg-success/20 text-success border border-success/30";
-      case "medium":
-        return "bg-warning/20 text-warning border border-warning/30";
-      case "hard":
-        return "bg-error/20 text-error border border-error/30";
+      case 'easy':
+        return 'success';
+      case 'medium':
+        return 'warning';
+      case 'hard':
+        return 'error';
       default:
-        return "bg-muted/20 text-muted border border-muted/30";
+        return 'default';
     }
   };
 
   // Preparation step
-  if (step === "preparation") {
+  if (step === 'preparation') {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-4">
         <div className="relative max-w-lg w-full">
           <div className="absolute -top-20 -left-20 w-60 h-60 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-secondary/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="relative bg-card rounded-3xl shadow-soft border border-border p-8 transition-all duration-500">
+          <BaseCard className="relative p-8 transition-all duration-500">
             <div className="w-24 h-24 mx-auto rounded-2xl bg-primary/20 flex items-center justify-center shadow-md mb-6 ring-4 ring-primary/10">
               <Brain className="w-12 h-12 text-primary" />
             </div>
@@ -284,14 +290,16 @@ export default function AdaptiveInterviewPage() {
               Adaptive Interview
             </h2>
             <div className="flex justify-center gap-3 mb-6">
-              <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-medium shadow-sm">
+              <BaseBadge variant="primary" rounded className="shadow-sm">
                 {topic}
-              </span>
-              <span
-                className={`px-3 py-1 rounded-full font-medium text-sm shadow-sm ${getDifficultyBadgeClass()}`}
+              </BaseBadge>
+              <BaseBadge
+                variant={getDifficultyVariant()}
+                rounded
+                className="shadow-sm"
               >
                 {difficulty.toUpperCase()}
-              </span>
+              </BaseBadge>
             </div>
             {!ready ? (
               <>
@@ -331,13 +339,18 @@ export default function AdaptiveInterviewPage() {
                     </li>
                   </ul>
                 </div>
-                <button
+                <BaseButton
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  leftIcon={
+                    <CheckCircle className="w-5 h-5 transition-transform group-hover:scale-110" />
+                  }
                   onClick={() => setReady(true)}
-                  className="w-full py-3.5 bg-primary hover:brightness-105 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group"
+                  className="py-3.5 shadow-md hover:shadow-lg transition-all duration-300"
                 >
-                  <CheckCircle className="w-5 h-5 transition-transform group-hover:scale-110" />{" "}
                   I'm ready — Start Interview
-                </button>
+                </BaseButton>
               </>
             ) : (
               <div className="text-center py-6">
@@ -352,34 +365,38 @@ export default function AdaptiveInterviewPage() {
                     {countdown}
                   </div>
                   <p className="text-muted mt-2 font-medium">
-                    {countdown === 1 ? "Take a deep breath..." : "Get ready..."}
+                    {countdown === 1 ? 'Take a deep breath...' : 'Get ready...'}
                   </p>
                 </div>
               </div>
             )}
-          </div>
+          </BaseCard>
         </div>
       </div>
     );
   }
 
   const showInputArea =
-    step === "chat" && !isFinished && !isAnalyzing && !loading;
+    step === 'chat' && !isFinished && !isAnalyzing && !loading;
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-20 backdrop-blur-xl bg-card/80 border-b border-border shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
-          <button
-            onClick={() => navigate("/welcome")}
-            className="group flex items-center gap-2 text-muted hover:text-primary transition-all duration-300 font-medium"
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            leftIcon={
+              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            }
+            onClick={() => navigate('/welcome')}
+            className="group gap-2 text-muted hover:text-primary"
           >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
             <span className="hidden sm:inline">Exit</span>
-          </button>
+          </BaseButton>
 
-          {step === "chat" && !isFinished && (
+          {step === 'chat' && !isFinished && (
             <div className="flex-1 max-w-md mx-4 hidden md:block">
               <div className="flex justify-between text-xs text-muted mb-1">
                 <span>Progress</span>
@@ -397,40 +414,48 @@ export default function AdaptiveInterviewPage() {
           )}
 
           <div className="flex items-center gap-3">
-            {/* Topic badge */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40 shadow-sm">
+            <BaseBadge
+              variant="primary"
+              rounded
+              className="gap-2 px-3 py-1.5 shadow-sm"
+            >
               <Brain className="w-4 h-4 text-primary" />
               <span className="font-semibold text-primary text-sm">
                 {topic}
               </span>
-            </div>
-            {/* Difficulty badge */}
-            <div
-              className={`px-3 py-1.5 rounded-full font-semibold text-sm shadow-sm ${getDifficultyBadgeClass()}`}
+            </BaseBadge>
+            <BaseBadge
+              variant={getDifficultyVariant()}
+              rounded
+              className="px-3 py-1.5 shadow-sm"
             >
               {difficulty}
-            </div>
+            </BaseBadge>
 
-            {/* User info */}
             <div className="flex items-center gap-2 ml-2">
-              <div className="hidden sm:flex items-center gap-2 text-sm text-text bg-card/70 rounded-full pl-3 pr-3 py-1 border border-border shadow-sm">
+              <BaseBadge
+                variant="default"
+                rounded
+                className="hidden sm:flex gap-2 px-3 py-1 border-border shadow-sm"
+              >
                 <CircleUser className="w-4 h-4 text-primary" />
                 <span className="font-medium">{displayName}</span>
-              </div>
+              </BaseBadge>
               {!isFinished && (
-                <button
+                <BaseButton
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<RotateCw className="w-5 h-5" />}
                   onClick={resetInterview}
-                  className="p-2 text-muted hover:text-text transition-colors hover:bg-muted/10 rounded-full"
+                  className="p-2 text-muted hover:text-text hover:bg-muted/10 rounded-full"
                   title="Reset interview"
-                >
-                  <RotateCw className="w-5 h-5" />
-                </button>
+                />
               )}
             </div>
           </div>
         </div>
 
-        {step === "chat" && !isFinished && (
+        {step === 'chat' && !isFinished && (
           <div className="md:hidden px-4 pb-2">
             <div className="flex justify-between text-xs text-muted mb-1">
               <span>Progress</span>
@@ -450,11 +475,11 @@ export default function AdaptiveInterviewPage() {
 
       {/* Chat messages */}
       <div
-        className={`flex-1 max-w-4xl w-full mx-auto px-4 py-6 ${showInputArea ? "pb-36" : "pb-6"}`}
+        className={`flex-1 max-w-4xl w-full mx-auto px-4 py-6 ${showInputArea ? 'pb-36' : 'pb-6'}`}
       >
         <div className="space-y-5">
           {messages.map((msg, idx) => {
-            if (msg.role === "system") {
+            if (msg.role === 'system') {
               return (
                 <div key={idx} className="flex justify-center animate-fadeIn">
                   <div className="bg-error/10 border border-error/30 rounded-xl px-4 py-2 text-error text-sm flex items-center gap-2 shadow-sm">
@@ -464,17 +489,17 @@ export default function AdaptiveInterviewPage() {
                 </div>
               );
             }
-            const isUser = msg.role === "user";
+            const isUser = msg.role === 'user';
             return (
               <div
                 key={idx}
-                className={`flex ${isUser ? "justify-end" : "justify-start"} animate-fadeIn`}
+                className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}
               >
                 <div
-                  className={`flex max-w-[85%] gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+                  className={`flex max-w-[85%] gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   <div
-                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-md ${isUser ? "bg-primary" : "bg-gradient-to-br from-primary to-secondary"}`}
+                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-md ${isUser ? 'bg-primary' : 'bg-gradient-to-br from-primary to-secondary'}`}
                   >
                     {isUser ? (
                       <User className="w-4 h-4 text-white" />
@@ -483,22 +508,22 @@ export default function AdaptiveInterviewPage() {
                     )}
                   </div>
                   <div
-                    className={`relative rounded-2xl px-5 py-3 shadow-soft transition-all hover:shadow-md ${isUser ? "bg-primary text-white rounded-tr-none" : "bg-card text-text rounded-tl-none border border-border"}`}
+                    className={`relative rounded-2xl px-5 py-3 shadow-soft transition-all hover:shadow-md ${isUser ? 'bg-primary text-white rounded-tr-none' : 'bg-card text-text rounded-tl-none border border-border'}`}
                   >
                     {!isUser && (
                       <div className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
                         <Zap className="w-3 h-3" /> AI Interviewer
                         <span className="text-muted text-[10px] font-normal ml-1">
                           {new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
+                            hour: '2-digit',
+                            minute: '2-digit',
                           })}
                         </span>
                       </div>
                     )}
                     <div className="whitespace-pre-wrap leading-relaxed text-[15px]">
-                      {msg.content.split("\n").map((line, i) => (
-                        <p key={i} className={i > 0 ? "mt-2" : ""}>
+                      {msg.content.split('\n').map((line, i) => (
+                        <p key={i} className={i > 0 ? 'mt-2' : ''}>
                           {line}
                         </p>
                       ))}
@@ -559,20 +584,16 @@ export default function AdaptiveInterviewPage() {
                   disabled={loading || isAnalyzing}
                 />
               </div>
-              <button
+              <BaseButton
+                variant="primary"
                 onClick={sendAnswer}
                 disabled={loading || isAnalyzing || !input.trim()}
-                className="px-5 py-3 bg-primary hover:brightness-105 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                loading={loading}
+                leftIcon={!loading && <Send className="w-4 h-4" />}
+                className="px-5 py-3 shadow-md hover:shadow-lg transition-all duration-200"
               >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    <span className="hidden sm:inline">Send</span>
-                  </>
-                )}
-              </button>
+                <span className="hidden sm:inline">Send</span>
+              </BaseButton>
             </div>
             <p className="text-center text-xs text-muted mt-2 flex items-center justify-center gap-1">
               <Mic className="w-3 h-3" /> AI adapts to your answers in real-time
@@ -583,7 +604,7 @@ export default function AdaptiveInterviewPage() {
 
       {isAnalyzing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fadeIn">
-          <div className="bg-card rounded-2xl p-8 shadow-soft flex flex-col items-center gap-4 max-w-sm mx-4 border border-border">
+          <BaseCard className="p-8 flex flex-col items-center gap-4 max-w-sm mx-4">
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping"></div>
               <Loader2 className="w-12 h-12 text-primary animate-spin relative" />
@@ -592,14 +613,14 @@ export default function AdaptiveInterviewPage() {
               AI is analyzing your answers...
             </p>
             <p className="text-sm text-muted">Please wait a moment</p>
-          </div>
+          </BaseCard>
         </div>
       )}
 
       {/* Finished state - Score Card */}
       {isFinished && finalScore !== null && (
         <div className="mt-8 mb-4 animate-fadeIn px-4">
-          <div className="bg-card rounded-2xl p-6 shadow-soft border border-border">
+          <BaseCard className="p-6">
             <div className="flex flex-col items-center text-center">
               <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-4 shadow-md">
                 <Trophy className="w-10 h-10 text-primary" />
@@ -614,37 +635,41 @@ export default function AdaptiveInterviewPage() {
                 {finalScore >= 8
                   ? "Excellent work! 🌟 You're a star!"
                   : finalScore >= 6
-                    ? "Good job! Keep improving 💪"
-                    : "Nice try! Review the report to level up 📚"}
+                    ? 'Good job! Keep improving 💪'
+                    : 'Nice try! Review the report to level up 📚'}
               </p>
               <div className="flex flex-wrap gap-3 justify-center">
-                <button
+                <BaseButton
+                  variant="primary"
+                  leftIcon={<Award className="w-4 h-4" />}
                   onClick={() => setShowReportModal(true)}
-                  className="px-5 py-2.5 bg-primary hover:brightness-105 text-white rounded-xl transition shadow-md flex items-center gap-2 font-medium"
                 >
-                  <Award className="w-4 h-4" /> View Full Report
-                </button>
-                <button
-                  onClick={() => navigate("/history")}
-                  className="px-5 py-2.5 bg-secondary hover:brightness-105 text-white rounded-xl transition shadow-md flex items-center gap-2 font-medium"
+                  View Full Report
+                </BaseButton>
+                <BaseButton
+                  variant="secondary"
+                  leftIcon={<CheckCircle className="w-4 h-4" />}
+                  onClick={() => navigate('/history')}
                 >
-                  <CheckCircle className="w-4 h-4" /> History
-                </button>
-                <button
+                  History
+                </BaseButton>
+                <BaseButton
+                  variant="outline"
+                  leftIcon={<RotateCw className="w-4 h-4" />}
                   onClick={resetInterview}
-                  className="px-5 py-2.5 bg-card border border-border hover:bg-muted/10 text-text rounded-xl transition shadow-sm flex items-center gap-2 font-medium"
                 >
-                  <RotateCw className="w-4 h-4" /> New Interview
-                </button>
-                <button
-                  onClick={() => navigate("/welcome")}
-                  className="px-5 py-2.5 bg-card border border-border hover:bg-muted/10 text-text rounded-xl transition shadow-sm flex items-center gap-2 font-medium"
+                  New Interview
+                </BaseButton>
+                <BaseButton
+                  variant="outline"
+                  leftIcon={<Home className="w-4 h-4" />}
+                  onClick={() => navigate('/welcome')}
                 >
-                  <Home className="w-4 h-4" /> Dashboard
-                </button>
+                  Dashboard
+                </BaseButton>
               </div>
             </div>
-          </div>
+          </BaseCard>
         </div>
       )}
 

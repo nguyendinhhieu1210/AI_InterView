@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Award,
@@ -13,8 +13,14 @@ import {
   Trash2,
   Calendar,
   HelpCircle,
-} from "lucide-react";
-import api from "../services/api";
+} from 'lucide-react';
+
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
+
+import api from '../services/api';
 
 export default function InterviewDetailPage() {
   const { id } = useParams();
@@ -37,16 +43,16 @@ export default function InterviewDetailPage() {
       if (response.data.success && response.data.interview) {
         setInterview(response.data.interview);
       } else {
-        throw new Error("Interview not found");
+        throw new Error('Interview not found');
       }
     } catch (err) {
-      console.error("Detail fetch error:", err);
+      console.error('Detail fetch error:', err);
       if (err.response?.status === 404) {
-        setError("Interview not found. It may have been deleted.");
+        setError('Interview not found. It may have been deleted.');
       } else if (err.response?.status === 401) {
         return;
       } else {
-        setError(err.message || "Failed to load interview details");
+        setError(err.message || 'Failed to load interview details');
       }
     } finally {
       setLoading(false);
@@ -54,40 +60,40 @@ export default function InterviewDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this interview?"))
+    if (!window.confirm('Are you sure you want to delete this interview?'))
       return;
     try {
       await api.delete(`/interview/history/${id}`);
-      navigate("/history");
+      navigate('/history');
     } catch (error) {
-      alert("Delete failed");
+      alert('Delete failed');
     }
   };
 
   const getScoreColor = (score) => {
-    if (score >= 80) return "text-success";
-    if (score >= 60) return "text-warning";
-    if (score >= 40) return "text-warning/80";
-    return "text-error";
+    if (score >= 80) return 'text-success';
+    if (score >= 60) return 'text-warning';
+    if (score >= 40) return 'text-warning/80';
+    return 'text-error';
   };
 
-  const getScoreBg = (score) => {
-    if (score >= 80) return "bg-success/20 text-success";
-    if (score >= 60) return "bg-warning/20 text-warning";
-    if (score >= 40) return "bg-warning/10 text-warning/80";
-    return "bg-error/20 text-error";
+  const getScoreBadgeVariant = (score) => {
+    if (score >= 80) return 'success';
+    if (score >= 60) return 'warning';
+    if (score >= 40) return 'warning';
+    return 'error';
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid date";
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    if (isNaN(date.getTime())) return 'Invalid date';
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(date);
   };
 
@@ -103,16 +109,13 @@ export default function InterviewDetailPage() {
   if (error || !interview) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-bg">
-        <div className="bg-card backdrop-blur rounded-2xl p-8 text-center shadow-soft border border-border">
+        <BaseCard className="p-8 text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-error mx-auto mb-4" />
-          <p className="text-text mb-4">{error || "Interview not found"}</p>
-          <button
-            onClick={() => navigate("/history")}
-            className="px-4 py-2 bg-primary text-white rounded-xl hover:brightness-105 transition shadow-md"
-          >
+          <p className="text-text mb-4">{error || 'Interview not found'}</p>
+          <BaseButton variant="primary" onClick={() => navigate('/history')}>
             Back to History
-          </button>
-        </div>
+          </BaseButton>
+        </BaseCard>
       </div>
     );
   }
@@ -125,19 +128,26 @@ export default function InterviewDetailPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {/* Navigation & Delete */}
         <div className="flex justify-between items-center mb-6">
-          <button
-            onClick={() => navigate("/interview-history")}
-            className="group flex items-center gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border transition-all duration-300"
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            leftIcon={
+              <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+            }
+            onClick={() => navigate('/interview-history')}
+            className="group gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
           >
-            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />{" "}
             Back
-          </button>
-          <button
+          </BaseButton>
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            leftIcon={<Trash2 className="w-4 h-4" />}
             onClick={handleDelete}
-            className="flex items-center gap-2 text-error hover:text-error/80 bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border transition-colors"
+            className="gap-2 text-error hover:text-error/80 bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
           >
-            <Trash2 className="w-4 h-4" /> Delete
-          </button>
+            Delete
+          </BaseButton>
         </div>
 
         {/* Title & Meta */}
@@ -147,11 +157,11 @@ export default function InterviewDetailPage() {
           </h1>
           <div className="flex items-center justify-center sm:justify-start gap-4 text-muted text-sm mt-2">
             <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5" />{" "}
+              <Calendar className="w-3.5 h-3.5" />{' '}
               {formatDate(interview.createdAt)}
             </span>
             <span className="flex items-center gap-1">
-              <HelpCircle className="w-3.5 h-3.5" /> {interview.totalQuestions}{" "}
+              <HelpCircle className="w-3.5 h-3.5" /> {interview.totalQuestions}{' '}
               questions
             </span>
           </div>
@@ -159,7 +169,7 @@ export default function InterviewDetailPage() {
 
         {/* Score Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-card/80 backdrop-blur rounded-2xl p-4 text-center shadow-soft border border-border hover:shadow-lg transition-all">
+          <BaseCard className="p-4 text-center hover:shadow-lg transition-all">
             <TrendingUp className="w-6 h-6 mx-auto text-primary mb-2" />
             <div
               className={`text-3xl font-bold ${getScoreColor(interview.totalScore)}`}
@@ -168,8 +178,9 @@ export default function InterviewDetailPage() {
               <span className="text-base text-muted">/100</span>
             </div>
             <div className="text-xs text-muted mt-1">Total Score</div>
-          </div>
-          <div className="bg-card/80 backdrop-blur rounded-2xl p-4 text-center shadow-soft border border-border hover:shadow-lg transition-all">
+          </BaseCard>
+
+          <BaseCard className="p-4 text-center hover:shadow-lg transition-all">
             <div className="text-3xl font-bold text-success">
               {interview.mcqScore || 0}
               <span className="text-base text-muted">
@@ -177,8 +188,9 @@ export default function InterviewDetailPage() {
               </span>
             </div>
             <div className="text-xs text-muted mt-1">MCQ Score</div>
-          </div>
-          <div className="bg-card/80 backdrop-blur rounded-2xl p-4 text-center shadow-soft border border-border hover:shadow-lg transition-all">
+          </BaseCard>
+
+          <BaseCard className="p-4 text-center hover:shadow-lg transition-all">
             <div className="text-3xl font-bold text-secondary">
               {interview.essayScore || 0}
               <span className="text-base text-muted">
@@ -186,7 +198,7 @@ export default function InterviewDetailPage() {
               </span>
             </div>
             <div className="text-xs text-muted mt-1">Essay Score</div>
-          </div>
+          </BaseCard>
         </div>
 
         {/* Questions List */}
@@ -198,7 +210,7 @@ export default function InterviewDetailPage() {
           {/* MCQ Questions */}
           {mcqResults.map((result, idx) => {
             const isCorrect = result.isCorrect;
-            const userAnswer = result.userAnswer || "";
+            const userAnswer = result.userAnswer || '';
             const correctAnswer = result.correctAnswer;
             const explanation = result.explanation;
             const options = result.options || [];
@@ -213,7 +225,7 @@ export default function InterviewDetailPage() {
                 <button
                   onClick={() =>
                     setExpandedQuestion(
-                      expandedQuestion === `mcq_${idx}` ? null : `mcq_${idx}`,
+                      expandedQuestion === `mcq_${idx}` ? null : `mcq_${idx}`
                     )
                   }
                   className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/5 transition"
@@ -229,11 +241,13 @@ export default function InterviewDetailPage() {
                         Question {idx + 1}: {questionText}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span
-                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getScoreBg(score)}`}
+                        <BaseBadge
+                          variant={getScoreBadgeVariant(score)}
+                          size="sm"
+                          rounded
                         >
                           Score: {score}/10
-                        </span>
+                        </BaseBadge>
                       </div>
                     </div>
                   </div>
@@ -250,19 +264,19 @@ export default function InterviewDetailPage() {
                       {options.map((option, optIdx) => {
                         const isCorrectOption = option === correctAnswer;
                         const isUserOption = option === userAnswer;
-                        let bgClass = "bg-card border-border";
-                        let textClass = "text-text";
+                        let bgClass = 'bg-card border-border';
+                        let textClass = 'text-text';
                         let icon = null;
 
                         if (isCorrectOption) {
-                          bgClass = "bg-success/20 border-success/30";
-                          textClass = "text-success font-medium";
+                          bgClass = 'bg-success/20 border-success/30';
+                          textClass = 'text-success font-medium';
                           icon = (
                             <CheckCircle className="w-4 h-4 text-success" />
                           );
                         } else if (isUserOption) {
-                          bgClass = "bg-error/20 border-error/30";
-                          textClass = "text-error font-medium";
+                          bgClass = 'bg-error/20 border-error/30';
+                          textClass = 'text-error font-medium';
                           icon = <XCircle className="w-4 h-4 text-error" />;
                         }
 
@@ -302,12 +316,12 @@ export default function InterviewDetailPage() {
 
           {/* Essay Questions */}
           {essayResults.map((result, idx) => {
-            const userAnswer = result.userAnswer || "";
-            const sampleAnswer = result.sampleAnswer || "";
+            const userAnswer = result.userAnswer || '';
+            const sampleAnswer = result.sampleAnswer || '';
             const idealKeywords = result.idealAnswerKeywords || [];
             const score = result.score || 0;
-            const explanation = result.explanation || "";
-            const feedback = result.feedback || "";
+            const explanation = result.explanation || '';
+            const feedback = result.feedback || '';
             const questionText = result.question;
 
             return (
@@ -320,7 +334,7 @@ export default function InterviewDetailPage() {
                     setExpandedQuestion(
                       expandedQuestion === `essay_${idx}`
                         ? null
-                        : `essay_${idx}`,
+                        : `essay_${idx}`
                     )
                   }
                   className="w-full flex justify-between items-center p-4 text-left hover:bg-muted/5 transition"
@@ -330,11 +344,13 @@ export default function InterviewDetailPage() {
                       Question {idx + 1}: {questionText}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span
-                        className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getScoreBg(score)}`}
+                      <BaseBadge
+                        variant={getScoreBadgeVariant(score)}
+                        size="sm"
+                        rounded
                       >
                         Score: {score}/10
-                      </span>
+                      </BaseBadge>
                     </div>
                   </div>
                   {expandedQuestion === `essay_${idx}` ? (
@@ -348,7 +364,7 @@ export default function InterviewDetailPage() {
                     <div>
                       <p className="font-semibold text-text">Your answer:</p>
                       <div className="bg-card p-3 rounded-lg mt-1 whitespace-pre-wrap border border-border text-text">
-                        {userAnswer || "—"}
+                        {userAnswer || '—'}
                       </div>
                     </div>
                     {sampleAnswer && (
@@ -368,12 +384,9 @@ export default function InterviewDetailPage() {
                         </p>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {idealKeywords.map((kw, i) => (
-                            <span
-                              key={i}
-                              className="text-xs bg-secondary/20 text-secondary px-2 py-1 rounded-full"
-                            >
+                            <BaseBadge key={i} variant="info" size="sm" rounded>
                               {kw}
-                            </span>
+                            </BaseBadge>
                           ))}
                         </div>
                       </div>

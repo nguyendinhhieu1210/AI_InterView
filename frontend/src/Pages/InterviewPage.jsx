@@ -1,6 +1,6 @@
 // src/pages/InterviewPage.jsx
-import React, { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   FileText,
@@ -13,15 +13,21 @@ import {
   XCircle,
   Award,
   AlertCircle,
-} from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import api from "../services/api";
+} from 'lucide-react';
+
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
+
+import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 
 // ==================== Error Boundary ====================
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, errorMsg: "" };
+    this.state = { hasError: false, errorMsg: '' };
   }
 
   static getDerivedStateFromError(error) {
@@ -29,28 +35,28 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("InterviewPage ErrorBoundary caught:", error, errorInfo);
+    console.error('InterviewPage ErrorBoundary caught:', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-bg">
-          <div className="text-center p-8 bg-card rounded-2xl shadow-soft border border-border max-w-md">
+          <BaseCard className="text-center p-8 max-w-md">
             <div className="text-error text-6xl mb-4">⚠️</div>
             <h2 className="text-2xl font-bold text-text mb-2">
               Something went wrong
             </h2>
             <p className="text-muted mb-4">
-              {this.state.errorMsg || "Failed to render interview page."}
+              {this.state.errorMsg || 'Failed to render interview page.'}
             </p>
-            <button
+            <BaseButton
+              variant="primary"
               onClick={() => window.location.reload()}
-              className="px-5 py-2 bg-primary text-white rounded-lg hover:brightness-105 transition shadow-md"
             >
               Reload Page
-            </button>
-          </div>
+            </BaseButton>
+          </BaseCard>
         </div>
       );
     }
@@ -72,26 +78,25 @@ export default function InterviewPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [results, setResults] = useState(null);
-  const [activeSection, setActiveSection] = useState("mcq");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [activeSection, setActiveSection] = useState('mcq');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const isMounted = useRef(true);
 
   useEffect(() => {
-    if (!isAuthenticated) navigate("/login");
+    if (!isAuthenticated) navigate('/login');
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(""), 5000);
+      const timer = setTimeout(() => setErrorMessage(''), 5000);
       return () => clearTimeout(timer);
     }
   }, [errorMessage]);
 
-  // src/pages/InterviewPage.jsx (phần fetchQuestions đã sửa)
   useEffect(() => {
     if (!topic) {
-      navigate("/welcome");
+      navigate('/welcome');
       return;
     }
 
@@ -100,19 +105,15 @@ export default function InterviewPage() {
         setLoading(true);
         updateActivity();
 
-        // ✅ Gọi API generate questions
-        const { data } = await api.post("/interview/generate", {
+        const { data } = await api.post('/interview/generate', {
           topic,
           difficulty,
         });
 
-        console.log("API Response:", data); // Debug kiểm tra dữ liệu
-
         if (isMounted.current) {
-          // ✅ Kiểm tra và lấy đúng cấu trúc dữ liệu
           if (!data.questions) {
             throw new Error(
-              "Invalid response format: missing questions object",
+              'Invalid response format: missing questions object'
             );
           }
 
@@ -120,7 +121,7 @@ export default function InterviewPage() {
           const textData = data.questions.text || [];
 
           if (mcqData.length === 0 && textData.length === 0) {
-            throw new Error("No questions generated");
+            throw new Error('No questions generated');
           }
 
           const enriched = {
@@ -134,19 +135,18 @@ export default function InterviewPage() {
             })),
           };
 
-          console.log("Enriched questions:", enriched);
           setQuestions(Object.freeze(enriched));
           setLoading(false);
         }
       } catch (error) {
-        console.error("Generate questions error:", error);
+        console.error('Generate questions error:', error);
         if (isMounted.current) {
           const errorMsg =
             error.response?.data?.message ||
             error.message ||
-            "Failed to generate questions. Please try again.";
+            'Failed to generate questions. Please try again.';
           setErrorMessage(errorMsg);
-          setTimeout(() => navigate("/welcome"), 2000);
+          setTimeout(() => navigate('/welcome'), 2000);
         }
       }
     };
@@ -162,7 +162,7 @@ export default function InterviewPage() {
   const handleSubmit = async () => {
     if (submitted) return;
     setSubmitting(true);
-    setErrorMessage("");
+    setErrorMessage('');
     try {
       const cleanQuestions = {
         mcq: questions.mcq.map(({ _uid, ...rest }) => rest),
@@ -176,28 +176,27 @@ export default function InterviewPage() {
         userId: user?.id,
       };
 
-      // ✅ Sử dụng api instance để submit answers
-      const { data } = await api.post("/interview/submit", payload);
+      const { data } = await api.post('/interview/submit', payload);
 
       if (isMounted.current) {
         if (data.success) {
           setResults(data.results);
           setSubmitted(true);
         } else {
-          throw new Error(data.message || "Grading failed");
+          throw new Error(data.message || 'Grading failed');
         }
       }
     } catch (error) {
-      console.error("Submit error:", error);
+      console.error('Submit error:', error);
       const errorMsg =
         error.response?.data?.message ||
         error.message ||
-        "Error submitting answers. Please try again.";
+        'Error submitting answers. Please try again.';
       setErrorMessage(errorMsg);
 
       if (error.response?.status === 401) {
-        setErrorMessage("Session expired. Please login again.");
-        setTimeout(() => navigate("/login"), 2000);
+        setErrorMessage('Session expired. Please login again.');
+        setTimeout(() => navigate('/login'), 2000);
       }
     } finally {
       if (isMounted.current) setSubmitting(false);
@@ -211,12 +210,12 @@ export default function InterviewPage() {
   const mcqCount = questions?.mcq?.length || 0;
   const textCount = questions?.text?.length || 0;
   const answeredMcq = Object.keys(answers).filter((k) =>
-    k.startsWith("mcq_"),
+    k.startsWith('mcq_')
   ).length;
   const answeredText = Object.keys(answers).filter((k) =>
-    k.startsWith("text_"),
+    k.startsWith('text_')
   ).length;
-  const userName = user?.fullName || user?.userName || "Guest";
+  const userName = user?.fullName || user?.userName || 'Guest';
 
   const totalQuestions = mcqCount + textCount;
   const answeredTotal = answeredMcq + answeredText;
@@ -232,7 +231,7 @@ export default function InterviewPage() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary/10 animate-pulse"></div>
           </div>
           <p className="mt-6 text-muted font-medium">
-            AI is generating questions about{" "}
+            AI is generating questions about{' '}
             <span className="text-primary font-bold">“{topic}”</span>...
           </p>
         </div>
@@ -243,17 +242,18 @@ export default function InterviewPage() {
   if (!questions || (mcqCount === 0 && textCount === 0)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg">
-        <div className="text-center p-8 bg-card rounded-2xl shadow-soft border border-border">
+        <BaseCard className="text-center p-8">
           <p className="text-error font-semibold">
             No questions available. Please try again.
           </p>
-          <button
-            onClick={() => navigate("/welcome")}
-            className="mt-4 px-5 py-2 bg-primary text-white rounded-lg hover:brightness-105 transition shadow-md"
+          <BaseButton
+            variant="primary"
+            onClick={() => navigate('/welcome')}
+            className="mt-4"
           >
             Go Back
-          </button>
-        </div>
+          </BaseButton>
+        </BaseCard>
       </div>
     );
   }
@@ -268,35 +268,49 @@ export default function InterviewPage() {
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <button
-              onClick={() => navigate("/welcome")}
-              className="group flex items-center gap-2 text-muted hover:text-primary transition-all duration-300 font-medium bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border w-fit"
+            <BaseButton
+              variant="ghost"
+              size="sm"
+              leftIcon={
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              }
+              onClick={() => navigate('/welcome')}
+              className="group gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border w-fit"
             >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span>Back to Dashboard</span>
-            </button>
+              Back to Dashboard
+            </BaseButton>
             <div className="flex items-center gap-3 self-end sm:self-auto">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-card/70 backdrop-blur-sm rounded-full shadow-soft border border-border">
+              <BaseBadge
+                variant="default"
+                rounded
+                className="gap-2 px-3 py-1.5"
+              >
                 <User className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-text">
                   {userName}
                 </span>
-              </div>
+              </BaseBadge>
               {!submitted && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-card/70 backdrop-blur-sm rounded-full shadow-soft border border-border">
+                <BaseBadge
+                  variant="success"
+                  rounded
+                  className="gap-2 px-3 py-1.5"
+                >
                   <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-                  <span className="text-xs font-medium text-muted">
-                    In Progress
-                  </span>
-                </div>
+                  <span className="text-xs font-medium">In Progress</span>
+                </BaseBadge>
               )}
               {submitted && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-full shadow-md">
+                <BaseBadge
+                  variant="primary"
+                  rounded
+                  className="gap-2 px-3 py-1.5 shadow-md"
+                >
                   <Award className="w-4 h-4" />
                   <span className="text-xs font-medium">
                     Score: {totalScore}/100
                   </span>
-                </div>
+                </BaseBadge>
               )}
             </div>
           </div>
@@ -307,7 +321,7 @@ export default function InterviewPage() {
               <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
               <div className="flex-1 text-sm text-error">{errorMessage}</div>
               <button
-                onClick={() => setErrorMessage("")}
+                onClick={() => setErrorMessage('')}
                 className="text-error hover:text-error/80"
               >
                 <XCircle className="w-4 h-4" />
@@ -316,7 +330,7 @@ export default function InterviewPage() {
           )}
 
           {/* Main Card */}
-          <div className="bg-card rounded-2xl shadow-soft border border-border overflow-hidden">
+          <BaseCard className="overflow-hidden">
             {/* Header card với gradient nhẹ */}
             <div className="relative bg-gradient-to-r from-primary/10 to-secondary/10 px-6 py-6 border-b border-border">
               <div className="relative">
@@ -327,15 +341,15 @@ export default function InterviewPage() {
                   </h1>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <span className="px-3 py-1 bg-primary/20 text-primary text-sm font-medium rounded-full">
+                  <BaseBadge variant="primary" rounded>
                     Difficulty: {difficulty}
-                  </span>
-                  <span className="px-3 py-1 bg-muted/20 text-muted text-sm font-medium rounded-full">
+                  </BaseBadge>
+                  <BaseBadge variant="default" rounded>
                     {mcqCount} MCQ
-                  </span>
-                  <span className="px-3 py-1 bg-muted/20 text-muted text-sm font-medium rounded-full">
+                  </BaseBadge>
+                  <BaseBadge variant="default" rounded>
                     {textCount} Essay
-                  </span>
+                  </BaseBadge>
                 </div>
               </div>
             </div>
@@ -361,31 +375,31 @@ export default function InterviewPage() {
             {/* Tab headers */}
             <div className="flex border-b border-border px-6">
               <button
-                onClick={() => switchTab("mcq")}
+                onClick={() => switchTab('mcq')}
                 className={`flex items-center gap-2 py-3 px-4 text-sm font-medium transition-all relative ${
-                  activeSection === "mcq"
-                    ? "text-primary"
-                    : "text-muted hover:text-text"
+                  activeSection === 'mcq'
+                    ? 'text-primary'
+                    : 'text-muted hover:text-text'
                 }`}
               >
-                <HelpCircle className="w-4 h-4" /> MCQ{" "}
+                <HelpCircle className="w-4 h-4" /> MCQ{' '}
                 {submitted &&
                   mcqResults.length > 0 &&
                   `(${mcqResults.filter((r) => r.isCorrect).length}/${mcqCount})`}
-                {activeSection === "mcq" && (
+                {activeSection === 'mcq' && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
                 )}
               </button>
               <button
-                onClick={() => switchTab("text")}
+                onClick={() => switchTab('text')}
                 className={`flex items-center gap-2 py-3 px-4 text-sm font-medium transition-all relative ${
-                  activeSection === "text"
-                    ? "text-primary"
-                    : "text-muted hover:text-text"
+                  activeSection === 'text'
+                    ? 'text-primary'
+                    : 'text-muted hover:text-text'
                 }`}
               >
                 <FileText className="w-4 h-4" /> Essay Questions
-                {activeSection === "text" && (
+                {activeSection === 'text' && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
                 )}
               </button>
@@ -401,7 +415,7 @@ export default function InterviewPage() {
             >
               {/* MCQ Section */}
               <div
-                style={{ display: activeSection === "mcq" ? "block" : "none" }}
+                style={{ display: activeSection === 'mcq' ? 'block' : 'none' }}
               >
                 <div className="space-y-6">
                   <h2 className="text-xl font-bold text-text flex items-center gap-2">
@@ -420,9 +434,9 @@ export default function InterviewPage() {
                         className={`group bg-muted/5 rounded-xl p-5 border transition-all duration-300 ${
                           submitted
                             ? isCorrect
-                              ? "border-success/50 bg-success/5"
-                              : "border-error/50 bg-error/5"
-                            : "border-border hover:border-primary/30"
+                              ? 'border-success/50 bg-success/5'
+                              : 'border-error/50 bg-error/5'
+                            : 'border-border hover:border-primary/30'
                         }`}
                       >
                         <div className="flex items-start gap-3 mb-3">
@@ -449,14 +463,14 @@ export default function InterviewPage() {
                             const isCorrectAnswer = opt === q.correctAnswer;
                             const isUserAnswer = opt === userChoice;
                             let optionClass =
-                              "flex items-start gap-3 cursor-pointer p-2 rounded-lg transition border border-transparent";
+                              'flex items-start gap-3 cursor-pointer p-2 rounded-lg transition border border-transparent';
                             if (!submitted)
-                              optionClass += " hover:bg-primary/10";
+                              optionClass += ' hover:bg-primary/10';
                             else if (isCorrectAnswer)
-                              optionClass += " bg-success/20 border-success/50";
+                              optionClass += ' bg-success/20 border-success/50';
                             else if (isUserAnswer && !isCorrectAnswer)
-                              optionClass += " bg-error/20 border-error/50";
-                            else optionClass += " opacity-70";
+                              optionClass += ' bg-error/20 border-error/50';
+                            else optionClass += ' opacity-70';
 
                             return (
                               <label
@@ -469,7 +483,7 @@ export default function InterviewPage() {
                                   value={opt}
                                   checked={userChoice === opt}
                                   onChange={() =>
-                                    handleAnswerChange(`mcq_${idx}`, "mcq", opt)
+                                    handleAnswerChange(`mcq_${idx}`, 'mcq', opt)
                                   }
                                   disabled={submitted}
                                   className="mt-0.5 w-4 h-4"
@@ -477,12 +491,12 @@ export default function InterviewPage() {
                                 <span
                                   className={`text-sm flex-1 ${
                                     submitted && isCorrectAnswer
-                                      ? "text-success font-semibold"
+                                      ? 'text-success font-semibold'
                                       : submitted &&
                                           isUserAnswer &&
                                           !isCorrectAnswer
-                                        ? "text-error font-semibold"
-                                        : "text-text"
+                                        ? 'text-error font-semibold'
+                                        : 'text-text'
                                   }`}
                                 >
                                   {opt}
@@ -513,7 +527,7 @@ export default function InterviewPage() {
                               </p>
                               <p className="text-sm text-text">
                                 {mcqResults[idx]?.explanation ||
-                                  "No explanation available."}
+                                  'No explanation available.'}
                               </p>
                             </div>
                             <div className="p-3 rounded-lg bg-warning/5 border-l-4 border-warning">
@@ -521,7 +535,7 @@ export default function InterviewPage() {
                                 <User className="w-3 h-3" /> Your answer
                               </p>
                               <p className="text-sm text-text">
-                                {userChoice || "Not answered"}
+                                {userChoice || 'Not answered'}
                               </p>
                             </div>
                             <div className="p-3 rounded-lg bg-success/5 border-l-4 border-success">
@@ -533,10 +547,18 @@ export default function InterviewPage() {
                                 {q.correctAnswer}
                               </p>
                             </div>
-                            <div className="p-3 rounded-lg bg-primary/10 text-primary font-semibold text-sm flex items-center gap-2">
+                            <BaseBadge
+                              variant={
+                                mcqResults[idx]?.score >= 7
+                                  ? 'success'
+                                  : 'error'
+                              }
+                              rounded
+                              className="p-3 text-sm font-semibold flex items-center gap-2"
+                            >
                               <span>Score:</span>
                               <span>{mcqResults[idx]?.score || 0}/10</span>
-                            </div>
+                            </BaseBadge>
                           </div>
                         )}
                       </div>
@@ -547,7 +569,7 @@ export default function InterviewPage() {
 
               {/* Essay Section */}
               <div
-                style={{ display: activeSection === "text" ? "block" : "none" }}
+                style={{ display: activeSection === 'text' ? 'block' : 'none' }}
               >
                 <div className="space-y-6">
                   <h2 className="text-xl font-bold text-text flex items-center gap-2">
@@ -564,9 +586,9 @@ export default function InterviewPage() {
                         className={`bg-muted/5 rounded-xl p-5 border transition-all duration-300 ${
                           submitted
                             ? isLowScore
-                              ? "border-error/50 bg-error/5"
-                              : "border-success/50 bg-success/5"
-                            : "border-border hover:border-primary/30"
+                              ? 'border-error/50 bg-error/5'
+                              : 'border-success/50 bg-success/5'
+                            : 'border-border hover:border-primary/30'
                         }`}
                       >
                         <div className="flex items-start gap-3 mb-3">
@@ -582,12 +604,12 @@ export default function InterviewPage() {
                             rows={4}
                             className="w-full p-3 rounded-xl border border-border bg-card text-text focus:ring-2 focus:ring-primary transition-all disabled:opacity-80"
                             placeholder="Type your answer here..."
-                            value={answers[`text_${idx}`] || ""}
+                            value={answers[`text_${idx}`] || ''}
                             onChange={(e) =>
                               handleAnswerChange(
                                 `text_${idx}`,
-                                "text",
-                                e.target.value,
+                                'text',
+                                e.target.value
                               )
                             }
                             disabled={submitted}
@@ -600,7 +622,7 @@ export default function InterviewPage() {
                                 <User className="w-3 h-3" /> Your answer
                               </p>
                               <p className="text-sm text-text whitespace-pre-wrap">
-                                {essayResult.userAnswer || "Not answered"}
+                                {essayResult.userAnswer || 'Not answered'}
                               </p>
                             </div>
                             {essayResult.idealAnswerKeywords?.length > 0 && (
@@ -609,9 +631,20 @@ export default function InterviewPage() {
                                   <CheckCircle className="w-3 h-3" /> Ideal
                                   keywords
                                 </p>
-                                <p className="text-sm text-text">
-                                  {essayResult.idealAnswerKeywords.join(", ")}
-                                </p>
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                  {essayResult.idealAnswerKeywords.map(
+                                    (kw, i) => (
+                                      <BaseBadge
+                                        key={i}
+                                        variant="success"
+                                        size="sm"
+                                        rounded
+                                      >
+                                        {kw}
+                                      </BaseBadge>
+                                    )
+                                  )}
+                                </div>
                               </div>
                             )}
                             {(essayResult.sampleAnswer ||
@@ -626,16 +659,16 @@ export default function InterviewPage() {
                                 </p>
                               </div>
                             )}
-                            <div
-                              className={`p-3 rounded-lg font-semibold text-sm flex items-center gap-2 ${
-                                essayResult.score >= 7
-                                  ? "bg-success/10 text-success"
-                                  : "bg-error/10 text-error"
-                              }`}
+                            <BaseBadge
+                              variant={
+                                essayResult.score >= 7 ? 'success' : 'error'
+                              }
+                              rounded
+                              className="p-3 text-sm font-semibold flex items-center gap-2"
                             >
                               <span>Score:</span>
                               <span>{essayResult.score}/10</span>
-                            </div>
+                            </BaseBadge>
                           </div>
                         )}
                       </div>
@@ -647,22 +680,18 @@ export default function InterviewPage() {
               {/* Submit Button / Results Footer */}
               {!submitted && (
                 <div className="mt-8 pt-4 border-t border-border">
-                  <button
+                  <BaseButton
                     type="submit"
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    loading={submitting}
+                    leftIcon={!submitting && <Send className="w-5 h-5" />}
                     disabled={submitting}
-                    className="w-full py-3.5 bg-primary hover:brightness-105 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 active:scale-95"
+                    className="py-3.5 shadow-md hover:shadow-lg transition-all duration-300 active:scale-95"
                   >
-                    {submitting ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Grading...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-5 h-5" /> Submit Answers
-                      </>
-                    )}
-                  </button>
+                    {submitting ? 'Grading...' : 'Submit Answers'}
+                  </BaseButton>
                   <p className="text-center text-xs text-muted mt-3">
                     * Review your answers carefully before submitting
                   </p>
@@ -677,24 +706,24 @@ export default function InterviewPage() {
                       Your total score: {totalScore}/100
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
-                      <button
-                        onClick={() => navigate("/welcome")}
-                        className="px-5 py-2 bg-primary text-white rounded-lg hover:brightness-105 transition shadow-md"
+                      <BaseButton
+                        variant="primary"
+                        onClick={() => navigate('/welcome')}
                       >
                         Back to Dashboard
-                      </button>
-                      <button
-                        onClick={() => navigate("/history")}
-                        className="px-5 py-2 bg-secondary text-white rounded-lg hover:brightness-105 transition shadow-md"
+                      </BaseButton>
+                      <BaseButton
+                        variant="secondary"
+                        onClick={() => navigate('/history')}
                       >
                         View History
-                      </button>
+                      </BaseButton>
                     </div>
                   </div>
                 </div>
               )}
             </form>
-          </div>
+          </BaseCard>
           <div className="mt-6 text-center text-xs text-muted">
             <TrendingUp className="inline w-3 h-3 mr-1" /> Powered by AI
           </div>

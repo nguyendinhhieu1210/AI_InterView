@@ -1,6 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, FileText, Loader2, RefreshCw, AlertCircle, Eye, BarChart3, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  FileText,
+  Loader2,
+  RefreshCw,
+  AlertCircle,
+  Eye,
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  Layers,
+} from 'lucide-react';
+
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
+
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -22,18 +40,25 @@ export default function CVHistoryPage() {
       setLoading(true);
       setError(null);
       const res = await api.get('/cv/history');
-      const rawList = res.data?.success && Array.isArray(res.data.history) ? res.data.history : [];
-      const normalized = rawList.map(item => {
+      const rawList =
+        res.data?.success && Array.isArray(res.data.history)
+          ? res.data.history
+          : [];
+      const normalized = rawList.map((item) => {
         let questionCount = 0;
-        if (item.results && Array.isArray(item.results)) questionCount = item.results.length;
+        if (item.results && Array.isArray(item.results))
+          questionCount = item.results.length;
         else if (item.questions) {
-          if (Array.isArray(item.questions)) questionCount = item.questions.length;
-          else if (typeof item.questions === 'object') questionCount = Object.keys(item.questions).length;
+          if (Array.isArray(item.questions))
+            questionCount = item.questions.length;
+          else if (typeof item.questions === 'object')
+            questionCount = Object.keys(item.questions).length;
         }
         let skillTags = [];
         if (item.topic) {
           if (Array.isArray(item.topic)) skillTags = item.topic;
-          else if (typeof item.topic === 'string') skillTags = item.topic.split(',').map(s => s.trim());
+          else if (typeof item.topic === 'string')
+            skillTags = item.topic.split(',').map((s) => s.trim());
         }
         return {
           id: item._id,
@@ -42,7 +67,7 @@ export default function CVHistoryPage() {
           questionCount,
           createdAt: item.createdAt,
           totalScore: item.totalScore || 0,
-          detailPath: `/cv-history/${item._id}`
+          detailPath: `/cv-history/${item._id}`,
         };
       });
       normalized.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -60,8 +85,11 @@ export default function CVHistoryPage() {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Invalid date';
     return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(date);
   };
 
@@ -73,25 +101,22 @@ export default function CVHistoryPage() {
   };
 
   const totalPages = Math.ceil(history.length / itemsPerPage);
-  const paginatedHistory = history.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedHistory = history.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Màu chính cho CV: Teal (không trùng với Standard Indigo)
-  const cvColor = {
-    primary: 'teal',
-    bgLight: 'bg-teal-50 dark:bg-teal-950/40',
-    textLight: 'text-teal-600 dark:text-teal-400',
-    border: 'border-teal-200 dark:border-teal-800'
   };
 
   if (loading || authLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-bg">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-        <p className="text-muted animate-pulse">Loading CV‑based interviews...</p>
+        <p className="text-muted animate-pulse">
+          Loading CV‑based interviews...
+        </p>
       </div>
     );
   }
@@ -99,13 +124,17 @@ export default function CVHistoryPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-bg">
-        <div className="bg-card rounded-2xl p-8 text-center max-w-md shadow-soft border border-border">
+        <BaseCard className="p-8 text-center max-w-md">
           <AlertCircle className="w-14 h-14 text-error mx-auto mb-4" />
           <p className="text-text mb-6">{error}</p>
-          <button onClick={fetchCVHistory} className="px-5 py-2.5 bg-primary text-white rounded-xl flex items-center gap-2 mx-auto hover:brightness-105 transition shadow-md">
-            <RefreshCw className="w-4 h-4" /> Retry
-          </button>
-        </div>
+          <BaseButton
+            variant="primary"
+            leftIcon={<RefreshCw className="w-4 h-4" />}
+            onClick={fetchCVHistory}
+          >
+            Retry
+          </BaseButton>
+        </BaseCard>
       </div>
     );
   }
@@ -115,16 +144,22 @@ export default function CVHistoryPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         {/* Header with Back button and Stats */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-          <button
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            leftIcon={
+              <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+            }
             onClick={() => navigate('/history')}
-            className="group flex items-center gap-2 text-muted hover:text-primary transition-all duration-300 hover:gap-3 font-medium bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
+            className="group gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
           >
-            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
             Back
-          </button>
+          </BaseButton>
           <div className="bg-card/80 backdrop-blur-sm rounded-full px-5 py-2 shadow-soft border border-border">
             <BarChart3 className="w-4 h-4 inline mr-2 text-primary" />
-            <span className="font-semibold text-text">{history.length} CV sessions</span>
+            <span className="font-semibold text-text">
+              {history.length} CV sessions
+            </span>
           </div>
         </div>
 
@@ -135,60 +170,87 @@ export default function CVHistoryPage() {
               CV-Based Interview History
             </span>
           </h1>
-          <p className="text-muted mt-2">Interviews generated from your uploaded CV</p>
+          <p className="text-muted mt-2">
+            Interviews generated from your uploaded CV
+          </p>
         </div>
 
         {history.length === 0 ? (
-          <div className="bg-card rounded-2xl p-12 text-center shadow-soft border border-border">
+          <BaseCard className="p-12 text-center">
             <FileText className="w-20 h-20 text-primary/40 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-text">No CV‑based interviews yet</h3>
-            <button onClick={() => navigate('/welcome')} className="mt-4 px-6 py-2.5 bg-primary text-white rounded-xl hover:brightness-105 transition shadow-md">
+            <h3 className="text-xl font-semibold text-text">
+              No CV‑based interviews yet
+            </h3>
+            <BaseButton
+              variant="primary"
+              onClick={() => navigate('/welcome')}
+              className="mt-4"
+            >
               Upload a CV to start
-            </button>
-          </div>
+            </BaseButton>
+          </BaseCard>
         ) : (
           <>
             {/* Grid of CV interview cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedHistory.map((item) => (
-                <div 
-                  key={item.id} 
-                  className={`group relative bg-card rounded-2xl shadow-soft hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.02] border ${cvColor.border}`}
+                <div
+                  key={item.id}
+                  className="group relative bg-card rounded-2xl shadow-soft hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.02] border border-teal-200 dark:border-teal-800"
                 >
-                  <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-${cvColor.primary}-200/30 to-transparent rounded-bl-3xl -z-0`} />
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-teal-200/30 to-transparent rounded-bl-3xl -z-0" />
                   <div className="p-5 relative z-10">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-bold text-text truncate">{item.cvName}</h3>
-                      <Layers className={`w-5 h-5 ${cvColor.textLight}`} />
+                      <h3 className="text-lg font-bold text-text truncate">
+                        {item.cvName}
+                      </h3>
+                      <Layers className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                     </div>
+
                     {item.skillTags.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         {item.skillTags.map((tag, idx) => (
-                          <span key={idx} className={`px-2 py-0.5 ${cvColor.bgLight} ${cvColor.textLight} text-xs rounded-full`}>
+                          <BaseBadge
+                            key={idx}
+                            variant="info"
+                            size="sm"
+                            rounded
+                            className="bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400"
+                          >
                             {tag}
-                          </span>
+                          </BaseBadge>
                         ))}
                       </div>
                     )}
+
                     <div className="flex items-center gap-3 text-xs text-muted mb-4">
-                      <Calendar className="w-3.5 h-3.5" /> 
+                      <Calendar className="w-3.5 h-3.5" />
                       <span>{formatDate(item.createdAt)}</span>
-                      <FileText className="w-3.5 h-3.5 ml-1" /> 
+                      <FileText className="w-3.5 h-3.5 ml-1" />
                       <span>{item.questionCount} questions</span>
                     </div>
+
                     <div className="flex justify-between items-end">
                       <div>
-                        <span className="text-xs text-muted">Overall Score</span>
-                        <div className={`text-3xl font-black ${getScoreColor(item.totalScore)}`}>
-                          {item.totalScore}<span className="text-sm text-muted">/100</span>
+                        <span className="text-xs text-muted">
+                          Overall Score
+                        </span>
+                        <div
+                          className={`text-3xl font-black ${getScoreColor(item.totalScore)}`}
+                        >
+                          {item.totalScore}
+                          <span className="text-sm text-muted">/100</span>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => navigate(item.detailPath)} 
-                        className={`flex items-center gap-1 ${cvColor.textLight} hover:bg-primary/10 px-3 py-1.5 rounded-full text-sm font-medium transition`}
+                      <BaseButton
+                        variant="ghost"
+                        size="sm"
+                        rightIcon={<Eye className="w-4 h-4" />}
+                        onClick={() => navigate(item.detailPath)}
+                        className="gap-1 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 px-3 py-1.5 rounded-full"
                       >
-                        Review <Eye className="w-4 h-4" />
-                      </button>
+                        Review
+                      </BaseButton>
                     </div>
                   </div>
                 </div>
@@ -198,33 +260,41 @@ export default function CVHistoryPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center gap-2 mt-12">
-                <button 
-                  disabled={currentPage === 1} 
-                  onClick={() => handlePageChange(currentPage - 1)} 
-                  className="p-2 rounded-xl disabled:opacity-40 text-text hover:bg-card/50 transition"
+                <BaseButton
+                  variant="ghost"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="p-2 rounded-xl disabled:opacity-40"
                 >
                   <ChevronLeft className="w-5 h-5" />
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                  <button 
-                    key={p} 
-                    onClick={() => handlePageChange(p)} 
-                    className={`w-9 h-9 rounded-full font-medium transition ${
-                      currentPage === p 
-                        ? 'bg-primary text-white shadow-md' 
-                        : 'bg-card text-text hover:bg-primary/10'
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
-                <button 
-                  disabled={currentPage === totalPages} 
-                  onClick={() => handlePageChange(currentPage + 1)} 
-                  className="p-2 rounded-xl disabled:opacity-40 text-text hover:bg-card/50 transition"
+                </BaseButton>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (p) => (
+                    <BaseButton
+                      key={p}
+                      variant={currentPage === p ? 'primary' : 'ghost'}
+                      size="sm"
+                      onClick={() => handlePageChange(p)}
+                      className={`w-9 h-9 rounded-full font-medium transition ${
+                        currentPage === p ? 'shadow-md' : 'hover:bg-primary/10'
+                      }`}
+                    >
+                      {p}
+                    </BaseButton>
+                  )
+                )}
+
+                <BaseButton
+                  variant="ghost"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="p-2 rounded-xl disabled:opacity-40"
                 >
                   <ChevronRight className="w-5 h-5" />
-                </button>
+                </BaseButton>
               </div>
             )}
           </>

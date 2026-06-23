@@ -1,6 +1,6 @@
 // ProfilePage.jsx – dùng HistoryContext
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Mail,
   Calendar,
@@ -13,10 +13,17 @@ import {
   Briefcase,
   CheckCircle,
   AlertCircle,
-} from "lucide-react";
-import api from "../services/api";
-import { useAuth } from "../contexts/AuthContext";
-import { useHistory } from "../contexts/HistoryContext";
+} from 'lucide-react';
+
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseInput } from '../components/base/BaseInput';
+import { BaseBadge } from '../components/base/BaseBadge';
+
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { useHistory } from '../contexts/HistoryContext';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -37,11 +44,11 @@ export default function ProfilePage() {
   // User data
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const [fullName, setFullName] = useState("");
-  const [avatarPreview, setAvatarPreview] = useState("");
+  const [fullName, setFullName] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState('');
 
   const [updating, setUpdating] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -49,23 +56,23 @@ export default function ProfilePage() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) navigate("/login");
+    if (!authLoading && !isAuthenticated) navigate('/login');
   }, [authLoading, isAuthenticated, navigate]);
 
   // Fetch profile
   const fetchProfile = async () => {
     try {
-      const response = await api.get("/users/profile");
+      const response = await api.get('/users/profile');
       const userData = response.data.user;
       setUser(userData);
-      setFullName(userData.fullName || userData.userName || "");
-      setAvatarPreview(userData.avatar || "");
+      setFullName(userData.fullName || userData.userName || '');
+      setAvatarPreview(userData.avatar || '');
     } catch (err) {
       if (err.response?.status === 401) {
         logout();
-        navigate("/login");
+        navigate('/login');
       } else {
-        setError(err.response?.data?.message || "Failed to load profile");
+        setError(err.response?.data?.message || 'Failed to load profile');
       }
     } finally {
       setLoading(false);
@@ -81,25 +88,25 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authUser, authLoading]);
 
-  const updateProfileData = async (newFullName, newAvatar, customMsg = "") => {
+  const updateProfileData = async (newFullName, newAvatar, customMsg = '') => {
     setUpdating(true);
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
     try {
       const payload = {};
       if (newFullName !== undefined) payload.fullName = newFullName;
       if (newAvatar !== undefined) payload.avatar = newAvatar;
-      const response = await api.put("/users/profile", payload);
+      const response = await api.put('/users/profile', payload);
       const updatedUser = response.data.user;
       setUser(updatedUser);
       setFullName(updatedUser.fullName || updatedUser.userName);
       if (newAvatar) setAvatarPreview(newAvatar);
-      setSuccess(customMsg || "Profile updated successfully");
-      setTimeout(() => setSuccess(""), 4000);
+      setSuccess(customMsg || 'Profile updated successfully');
+      setTimeout(() => setSuccess(''), 4000);
       return true;
     } catch (err) {
-      setError(err.response?.data?.message || "Update failed");
-      setTimeout(() => setError(""), 4000);
+      setError(err.response?.data?.message || 'Update failed');
+      setTimeout(() => setError(''), 4000);
       return false;
     } finally {
       setUpdating(false);
@@ -114,7 +121,7 @@ export default function ProfilePage() {
         const img = new Image();
         img.src = e.target.result;
         img.onload = () => {
-          const canvas = document.createElement("canvas");
+          const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
           if (width > maxWidth) {
@@ -123,9 +130,9 @@ export default function ProfilePage() {
           }
           canvas.width = width;
           canvas.height = height;
-          const ctx = canvas.getContext("2d");
+          const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          const mimeType = file.type || "image/jpeg";
+          const mimeType = file.type || 'image/jpeg';
           resolve(canvas.toDataURL(mimeType, quality));
         };
         img.onerror = reject;
@@ -138,8 +145,8 @@ export default function ProfilePage() {
     const file = event.target.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      setError("Image too large (>5MB). Please choose a smaller one.");
-      setTimeout(() => setError(""), 3000);
+      setError('Image too large (>5MB). Please choose a smaller one.');
+      setTimeout(() => setError(''), 3000);
       return;
     }
     setUploadingAvatar(true);
@@ -150,13 +157,13 @@ export default function ProfilePage() {
       const ok = await updateProfileData(
         undefined,
         base64,
-        "✨ Avatar updated!",
+        '✨ Avatar updated!'
       );
       if (!ok) setAvatarPreview(previousAvatar);
     } catch (err) {
       console.error(err);
-      setError("Failed to process image. Please try again.");
-      setTimeout(() => setError(""), 4000);
+      setError('Failed to process image. Please try again.');
+      setTimeout(() => setError(''), 4000);
       setAvatarPreview(previousAvatar);
     } finally {
       setUploadingAvatar(false);
@@ -171,10 +178,10 @@ export default function ProfilePage() {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
   };
 
@@ -186,19 +193,19 @@ export default function ProfilePage() {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return "Just now";
+    if (diffMins < 1) return 'Just now';
     if (diffMins < 60)
-      return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+      return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
     if (diffHours < 24)
-      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
     return date.toLocaleDateString();
   };
 
   const formatScoreDisplay = (item) => {
-    if (item.type === "coding") return null;
+    if (item.type === 'coding') return null;
     let score = item.totalScore;
-    if (item.type === "adaptive") {
+    if (item.type === 'adaptive') {
       if (score > 10) score = score / 10;
       return `${score}/10 Score`;
     }
@@ -207,17 +214,15 @@ export default function ProfilePage() {
 
   // === Tạo merged history từ context ===
   const allHistory = (() => {
-    // Standard (normal)
     const normalList = (normal || []).map((item) => ({
       id: `interview_${item.id}`,
-      type: "standard",
-      topic: item.topic || "General Interview",
-      difficulty: item.difficulty || "Medium",
+      type: 'standard',
+      topic: item.topic || 'General Interview',
+      difficulty: item.difficulty || 'Medium',
       totalQuestions: item.totalQuestions || 0,
       createdAt: item.createdAt,
       totalScore: item.totalScore || 0,
     }));
-    // CV
     const cvList = (cv || []).map((item) => {
       let questionCount = 0;
       if (item.results && Array.isArray(item.results))
@@ -225,35 +230,33 @@ export default function ProfilePage() {
       else if (item.questions) {
         if (Array.isArray(item.questions))
           questionCount = item.questions.length;
-        else if (typeof item.questions === "object")
+        else if (typeof item.questions === 'object')
           questionCount = Object.keys(item.questions).length;
       }
       return {
         id: `cv_${item._id}`,
-        type: "cv",
-        topic: item.cvName || "CV Review",
-        difficulty: "CV",
+        type: 'cv',
+        topic: item.cvName || 'CV Review',
+        difficulty: 'CV',
         totalQuestions: questionCount,
         createdAt: item.createdAt,
         totalScore: item.totalScore || 0,
       };
     });
-    // Adaptive
     const adaptiveList = (adaptive || []).map((item) => ({
       id: `adaptive_${item.id}`,
-      type: "adaptive",
-      topic: item.topic || "Adaptive Interview",
-      difficulty: "Adaptive",
+      type: 'adaptive',
+      topic: item.topic || 'Adaptive Interview',
+      difficulty: 'Adaptive',
       totalQuestions: item.totalQuestions || 0,
       createdAt: item.createdAt,
       totalScore: item.totalScore || 0,
     }));
-    // Coding
     const codingList = (coding || []).map((item) => ({
       id: `coding_${item._id || item.id}`,
-      type: "coding",
-      topic: item.title || "Coding Challenge",
-      difficulty: "Coding",
+      type: 'coding',
+      topic: item.title || 'Coding Challenge',
+      difficulty: 'Coding',
       totalQuestions: item.questions?.length || item.totalQuestions || 0,
       createdAt: item.createdAt,
       totalScore: null,
@@ -291,51 +294,55 @@ export default function ProfilePage() {
   const joinDate = formatDate(user.createdAt);
 
   const getScoreColorClass = (item) => {
-    if (item.type === "coding") return "bg-muted/20 text-muted";
+    if (item.type === 'coding') return 'bg-muted/20 text-muted';
     const score = item.totalScore;
-    if (typeof score !== "number") return "bg-muted/20 text-muted";
-    let percent = item.type === "adaptive" ? score * 10 : score;
-    if (percent >= 90) return "bg-success/20 text-success";
-    if (percent >= 75) return "bg-warning/20 text-warning";
-    if (percent >= 50) return "bg-warning/10 text-warning";
-    return "bg-muted/20 text-muted";
+    if (typeof score !== 'number') return 'bg-muted/20 text-muted';
+    let percent = item.type === 'adaptive' ? score * 10 : score;
+    if (percent >= 90) return 'bg-success/20 text-success';
+    if (percent >= 75) return 'bg-warning/20 text-warning';
+    if (percent >= 50) return 'bg-warning/10 text-warning';
+    return 'bg-muted/20 text-muted';
   };
 
-  const getDifficultyBadgeClass = (difficulty) => {
-    if (!difficulty) return "bg-muted/20 text-muted";
-    const lower = difficulty.toLowerCase();
-    if (lower === "cv") return "bg-secondary/20 text-secondary";
-    if (lower === "easy") return "bg-success/20 text-success";
-    if (lower === "medium") return "bg-warning/20 text-warning";
-    if (lower === "hard") return "bg-error/20 text-error";
-    if (lower === "coding") return "bg-primary/20 text-primary";
-    if (lower === "adaptive") return "bg-secondary/20 text-secondary";
-    return "bg-muted/20 text-muted";
+  const getDifficultyBadge = (difficulty) => {
+    const map = {
+      cv: 'info',
+      easy: 'success',
+      medium: 'warning',
+      hard: 'error',
+      coding: 'primary',
+      adaptive: 'secondary',
+    };
+    return map[difficulty?.toLowerCase()] || 'default';
   };
 
   return (
     <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         {/* Back button */}
-        <button
-          onClick={() => navigate("/welcome")}
-          className="group mb-6 flex items-center gap-2 text-muted hover:text-primary transition-all duration-300 font-medium bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
+        <BaseButton
+          variant="ghost"
+          size="sm"
+          leftIcon={
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
+          }
+          onClick={() => navigate('/welcome')}
+          className="group mb-6 gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
         >
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
-          <span>Back to Dashboard</span>
-        </button>
+          Back to Dashboard
+        </BaseButton>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8">
           {/* LEFT COLUMN - Profile Card */}
           <div className="lg:col-span-5 xl:col-span-4">
-            <div className="relative overflow-hidden rounded-2xl shadow-soft border border-border bg-card transition-all duration-500 hover:shadow-md">
+            <BaseCard className="relative overflow-hidden transition-all duration-500 hover:shadow-md">
               <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-primary via-secondary to-pink-500 opacity-90"></div>
               <div
                 className="absolute top-0 left-0 w-full h-32 opacity-20"
                 style={{
                   backgroundImage:
-                    "radial-gradient(circle at 20% 40%, white 1px, transparent 1px)",
-                  backgroundSize: "16px 16px",
+                    'radial-gradient(circle at 20% 40%, white 1px, transparent 1px)',
+                  backgroundSize: '16px 16px',
                 }}
               ></div>
               <div className="relative pt-16 pb-6 px-6 text-center">
@@ -380,12 +387,13 @@ export default function ProfilePage() {
                       </h2>
                       <div className="flex items-center justify-center gap-2 mt-1">
                         <p className="text-sm text-muted">@{user.userName}</p>
-                        <button
+                        <BaseButton
+                          variant="ghost"
+                          size="sm"
+                          leftIcon={<Edit3 className="w-3.5 h-3.5" />}
                           onClick={() => setEditMode(true)}
                           className="opacity-0 group-hover/name:opacity-100 transition-opacity text-primary hover:text-primary/80"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
+                        />
                       </div>
                     </div>
                   ) : (
@@ -393,35 +401,34 @@ export default function ProfilePage() {
                       onSubmit={handleUpdateFullName}
                       className="mt-2 space-y-3"
                     >
-                      <input
+                      <BaseInput
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="w-full px-4 py-2 rounded-xl border-2 border-border bg-card text-text focus:ring-2 focus:ring-primary outline-none text-center transition-all"
+                        className="text-center"
                         autoFocus
                       />
                       <div className="flex gap-2 justify-center">
-                        <button
+                        <BaseButton
                           type="submit"
+                          variant="primary"
+                          size="sm"
+                          loading={updating}
                           disabled={updating}
-                          className="px-4 py-1.5 bg-primary hover:brightness-105 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
                         >
-                          {updating ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            "Save"
-                          )}
-                        </button>
-                        <button
+                          Save
+                        </BaseButton>
+                        <BaseButton
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
                             setEditMode(false);
                             setFullName(user.fullName || user.userName);
                           }}
-                          className="px-4 py-1.5 bg-muted/30 hover:bg-muted/40 text-text rounded-lg text-sm font-medium transition-all"
                         >
                           Cancel
-                        </button>
+                        </BaseButton>
                       </div>
                     </form>
                   )}
@@ -429,14 +436,20 @@ export default function ProfilePage() {
 
                 {/* Role badge */}
                 <div className="mt-2">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${user.role === "admin" ? "bg-primary/20 text-primary border border-primary/30" : "bg-muted/20 text-muted border border-border"}`}
+                  <BaseBadge
+                    variant={user.role === 'admin' ? 'primary' : 'default'}
+                    rounded
+                    className="gap-1.5"
                   >
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${user.role === "admin" ? "bg-primary animate-pulse" : "bg-muted"}`}
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        user.role === 'admin'
+                          ? 'bg-primary animate-pulse'
+                          : 'bg-muted'
+                      }`}
                     ></span>
-                    {user.role === "admin" ? "Administrator" : "Member"}
-                  </span>
+                    {user.role === 'admin' ? 'Administrator' : 'Member'}
+                  </BaseBadge>
                 </div>
 
                 {/* Contact info */}
@@ -457,29 +470,27 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </BaseCard>
           </div>
 
           {/* RIGHT COLUMN - Total Sessions + Recent Activity */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-6">
             {/* Total Sessions Card */}
-            <div className="rounded-2xl shadow-soft border border-border bg-card">
-              <div className="p-6 text-center">
-                <div className="inline-flex p-3 rounded-full bg-primary/10 mb-4">
-                  <Zap className="w-6 h-6 text-primary" />
-                </div>
-                <div className="text-5xl font-black text-text">
-                  {totalInterviews}
-                </div>
-                <div className="text-muted mt-1">Total Interview Sessions</div>
-                <p className="text-xs text-muted/70 mt-2">
-                  Includes Standard, CV, Adaptive, and Coding interviews
-                </p>
+            <BaseCard className="p-6 text-center">
+              <div className="inline-flex p-3 rounded-full bg-primary/10 mb-4">
+                <Zap className="w-6 h-6 text-primary" />
               </div>
-            </div>
+              <div className="text-5xl font-black text-text">
+                {totalInterviews}
+              </div>
+              <div className="text-muted mt-1">Total Interview Sessions</div>
+              <p className="text-xs text-muted/70 mt-2">
+                Includes Standard, CV, Adaptive, and Coding interviews
+              </p>
+            </BaseCard>
 
             {/* Recent Activity */}
-            <div className="rounded-2xl shadow-soft border border-border bg-card">
+            <BaseCard>
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-gradient-to-r from-success/20 to-teal-500/20 rounded-xl">
@@ -492,7 +503,6 @@ export default function ProfilePage() {
                     <Loader2 className="w-4 h-4 animate-spin text-muted" />
                   )}
                 </div>
-                {/* Không cần refresh riêng vì context tự cập nhật, có thể bỏ nút hoặc giữ nhưng vô dụng */}
               </div>
 
               <div className="p-5 divide-y divide-border">
@@ -515,12 +525,14 @@ export default function ProfilePage() {
                 ) : recentActivities.length === 0 ? (
                   <div className="text-center py-8 text-muted">
                     <p>No interview attempts yet.</p>
-                    <button
-                      onClick={() => navigate("/interview")}
-                      className="mt-3 text-primary hover:underline text-sm"
+                    <BaseButton
+                      variant="link"
+                      size="sm"
+                      onClick={() => navigate('/interview')}
+                      className="mt-3 text-primary"
                     >
                       Start your first interview →
-                    </button>
+                    </BaseButton>
                   </div>
                 ) : (
                   recentActivities.map((activity) => (
@@ -537,17 +549,19 @@ export default function ProfilePage() {
                             {activity.topic}
                           </p>
                           {activity.difficulty && (
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full font-medium ${getDifficultyBadgeClass(activity.difficulty)}`}
+                            <BaseBadge
+                              variant={getDifficultyBadge(activity.difficulty)}
+                              size="sm"
+                              rounded
                             >
-                              {activity.difficulty === "CV"
-                                ? "📄 CV"
-                                : activity.difficulty === "Coding"
-                                  ? "💻 Coding"
-                                  : activity.difficulty === "Adaptive"
-                                    ? "🧠 Adaptive"
+                              {activity.difficulty === 'CV'
+                                ? '📄 CV'
+                                : activity.difficulty === 'Coding'
+                                  ? '💻 Coding'
+                                  : activity.difficulty === 'Adaptive'
+                                    ? '🧠 Adaptive'
                                     : activity.difficulty}
-                            </span>
+                            </BaseBadge>
                           )}
                         </div>
                         <p className="text-xs text-muted flex items-center gap-1 mt-0.5">
@@ -567,15 +581,18 @@ export default function ProfilePage() {
                   ))
                 )}
                 {!historyLoading && allHistory.length > 4 && (
-                  <button
-                    onClick={() => navigate("/history")}
-                    className="w-full mt-4 text-center text-sm text-primary hover:underline py-2 transition-all hover:bg-primary/5 rounded-lg"
+                  <BaseButton
+                    variant="link"
+                    size="sm"
+                    fullWidth
+                    onClick={() => navigate('/history')}
+                    className="mt-4 text-center text-primary py-2 hover:bg-primary/5 rounded-lg"
                   >
                     View all activity →
-                  </button>
+                  </BaseButton>
                 )}
               </div>
-            </div>
+            </BaseCard>
           </div>
         </div>
 

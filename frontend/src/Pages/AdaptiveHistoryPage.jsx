@@ -1,6 +1,6 @@
 // frontend/src/pages/AdaptiveHistoryPage.jsx
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Brain,
@@ -15,15 +15,15 @@ import {
   Clock,
   Award,
   BarChart3,
-} from "lucide-react";
+} from 'lucide-react';
 
 // Import Base Components
-import { BaseButton } from "../components/base/BaseButton";
-import { BaseCard } from "../components/base/BaseCard";
-import { BaseBadge } from "../components/base/BaseBadge";
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
 
-import api from "../services/api";
-import { useAuth } from "../contexts/AuthContext";
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AdaptiveHistoryPage() {
   const navigate = useNavigate();
@@ -41,61 +41,58 @@ export default function AdaptiveHistoryPage() {
   const fetchAdaptiveHistory = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/adaptive/history");
+      const res = await api.get('/adaptive/history');
       if (res.data.success) {
         setSessions(res.data.history);
       } else {
-        setError("Failed to load history");
+        setError('Failed to load history');
       }
     } catch (err) {
       console.error(err);
-      setError("Could not load adaptive interview history");
+      setError('Could not load adaptive interview history');
     } finally {
       setLoading(false);
     }
   };
 
   const formatDateTime = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid date";
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    if (isNaN(date.getTime())) return 'Invalid date';
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(date);
   };
 
   const getScoreColor = (score10) => {
-    if (score10 >= 8) return "text-success";
-    if (score10 >= 6) return "text-warning";
-    if (score10 >= 4) return "text-warning/80";
-    return "text-error";
+    if (score10 >= 8) return 'text-success';
+    if (score10 >= 6) return 'text-warning';
+    if (score10 >= 4) return 'text-warning/80';
+    return 'text-error';
   };
 
-  const getDifficultyBadge = (difficulty) => {
-    const colors = {
-      easy: "bg-success/20 text-success border-success/20",
-      medium: "bg-warning/20 text-warning border-warning/20",
-      hard: "bg-error/20 text-error border-error/20",
+  const getDifficultyVariant = (difficulty) => {
+    const map = {
+      easy: 'success',
+      medium: 'warning',
+      hard: 'error',
     };
-    return (
-      colors[difficulty?.toLowerCase()] ||
-      "bg-muted/20 text-muted border-muted/20"
-    );
+    return map[difficulty?.toLowerCase()] || 'default';
   };
 
   const totalPages = Math.ceil(sessions.length / itemsPerPage);
   const paginatedSessions = sessions.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (loading || authLoading) {
@@ -134,7 +131,7 @@ export default function AdaptiveHistoryPage() {
             variant="ghost"
             size="sm"
             leftIcon={<ArrowLeft className="w-5 h-5" />}
-            onClick={() => navigate("/history")}
+            onClick={() => navigate('/history')}
             className="group gap-2 text-muted hover:text-primary hover:gap-3 bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
           >
             Back
@@ -168,7 +165,7 @@ export default function AdaptiveHistoryPage() {
             </p>
             <BaseButton
               variant="primary"
-              onClick={() => navigate("/adaptive-interview")}
+              onClick={() => navigate('/adaptive-interview')}
             >
               Start Adaptive Interview →
             </BaseButton>
@@ -197,12 +194,14 @@ export default function AdaptiveHistoryPage() {
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-text">
-                      {(
-                        sessions.reduce(
-                          (sum, s) => sum + s.totalScore / 10,
-                          0,
-                        ) / sessions.length
-                      ).toFixed(1)}
+                      {sessions.length > 0
+                        ? (
+                            sessions.reduce(
+                              (sum, s) => sum + s.totalScore / 10,
+                              0
+                            ) / sessions.length
+                          ).toFixed(1)
+                        : '0'}
                     </div>
                     <div className="text-xs text-muted">Avg Score (0-10)</div>
                   </div>
@@ -227,7 +226,7 @@ export default function AdaptiveHistoryPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedSessions.map((session) => {
                 const score10 = (session.totalScore / 10).toFixed(1);
-                const difficultyColor = getDifficultyBadge(session.difficulty);
+                const scoreValue = parseFloat(score10);
 
                 return (
                   <div
@@ -243,24 +242,26 @@ export default function AdaptiveHistoryPage() {
                         >
                           <Brain className="w-3 h-3" /> Adaptive
                         </BaseBadge>
-                        <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full border ${difficultyColor}`}
+                        <BaseBadge
+                          variant={getDifficultyVariant(session.difficulty)}
+                          size="sm"
+                          rounded
                         >
-                          {session.difficulty || "Medium"}
-                        </span>
+                          {session.difficulty || 'Medium'}
+                        </BaseBadge>
                       </div>
 
                       <h3 className="text-lg font-bold text-text mb-2 line-clamp-1">
-                        {session.topic || "Untitled Session"}
+                        {session.topic || 'Untitled Session'}
                       </h3>
 
                       <div className="flex items-center gap-3 text-xs text-muted mb-3">
                         <span className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />{" "}
+                          <Calendar className="w-3.5 h-3.5" />{' '}
                           {formatDateTime(session.createdAt)}
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />{" "}
+                          <Clock className="w-3.5 h-3.5" />{' '}
                           {session.totalQuestions || 0} questions
                         </span>
                       </div>
@@ -271,7 +272,7 @@ export default function AdaptiveHistoryPage() {
                             Average Score
                           </span>
                           <div
-                            className={`text-2xl font-bold ${getScoreColor(parseFloat(score10))}`}
+                            className={`text-2xl font-bold ${getScoreColor(scoreValue)}`}
                           >
                             {score10}
                             <span className="text-sm font-normal text-muted">
@@ -288,7 +289,7 @@ export default function AdaptiveHistoryPage() {
                           onClick={() =>
                             navigate(
                               session.detailPath ||
-                                `/adaptive/detail/${session.id}`,
+                                `/adaptive/detail/${session.id}`
                             )
                           }
                           className="text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 group/btn"
@@ -318,18 +319,18 @@ export default function AdaptiveHistoryPage() {
                   (p) => (
                     <BaseButton
                       key={p}
-                      variant={currentPage === p ? "primary" : "ghost"}
+                      variant={currentPage === p ? 'primary' : 'ghost'}
                       size="sm"
                       onClick={() => handlePageChange(p)}
                       className={`w-9 h-9 rounded-full text-sm font-semibold ${
                         currentPage === p
-                          ? "shadow-md scale-105"
-                          : "hover:bg-primary/10"
+                          ? 'shadow-md scale-105'
+                          : 'hover:bg-primary/10'
                       }`}
                     >
                       {p}
                     </BaseButton>
-                  ),
+                  )
                 )}
                 <BaseButton
                   variant="ghost"

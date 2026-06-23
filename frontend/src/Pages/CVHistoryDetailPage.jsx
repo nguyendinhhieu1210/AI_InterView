@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Award,
@@ -19,8 +19,14 @@ import {
   ListChecks,
   BarChart,
   Brain,
-} from "lucide-react";
-import api from "../services/api";
+} from 'lucide-react';
+
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
+
+import api from '../services/api';
 
 export default function CVHistoryDetailPage() {
   const { id } = useParams();
@@ -48,16 +54,16 @@ export default function CVHistoryDetailPage() {
       if (response.data?.success && response.data.history) {
         setCvSession(response.data.history);
       } else {
-        throw new Error("CV session not found");
+        throw new Error('CV session not found');
       }
     } catch (err) {
-      console.error("CV detail fetch error:", err);
+      console.error('CV detail fetch error:', err);
       if (err.response?.status === 404) {
-        setError("CV interview not found. It may have been deleted.");
+        setError('CV interview not found. It may have been deleted.');
       } else if (err.response?.status === 401) {
         return;
       } else {
-        setError(err.message || "Failed to load CV interview details");
+        setError(err.message || 'Failed to load CV interview details');
       }
     } finally {
       setLoading(false);
@@ -65,40 +71,40 @@ export default function CVHistoryDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this CV interview?"))
+    if (!window.confirm('Are you sure you want to delete this CV interview?'))
       return;
     try {
       await api.delete(`/cv/history/${id}`);
-      navigate("/history");
+      navigate('/history');
     } catch (error) {
-      alert("Delete failed");
+      alert('Delete failed');
     }
   };
 
   const getScoreColor = (score) => {
-    if (score >= 80) return "text-success";
-    if (score >= 60) return "text-warning";
-    if (score >= 40) return "text-warning/80";
-    return "text-error";
+    if (score >= 80) return 'text-success';
+    if (score >= 60) return 'text-warning';
+    if (score >= 40) return 'text-warning/80';
+    return 'text-error';
   };
 
-  const getScoreBg = (score) => {
-    if (score >= 80) return "bg-success/20 text-success";
-    if (score >= 60) return "bg-warning/20 text-warning";
-    if (score >= 40) return "bg-warning/10 text-warning/80";
-    return "bg-error/20 text-error";
+  const getScoreBadgeVariant = (score) => {
+    if (score >= 80) return 'success';
+    if (score >= 60) return 'warning';
+    if (score >= 40) return 'warning';
+    return 'error';
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid date";
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    if (isNaN(date.getTime())) return 'Invalid date';
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(date);
   };
 
@@ -106,10 +112,10 @@ export default function CVHistoryDetailPage() {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     setTimeout(() => {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("loginTime");
-      navigate("/login");
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('loginTime');
+      navigate('/login');
     }, 2000);
   };
 
@@ -124,13 +130,13 @@ export default function CVHistoryDetailPage() {
   };
 
   useEffect(() => {
-    const events = ["mousemove", "keypress", "click", "scroll", "touchstart"];
+    const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
     const resetAndStart = () => resetIdleTimer();
     events.forEach((event) => window.addEventListener(event, resetAndStart));
     resetIdleTimer();
     return () => {
       events.forEach((event) =>
-        window.removeEventListener(event, resetAndStart),
+        window.removeEventListener(event, resetAndStart)
       );
       if (idleTimer.current) clearTimeout(idleTimer.current);
       if (countdownTimer.current) clearTimeout(countdownTimer.current);
@@ -154,18 +160,15 @@ export default function CVHistoryDetailPage() {
   if (error || !cvSession) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-bg">
-        <div className="bg-card backdrop-blur rounded-2xl p-8 text-center shadow-soft border border-border max-w-md w-full">
+        <BaseCard className="p-8 text-center max-w-md">
           <AlertCircle className="w-14 h-14 text-error mx-auto mb-4" />
           <p className="text-text mb-6 leading-relaxed">
-            {error || "CV session not found"}
+            {error || 'CV session not found'}
           </p>
-          <button
-            onClick={() => navigate("/cv-history")}
-            className="px-5 py-2.5 bg-primary text-white rounded-xl hover:brightness-105 transition shadow-md"
-          >
+          <BaseButton variant="primary" onClick={() => navigate('/cv-history')}>
             Back
-          </button>
-        </div>
+          </BaseButton>
+        </BaseCard>
       </div>
     );
   }
@@ -192,8 +195,8 @@ export default function CVHistoryDetailPage() {
   }
 
   const enrichedResults = results.map((result, idx) => {
-    if (result.type === "mcq") {
-      const mcqIndex = results.filter((r) => r.type === "mcq").indexOf(result);
+    if (result.type === 'mcq') {
+      const mcqIndex = results.filter((r) => r.type === 'mcq').indexOf(result);
       return {
         ...result,
         options: mcqOptionsMap[`mcq_${mcqIndex}`] || [],
@@ -206,30 +209,36 @@ export default function CVHistoryDetailPage() {
     <div className="min-h-screen bg-bg py-8 px-4 sm:px-6 transition-colors duration-300">
       {isLoggingOut && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-card rounded-2xl p-8 shadow-soft text-center animate-fadeIn border border-border">
+          <BaseCard className="p-8 text-center">
             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-text">Logging out...</p>
-          </div>
+          </BaseCard>
         </div>
       )}
 
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-          <button
-            onClick={() => navigate("/cv-history")}
-            className="group flex items-center gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border transition-all duration-300"
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            leftIcon={
+              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            }
+            onClick={() => navigate('/cv-history')}
+            className="group gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
           >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            <span>Back</span>
-          </button>
-          <button
+            Back
+          </BaseButton>
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            leftIcon={<Trash2 className="w-4 h-4" />}
             onClick={handleDelete}
-            className="flex items-center gap-2 text-error hover:text-error/80 bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border transition-colors"
+            className="gap-2 text-error hover:text-error/80 bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
           >
-            <Trash2 className="w-4 h-4" />
-            <span>Delete</span>
-          </button>
+            Delete
+          </BaseButton>
         </div>
 
         {/* Thông tin chính */}
@@ -239,17 +248,19 @@ export default function CVHistoryDetailPage() {
             <span>CV-Based Interview</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">
-            {cvName || "CV Interview"}
+            {cvName || 'CV Interview'}
           </h1>
           {skillTags && skillTags.length > 0 && (
             <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
               {skillTags.map((tag, idx) => (
-                <span
+                <BaseBadge
                   key={idx}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-100/80 dark:bg-teal-950/50 text-teal-800 dark:text-teal-200 text-xs rounded-full font-medium shadow-sm leading-relaxed"
+                  variant="info"
+                  rounded
+                  className="gap-1.5 px-3 py-1.5 bg-teal-100/80 dark:bg-teal-950/50 text-teal-800 dark:text-teal-200"
                 >
                   <Tag className="w-3 h-3" /> {tag}
-                </span>
+                </BaseBadge>
               ))}
             </div>
           )}
@@ -259,9 +270,9 @@ export default function CVHistoryDetailPage() {
           </p>
         </div>
 
-        {/* 4 thẻ thống kê - đồng bộ màu teal/cyan */}
+        {/* 4 thẻ thống kê */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-12">
-          <div className="group bg-card/80 backdrop-blur-sm rounded-2xl p-5 text-center shadow-soft hover:shadow-lg transition-all duration-300 border border-border hover:scale-105">
+          <BaseCard className="p-5 text-center hover:scale-105 transition-all duration-300">
             <div className="w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-950/40 flex items-center justify-center mx-auto mb-3 group-hover:bg-teal-200 dark:group-hover:bg-teal-900/60 transition">
               <TrendingUp className="w-6 h-6 text-teal-600 dark:text-teal-400" />
             </div>
@@ -274,9 +285,9 @@ export default function CVHistoryDetailPage() {
             <div className="text-xs text-muted mt-2 font-medium">
               Total Score
             </div>
-          </div>
+          </BaseCard>
 
-          <div className="group bg-card/80 backdrop-blur-sm rounded-2xl p-5 text-center shadow-soft hover:shadow-lg transition-all duration-300 border border-border hover:scale-105">
+          <BaseCard className="p-5 text-center hover:scale-105 transition-all duration-300">
             <div className="w-12 h-12 rounded-full bg-cyan-100 dark:bg-cyan-950/40 flex items-center justify-center mx-auto mb-3 group-hover:bg-cyan-200 dark:group-hover:bg-cyan-900/60 transition">
               <ListChecks className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
             </div>
@@ -286,9 +297,9 @@ export default function CVHistoryDetailPage() {
             <div className="text-xs text-muted mt-2 font-medium">
               Total Questions
             </div>
-          </div>
+          </BaseCard>
 
-          <div className="group bg-card/80 backdrop-blur-sm rounded-2xl p-5 text-center shadow-soft hover:shadow-lg transition-all duration-300 border border-border hover:scale-105">
+          <BaseCard className="p-5 text-center hover:scale-105 transition-all duration-300">
             <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-3 group-hover:bg-success/30 transition">
               <CheckCircle className="w-6 h-6 text-success" />
             </div>
@@ -298,9 +309,9 @@ export default function CVHistoryDetailPage() {
             <div className="text-xs text-muted mt-2 font-medium">
               Correct Answers
             </div>
-          </div>
+          </BaseCard>
 
-          <div className="group bg-card/80 backdrop-blur-sm rounded-2xl p-5 text-center shadow-soft hover:shadow-lg transition-all duration-300 border border-border hover:scale-105">
+          <BaseCard className="p-5 text-center hover:scale-105 transition-all duration-300">
             <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3 group-hover:bg-primary/30 transition">
               <BarChart className="w-6 h-6 text-primary" />
             </div>
@@ -308,7 +319,7 @@ export default function CVHistoryDetailPage() {
               {Math.round((totalScore / maxPossibleScore) * 100)}%
             </div>
             <div className="text-xs text-muted mt-2 font-medium">Accuracy</div>
-          </div>
+          </BaseCard>
         </div>
 
         {/* Danh sách câu hỏi */}
@@ -320,22 +331,22 @@ export default function CVHistoryDetailPage() {
           {enrichedResults.map((result, idx) => {
             const isCorrect = result.isCorrect === true;
             const userAnswer =
-              result.type === "essay"
-                ? result.yourAnswer || "No answer"
-                : result.userAnswer || "No answer";
-            const aiReview = result.review || result.feedback || "";
+              result.type === 'essay'
+                ? result.yourAnswer || 'No answer'
+                : result.userAnswer || 'No answer';
+            const aiReview = result.review || result.feedback || '';
             const aiSuggestedAnswer =
-              result.aiSuggestedAnswer || result.sampleAnswer || "";
+              result.aiSuggestedAnswer || result.sampleAnswer || '';
             const explanation =
               result.explanation &&
-              result.explanation !== "No explanation provided."
+              result.explanation !== 'No explanation provided.'
                 ? result.explanation
-                : "";
+                : '';
             const questionText = result.question || `Question ${idx + 1}`;
             const options = result.options || [];
 
             // MCQ
-            if (result.type === "mcq") {
+            if (result.type === 'mcq') {
               return (
                 <div
                   key={idx}
@@ -344,7 +355,7 @@ export default function CVHistoryDetailPage() {
                   <button
                     onClick={() =>
                       setExpandedQuestion(
-                        expandedQuestion === `cv_${idx}` ? null : `cv_${idx}`,
+                        expandedQuestion === `cv_${idx}` ? null : `cv_${idx}`
                       )
                     }
                     className="w-full p-5 text-left flex justify-between items-start hover:bg-muted/5 transition"
@@ -361,14 +372,16 @@ export default function CVHistoryDetailPage() {
                       )}
                       <div>
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 shadow-sm leading-relaxed">
+                          <BaseBadge variant="info" size="sm" rounded>
                             MCQ
-                          </span>
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${getScoreBg(result.score || 0)} leading-relaxed`}
+                          </BaseBadge>
+                          <BaseBadge
+                            variant={getScoreBadgeVariant(result.score || 0)}
+                            size="sm"
+                            rounded
                           >
                             Score: {result.score || 0}/10
-                          </span>
+                          </BaseBadge>
                         </div>
                         <h3 className="font-semibold text-text text-base leading-relaxed">
                           {questionText}
@@ -388,18 +401,18 @@ export default function CVHistoryDetailPage() {
                         {options.map((opt, optIdx) => {
                           const isCorrectOption = opt === result.correctAnswer;
                           const isUserOption = opt === userAnswer;
-                          let bgClass = "bg-muted/5 border-border";
-                          let textClass = "text-text";
+                          let bgClass = 'bg-muted/5 border-border';
+                          let textClass = 'text-text';
                           let icon = null;
                           if (isCorrectOption) {
-                            bgClass = "bg-success/10 border-success/30";
-                            textClass = "text-success font-medium";
+                            bgClass = 'bg-success/10 border-success/30';
+                            textClass = 'text-success font-medium';
                             icon = (
                               <CheckCircle className="w-5 h-5 text-success" />
                             );
                           } else if (isUserOption) {
-                            bgClass = "bg-error/10 border-error/30";
-                            textClass = "text-error font-medium";
+                            bgClass = 'bg-error/10 border-error/30';
+                            textClass = 'text-error font-medium';
                             icon = <XCircle className="w-5 h-5 text-error" />;
                           }
                           return (
@@ -448,7 +461,7 @@ export default function CVHistoryDetailPage() {
                 <button
                   onClick={() =>
                     setExpandedQuestion(
-                      expandedQuestion === `cv_${idx}` ? null : `cv_${idx}`,
+                      expandedQuestion === `cv_${idx}` ? null : `cv_${idx}`
                     )
                   }
                   className="w-full p-5 text-left flex justify-between items-start hover:bg-muted/5 transition"
@@ -459,14 +472,16 @@ export default function CVHistoryDetailPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 shadow-sm leading-relaxed">
+                        <BaseBadge variant="info" size="sm" rounded>
                           Essay
-                        </span>
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${getScoreBg(result.score || 0)} leading-relaxed`}
+                        </BaseBadge>
+                        <BaseBadge
+                          variant={getScoreBadgeVariant(result.score || 0)}
+                          size="sm"
+                          rounded
                         >
                           Score: {result.score || 0}/10
-                        </span>
+                        </BaseBadge>
                       </div>
                       <h3 className="font-semibold text-text text-base leading-relaxed">
                         {questionText}
@@ -484,7 +499,7 @@ export default function CVHistoryDetailPage() {
                   <div className="px-5 pb-6 space-y-5 animate-slideDown border-t border-border pt-5">
                     <div>
                       <p className="font-semibold text-text mb-2 flex items-center gap-1 text-sm leading-relaxed">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>{" "}
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>{' '}
                         Your Answer
                       </p>
                       <div className="bg-muted/5 border border-border rounded-xl p-4 whitespace-pre-wrap text-text text-sm leading-relaxed">
@@ -557,12 +572,14 @@ export default function CVHistoryDetailPage() {
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {result.idealAnswerKeywords.map((k, i) => (
-                            <span
+                            <BaseBadge
                               key={i}
-                              className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium shadow-sm leading-relaxed"
+                              variant="primary"
+                              size="sm"
+                              rounded
                             >
                               {k}
-                            </span>
+                            </BaseBadge>
                           ))}
                         </div>
                       </div>
@@ -577,7 +594,7 @@ export default function CVHistoryDetailPage() {
         {/* AI Feedback Summary */}
         {summary &&
           (summary.strengths?.length > 0 || summary.weaknesses?.length > 0) && (
-            <div className="mt-12 bg-card backdrop-blur-sm rounded-2xl shadow-soft border border-border overflow-hidden">
+            <BaseCard className="mt-12 overflow-hidden">
               <div className="bg-gradient-to-r from-teal-500/10 to-cyan-500/10 px-6 py-4 border-b border-border">
                 <h2 className="text-xl font-bold flex items-center gap-2 text-text leading-tight">
                   <Brain className="w-5 h-5 text-primary" /> AI Feedback Summary
@@ -636,22 +653,22 @@ export default function CVHistoryDetailPage() {
                   </div>
                 )}
               </div>
-            </div>
+            </BaseCard>
           )}
       </div>
 
       <style>{`
-                @keyframes slideDown {
-                    from { opacity: 0; transform: translateY(-8px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .animate-slideDown { animation: slideDown 0.25s ease-out; }
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: scale(0.95); }
-                    to { opacity: 1; transform: scale(1); }
-                }
-                .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-            `}</style>
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slideDown { animation: slideDown 0.25s ease-out; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+      `}</style>
     </div>
   );
 }

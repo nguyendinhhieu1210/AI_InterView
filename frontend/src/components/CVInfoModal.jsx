@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// components/CVInfoModal.jsx
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   X,
   Sparkles,
@@ -9,19 +10,24 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-} from "lucide-react";
-import { Document, Page, pdfjs } from "react-pdf";
-import { useInterview } from "../contexts/InterviewContext";
-import { useAuth } from "../contexts/AuthContext";
+} from 'lucide-react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import { useInterview } from '../contexts/InterviewContext';
+import { useAuth } from '../contexts/AuthContext';
 
-pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.js";
+// Import Base Components
+import { BaseButton } from './base/BaseButton';
+import { BaseCard } from './base/BaseCard';
+import { BaseBadge } from './base/BaseBadge';
 
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
+
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 function mergeBrokenVietnamese(text) {
-  if (!text) return "";
-  let merged = text.replace(/(\p{L})\s+(\p{M})/gu, "$1$2");
-  merged = merged.replace(/\s+/g, " ").trim();
+  if (!text) return '';
+  let merged = text.replace(/(\p{L})\s+(\p{M})/gu, '$1$2');
+  merged = merged.replace(/\s+/g, ' ').trim();
   return merged;
 }
 
@@ -39,9 +45,9 @@ export const CVInfoModal = ({
   const [generating, setGenerating] = useState(false);
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
-  const [cvText, setCvText] = useState("");
+  const [cvText, setCvText] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
-  const [fullName, setFullName] = useState("");
+  const [fullName, setFullName] = useState('');
   const [skills, setSkills] = useState({
     frontend: [],
     backend: [],
@@ -56,15 +62,15 @@ export const CVInfoModal = ({
   });
   const [showCvPreview, setShowCvPreview] = useState(true);
   const [isMobileView, setIsMobileView] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState('');
 
   const MAX_SKILLS = 4;
 
   useEffect(() => {
     const check = () => setIsMobileView(window.innerWidth < 768);
     check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
   useEffect(() => {
@@ -73,7 +79,7 @@ export const CVInfoModal = ({
 
   useEffect(() => {
     if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(""), 5000);
+      const timer = setTimeout(() => setErrorMessage(''), 5000);
       return () => clearTimeout(timer);
     }
   }, [errorMessage]);
@@ -96,28 +102,28 @@ export const CVInfoModal = ({
   const fetchWithAuth = async (url, options = {}) => {
     if (!token) {
       logout();
-      throw new Error("Session expired. Please login again.");
+      throw new Error('Session expired. Please login again.');
     }
     const headers = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
       ...options.headers,
     };
     const response = await fetch(url, { ...options, headers });
     if (response.status === 401) {
       logout();
-      throw new Error("Your session has expired. Please login again.");
+      throw new Error('Your session has expired. Please login again.');
     }
     return response;
   };
 
   const extractFullText = async (pdfDocument) => {
-    let fullText = "";
+    let fullText = '';
     for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
       const page = await pdfDocument.getPage(pageNum);
       const textContent = await page.getTextContent();
       const items = textContent.items.filter(
-        (item) => item.str && item.str.trim() !== "",
+        (item) => item.str && item.str.trim() !== ''
       );
       if (items.length === 0) continue;
 
@@ -130,22 +136,22 @@ export const CVInfoModal = ({
 
       let lastY = null;
       let lastX = null;
-      let lineText = "";
+      let lineText = '';
       for (const item of items) {
         const y = item.transform[5];
         const x = item.transform[4];
         if (lastY !== null && Math.abs(y - lastY) > 5) {
-          fullText += lineText.trim() + "\n";
-          lineText = "";
+          fullText += lineText.trim() + '\n';
+          lineText = '';
           lastX = null;
         }
-        if (lastX !== null && x - lastX > 10) lineText += " ";
+        if (lastX !== null && x - lastX > 10) lineText += ' ';
         lineText += item.str;
         lastY = y;
         lastX = x;
       }
-      if (lineText) fullText += lineText.trim() + "\n";
-      fullText += "\n";
+      if (lineText) fullText += lineText.trim() + '\n';
+      fullText += '\n';
     }
     return mergeBrokenVietnamese(fullText);
   };
@@ -158,20 +164,19 @@ export const CVInfoModal = ({
     if (cvData?.rawText && cvData?.skills && cvData?.fullName) return;
 
     setAnalyzing(true);
-    setErrorMessage("");
+    setErrorMessage('');
     try {
       const rawText = await extractFullText(pdf);
       setCvText(rawText);
 
-      // ✅ fix: dùng BASE_URL
       const response = await fetchWithAuth(`${BASE_URL}/cv/analyze-text`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ cvText: rawText }),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
 
-      setFullName(data.fullName || "");
+      setFullName(data.fullName || '');
       const receivedSkills = data.skills || {
         frontend: [],
         backend: [],
@@ -186,8 +191,8 @@ export const CVInfoModal = ({
         devops: [...(receivedSkills.devops || [])],
       });
     } catch (err) {
-      console.error("CV analysis failed", err);
-      setErrorMessage(err.message || "Failed to analyze CV. Please try again.");
+      console.error('CV analysis failed', err);
+      setErrorMessage(err.message || 'Failed to analyze CV. Please try again.');
     } finally {
       setAnalyzing(false);
     }
@@ -207,7 +212,7 @@ export const CVInfoModal = ({
     const isCurrentlySelected = selectedSkills[category].includes(skill);
     if (!isCurrentlySelected && totalSelected >= MAX_SKILLS) {
       setErrorMessage(
-        `You can only select up to ${MAX_SKILLS} skills. Please deselect another skill first.`,
+        `You can only select up to ${MAX_SKILLS} skills. Please deselect another skill first.`
       );
       return;
     }
@@ -217,12 +222,12 @@ export const CVInfoModal = ({
         ? prev[category].filter((s) => s !== skill)
         : [...prev[category], skill],
     }));
-    if (errorMessage) setErrorMessage("");
+    if (errorMessage) setErrorMessage('');
   };
 
   const handleGenerate = async () => {
     if (!cvText) {
-      setErrorMessage("CV content not ready yet. Please wait.");
+      setErrorMessage('CV content not ready yet. Please wait.');
       return;
     }
     if (isMaxExceeded) {
@@ -230,22 +235,21 @@ export const CVInfoModal = ({
       return;
     }
     if (totalSelected === 0) {
-      setErrorMessage("Please select at least one skill.");
+      setErrorMessage('Please select at least one skill.');
       return;
     }
     updateActivity();
     setGenerating(true);
     setGlobalGenerating(true);
-    setErrorMessage("");
+    setErrorMessage('');
 
     try {
-      // ✅ fix: dùng BASE_URL
       const response = await fetchWithAuth(
         `${BASE_URL}/cv/generate-questions`,
         {
-          method: "POST",
+          method: 'POST',
           body: JSON.stringify({ cvText, selectedSkills }),
-        },
+        }
       );
       const result = await response.json();
 
@@ -256,18 +260,18 @@ export const CVInfoModal = ({
         };
         startInterview(interviewData);
         onClose();
-        navigate("/cvinterview");
+        navigate('/cvinterview');
         if (onQuestionsGenerated) onQuestionsGenerated(interviewData);
         if (onStartInterview) onStartInterview(interviewData);
         setGlobalGenerating(false);
         setGenerating(false);
       } else {
-        throw new Error(result.message || "Invalid response");
+        throw new Error(result.message || 'Invalid response');
       }
     } catch (err) {
-      console.error("Generate error", err);
+      console.error('Generate error', err);
       setErrorMessage(
-        err.message || "Failed to generate questions. Please try again.",
+        err.message || 'Failed to generate questions. Please try again.'
       );
       setGlobalGenerating(false);
       setGenerating(false);
@@ -291,9 +295,9 @@ export const CVInfoModal = ({
     <div className="mb-5">
       <h3 className="font-semibold text-text mb-2 flex justify-between">
         <span>{title}</span>
-        <span className="text-xs bg-muted/20 text-muted px-2 py-0.5 rounded-full">
+        <BaseBadge variant="default" size="sm" rounded>
           {items.length}
-        </span>
+        </BaseBadge>
       </h3>
       <div className="flex flex-wrap gap-2">
         {items.map((skill) => (
@@ -301,9 +305,9 @@ export const CVInfoModal = ({
             key={skill}
             className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200 ${
               selectedItems.includes(skill)
-                ? "bg-primary/20 text-primary ring-2 ring-primary/50 shadow-sm"
-                : "bg-muted/10 text-text hover:bg-muted/20"
-            } ${generating ? "pointer-events-none opacity-60" : ""}`}
+                ? 'bg-primary/20 text-primary ring-2 ring-primary/50 shadow-sm'
+                : 'bg-muted/10 text-text hover:bg-muted/20'
+            } ${generating ? 'pointer-events-none opacity-60' : ''}`}
           >
             <input
               type="checkbox"
@@ -325,76 +329,86 @@ export const CVInfoModal = ({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 md:p-4 animate-fadeIn">
       <div className="bg-card rounded-2xl shadow-soft w-full max-w-7xl max-h-[95vh] flex flex-col overflow-hidden transform transition-all duration-300 scale-100 relative border border-border">
+        {/* Loading Overlay */}
         {generating && (
           <>
             <div className="absolute inset-0 bg-transparent z-40" />
             <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
-              <div className="bg-card/90 backdrop-blur-sm rounded-2xl shadow-soft p-6 flex flex-col items-center gap-3 pointer-events-auto border border-border">
+              <BaseCard className="p-6 flex flex-col items-center gap-3 pointer-events-auto">
                 <Loader2 className="w-12 h-12 text-primary animate-spin" />
                 <p className="text-text font-medium">
                   AI is generating questions...
                 </p>
-              </div>
+              </BaseCard>
             </div>
           </>
         )}
 
+        {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-border bg-gradient-to-r from-primary/5 to-secondary/5 sticky top-0 z-10">
           <div>
             <h2 className="text-xl font-bold text-text">
               CV Preview & Analysis
             </h2>
             <p className="text-sm text-muted">
-              {cvData?.fileName || "Your document"}
+              {cvData?.fileName || 'Your document'}
             </p>
           </div>
-          <button
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            leftIcon={<X className="w-5 h-5" />}
             onClick={() => {
               updateActivity();
               onClose();
             }}
-            className="p-2 hover:bg-muted/20 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5 text-muted" />
-          </button>
+            className="p-2 hover:bg-muted/20 rounded-full"
+          />
         </div>
 
+        {/* Body */}
         <div className="flex-1 overflow-auto p-4 md:p-6 bg-muted/5">
+          {/* Error Message */}
           {errorMessage && (
             <div className="mb-4 p-3 bg-error/10 border border-error/30 rounded-lg flex items-start gap-2 animate-in slide-in-from-top-2">
               <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
               <div className="flex-1 text-sm text-error">{errorMessage}</div>
-              <button
-                onClick={() => setErrorMessage("")}
+              <BaseButton
+                variant="ghost"
+                size="sm"
+                leftIcon={<X className="w-4 h-4" />}
+                onClick={() => setErrorMessage('')}
                 className="text-error hover:text-error/80"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              />
             </div>
           )}
 
           <div
-            className={`flex flex-col ${!isMobileView ? "md:flex-row" : ""} gap-5`}
+            className={`flex flex-col ${!isMobileView ? 'md:flex-row' : ''} gap-5`}
           >
+            {/* CV Preview */}
             {(showCvPreview || !isMobileView) && (
               <div
-                className={`${isMobileView ? "w-full" : "md:w-1/2 lg:w-3/5"} transition-all duration-300`}
+                className={`${isMobileView ? 'w-full' : 'md:w-1/2 lg:w-3/5'} transition-all duration-300`}
               >
-                <div className="bg-card rounded-xl shadow-soft border border-border p-3">
+                <BaseCard className="p-3">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="font-medium text-text">
                       📄 Document Preview
                     </h3>
                     {isMobileView && (
-                      <button
+                      <BaseButton
+                        variant="outline"
+                        size="sm"
+                        leftIcon={<EyeOff className="w-3.5" />}
                         onClick={() => {
                           updateActivity();
                           setShowCvPreview(false);
                         }}
-                        className="text-primary flex gap-1 border border-border px-2 py-1 rounded-full text-sm bg-card"
+                        className="text-primary border-border"
                       >
-                        <EyeOff className="w-3.5" /> Hide
-                      </button>
+                        Hide
+                      </BaseButton>
                     )}
                   </div>
                   <div className="overflow-auto flex justify-center bg-muted/10 rounded-lg min-h-[300px] p-2">
@@ -423,42 +437,50 @@ export const CVInfoModal = ({
                   </div>
                   {numPages > 1 && (
                     <div className="flex justify-center gap-4 mt-4 pt-2 border-t border-border">
-                      <button
+                      <BaseButton
+                        variant="ghost"
+                        size="sm"
                         disabled={pageNumber === 1}
                         onClick={goPrevPage}
-                        className="p-1.5 disabled:opacity-30 hover:bg-muted/10 rounded-full text-text"
+                        className="p-1.5 disabled:opacity-30"
                       >
                         <ChevronLeft />
-                      </button>
-                      <span className="text-sm bg-muted/10 text-text px-3 py-1 rounded-full">
+                      </BaseButton>
+                      <BaseBadge variant="default" rounded>
                         Page {pageNumber} / {numPages}
-                      </span>
-                      <button
+                      </BaseBadge>
+                      <BaseButton
+                        variant="ghost"
+                        size="sm"
                         disabled={pageNumber === numPages}
                         onClick={goNextPage}
-                        className="p-1.5 disabled:opacity-30 hover:bg-muted/10 rounded-full text-text"
+                        className="p-1.5 disabled:opacity-30"
                       >
                         <ChevronRight />
-                      </button>
+                      </BaseButton>
                     </div>
                   )}
-                </div>
+                </BaseCard>
               </div>
             )}
 
-            <div className={`${isMobileView ? "w-full" : "md:w-1/2 lg:w-2/5"}`}>
+            {/* AI Analysis */}
+            <div className={`${isMobileView ? 'w-full' : 'md:w-1/2 lg:w-2/5'}`}>
               {isMobileView && !showCvPreview && (
-                <button
+                <BaseButton
+                  variant="outline"
+                  fullWidth
+                  leftIcon={<Eye className="w-4" />}
                   onClick={() => {
                     updateActivity();
                     setShowCvPreview(true);
                   }}
-                  className="w-full mb-3 py-2 bg-primary/10 text-primary rounded-xl flex items-center justify-center gap-2 border border-border"
+                  className="mb-3 py-2 border-border"
                 >
-                  <Eye className="w-4" /> Show CV Preview
-                </button>
+                  Show CV Preview
+                </BaseButton>
               )}
-              <div className="bg-card rounded-xl shadow-soft border border-border overflow-hidden">
+              <BaseCard className="overflow-hidden">
                 <div className="p-4 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border">
                   <h3 className="font-bold flex gap-2 text-primary">
                     <Sparkles className="text-primary" /> AI Analysis
@@ -482,16 +504,17 @@ export const CVInfoModal = ({
                           Full Name
                         </label>
                         <div className="font-bold text-lg text-text">
-                          {fullName || "Not detected"}
+                          {fullName || 'Not detected'}
                         </div>
                       </div>
                       <div className="flex justify-between items-center mb-2 text-sm">
                         <span className="text-text">🎯 Skills Summary</span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full font-medium ${isMaxExceeded ? "bg-error/20 text-error" : "bg-success/20 text-success"}`}
+                        <BaseBadge
+                          variant={isMaxExceeded ? 'error' : 'success'}
+                          rounded
                         >
                           {totalSelected} / {MAX_SKILLS} selected
-                        </span>
+                        </BaseBadge>
                       </div>
                       {isMaxExceeded && (
                         <div className="mb-4 p-3 bg-warning/10 border border-warning/30 rounded-lg">
@@ -500,7 +523,7 @@ export const CVInfoModal = ({
                           </p>
                           <p className="text-warning/80 text-xs mt-1">
                             You have selected {totalSelected} skills. Please
-                            deselect some to focus on{" "}
+                            deselect some to focus on{' '}
                             <strong>2-3 core skills</strong>.
                           </p>
                         </div>
@@ -509,53 +532,54 @@ export const CVInfoModal = ({
                         title="Frontend"
                         items={skills.frontend}
                         selectedItems={selectedSkills.frontend}
-                        onToggle={(s) => toggleSkill("frontend", s)}
+                        onToggle={(s) => toggleSkill('frontend', s)}
                       />
                       <SkillGroup
                         title="Backend"
                         items={skills.backend}
                         selectedItems={selectedSkills.backend}
-                        onToggle={(s) => toggleSkill("backend", s)}
+                        onToggle={(s) => toggleSkill('backend', s)}
                       />
                       <SkillGroup
                         title="Core Knowledge"
                         items={skills.theory}
                         selectedItems={selectedSkills.theory}
-                        onToggle={(s) => toggleSkill("theory", s)}
+                        onToggle={(s) => toggleSkill('theory', s)}
                       />
                       <SkillGroup
                         title="Tools & DevOps"
                         items={skills.devops || []}
                         selectedItems={selectedSkills.devops || []}
-                        onToggle={(s) => toggleSkill("devops", s)}
+                        onToggle={(s) => toggleSkill('devops', s)}
                       />
                     </>
                   )}
                 </div>
-              </div>
+              </BaseCard>
             </div>
           </div>
         </div>
 
+        {/* Footer */}
         <div className="bg-card border-t border-border p-4 sticky bottom-0">
-          <button
+          <BaseButton
+            variant="primary"
+            size="lg"
+            fullWidth
+            loading={generating}
+            leftIcon={!generating && <Sparkles className="w-5 h-5" />}
             onClick={handleGenerate}
             disabled={
               generating || analyzing || totalSelected === 0 || isMaxExceeded
             }
-            className={`w-full py-3 rounded-xl flex justify-center items-center gap-2 font-bold transition-all duration-300 transform hover:scale-[1.02] ${
-              generating || analyzing || totalSelected === 0 || isMaxExceeded
-                ? "bg-muted/30 text-muted cursor-not-allowed"
-                : "bg-primary hover:brightness-105 text-white shadow-md"
-            }`}
+            className="py-3 transform hover:scale-[1.02]"
           >
-            <Sparkles className="w-5 h-5" />
             {totalSelected === 0
-              ? "Select at least one skill"
+              ? 'Select at least one skill'
               : isMaxExceeded
                 ? `Please select up to ${MAX_SKILLS} skills`
-                : `Start Interview (${totalSelected} skill${totalSelected > 1 ? "s" : ""})`}
-          </button>
+                : `Start Interview (${totalSelected} skill${totalSelected > 1 ? 's' : ''})`}
+          </BaseButton>
           {isMaxExceeded && (
             <p className="text-center text-xs text-error mt-2">
               ⚡ Deselect some skills (max {MAX_SKILLS})
@@ -563,6 +587,14 @@ export const CVInfoModal = ({
           )}
         </div>
       </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; backdrop-filter: blur(0px); }
+          to { opacity: 1; backdrop-filter: blur(8px); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+      `}</style>
     </div>
   );
 };

@@ -1,22 +1,27 @@
 // src/pages/InterviewCVPage.jsx
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Send,
   Award,
   User,
-  Loader2,
   ClipboardList,
   FileText,
   HelpCircle,
   CheckCircle,
   XCircle,
   TrendingUp,
-} from "lucide-react";
-import api from "../services/api";
-import { useInterview } from "../contexts/InterviewContext";
-import { useAuth } from "../contexts/AuthContext";
+} from 'lucide-react';
+
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
+
+import api from '../services/api';
+import { useInterview } from '../contexts/InterviewContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function InterviewCVPage() {
   const navigate = useNavigate();
@@ -30,15 +35,15 @@ export default function InterviewCVPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [results, setResults] = useState(null);
-  const [activeSection, setActiveSection] = useState("mcq");
+  const [activeSection, setActiveSection] = useState('mcq');
 
   useEffect(() => {
-    if (!isAuthenticated) navigate("/login");
+    if (!isAuthenticated) navigate('/login');
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     if (isGenerating) return;
-    if (!interviewData) navigate("/welcome");
+    if (!interviewData) navigate('/welcome');
   }, [interviewData, isGenerating, navigate]);
 
   useEffect(() => {
@@ -74,18 +79,18 @@ export default function InterviewCVPage() {
         questions,
         answers,
         selectedSkills: allSkills,
-        cvName: cvInfo?.fullName || "",
+        cvName: cvInfo?.fullName || '',
       };
-      const res = await api.post("/cv/submit-answers", payload);
+      const res = await api.post('/cv/submit-answers', payload);
       if (res.data.success) {
         setResults(res.data.results);
         setSubmitted(true);
       } else {
-        alert("Grading failed: " + (res.data.message || "Unknown error"));
+        alert('Grading failed: ' + (res.data.message || 'Unknown error'));
       }
     } catch (err) {
       console.error(err);
-      alert("Error submitting answers. Please try again.");
+      alert('Error submitting answers. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -93,17 +98,17 @@ export default function InterviewCVPage() {
 
   const handleBack = () => {
     clearInterview();
-    navigate("/welcome");
+    navigate('/welcome');
   };
 
   const mcqList = questions.mcq || [];
   const textList = questions.text || [];
   const totalQuestions = mcqList.length + textList.length;
   const answeredMcq = Object.keys(answers).filter((k) =>
-    k.startsWith("mcq_"),
+    k.startsWith('mcq_')
   ).length;
   const answeredText = Object.keys(answers).filter((k) =>
-    k.startsWith("text_"),
+    k.startsWith('text_')
   ).length;
   const answeredTotal = answeredMcq + answeredText;
   const progressPercent =
@@ -112,7 +117,7 @@ export default function InterviewCVPage() {
   const mcqResults = results?.mcq || [];
   const textResults = results?.text || [];
   const totalScore = results?.totalScore || 0;
-  const userName = user?.fullName || user?.userName || "Candidate";
+  const userName = user?.fullName || user?.userName || 'Candidate';
 
   if (loading || isGenerating) {
     return (
@@ -124,8 +129,8 @@ export default function InterviewCVPage() {
           </div>
           <p className="mt-6 text-muted font-medium">
             {isGenerating
-              ? "Preparing your personalized interview..."
-              : "Loading interview..."}
+              ? 'Preparing your personalized interview...'
+              : 'Loading interview...'}
           </p>
         </div>
       </div>
@@ -135,17 +140,14 @@ export default function InterviewCVPage() {
   if (mcqList.length === 0 && textList.length === 0 && !loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg">
-        <div className="text-center p-8 bg-card rounded-2xl shadow-soft border border-border">
+        <BaseCard className="text-center p-8">
           <p className="text-error font-semibold">
             No questions were generated.
           </p>
-          <button
-            onClick={handleBack}
-            className="mt-4 px-5 py-2 bg-primary text-white rounded-lg hover:brightness-105 transition shadow-md"
-          >
+          <BaseButton variant="primary" onClick={handleBack} className="mt-4">
             Back to Dashboard
-          </button>
-        </div>
+          </BaseButton>
+        </BaseCard>
       </div>
     );
   }
@@ -155,65 +157,77 @@ export default function InterviewCVPage() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <button
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            leftIcon={
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            }
             onClick={handleBack}
-            className="group flex items-center gap-2 text-muted hover:text-primary transition-all duration-300 font-medium bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border w-fit"
+            className="group gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border w-fit"
           >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to Dashboard</span>
-          </button>
+            Back to Dashboard
+          </BaseButton>
           <div className="flex items-center gap-3 self-end sm:self-auto">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-card/70 backdrop-blur-sm rounded-full shadow-soft border border-border">
+            <BaseBadge variant="default" rounded className="gap-2 px-3 py-1.5">
               <User className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-text">{userName}</span>
-            </div>
+            </BaseBadge>
             {!submitted && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-card/70 backdrop-blur-sm rounded-full shadow-soft border border-border">
+              <BaseBadge
+                variant="success"
+                rounded
+                className="gap-2 px-3 py-1.5"
+              >
                 <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-                <span className="text-xs font-medium text-muted">
-                  In Progress
-                </span>
-              </div>
+                <span className="text-xs font-medium">In Progress</span>
+              </BaseBadge>
             )}
             {submitted && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-full shadow-md">
+              <BaseBadge
+                variant="primary"
+                rounded
+                className="gap-2 px-3 py-1.5 shadow-md"
+              >
                 <Award className="w-4 h-4" />
                 <span className="text-xs font-medium">
                   Score: {totalScore}/100
                 </span>
-              </div>
+              </BaseBadge>
             )}
           </div>
         </div>
 
         {/* CV Info Card */}
         {cvInfo && (
-          <div className="bg-card rounded-2xl shadow-soft p-5 mb-6 border border-border">
+          <BaseCard className="p-5 mb-6">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-primary/10 rounded-full">
                 <User size={22} className="text-primary" />
               </div>
               <h2 className="text-xl font-bold text-text">
-                {cvInfo.fullName || "Candidate"}
+                {cvInfo.fullName || 'Candidate'}
               </h2>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
               {Object.values(cvInfo.selectedSkills || {})
                 .flat()
                 .map((skill, i) => (
-                  <span
+                  <BaseBadge
                     key={i}
-                    className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-medium shadow-sm"
+                    variant="primary"
+                    rounded
+                    className="px-3 py-1.5 shadow-sm"
                   >
                     {skill}
-                  </span>
+                  </BaseBadge>
                 ))}
             </div>
-          </div>
+          </BaseCard>
         )}
 
         {/* Main Interview Card */}
-        <div className="bg-card rounded-2xl shadow-soft border border-border overflow-hidden">
+        <BaseCard className="overflow-hidden">
           {/* Header card */}
           <div className="relative bg-gradient-to-r from-primary/10 to-secondary/10 px-6 py-6 border-b border-border">
             <div className="relative">
@@ -224,12 +238,12 @@ export default function InterviewCVPage() {
                 </h1>
               </div>
               <div className="flex flex-wrap gap-2 mt-3">
-                <span className="px-3 py-1 bg-primary/20 text-primary text-sm font-medium rounded-full">
+                <BaseBadge variant="primary" rounded>
                   {mcqList.length} MCQ
-                </span>
-                <span className="px-3 py-1 bg-primary/20 text-primary text-sm font-medium rounded-full">
+                </BaseBadge>
+                <BaseBadge variant="primary" rounded>
                   {textList.length} Essay
-                </span>
+                </BaseBadge>
               </div>
             </div>
           </div>
@@ -255,23 +269,31 @@ export default function InterviewCVPage() {
           {/* Tabs */}
           <div className="flex border-b border-border px-6">
             <button
-              onClick={() => setActiveSection("mcq")}
-              className={`flex items-center gap-2 py-3 px-4 text-sm font-medium transition-all relative ${activeSection === "mcq" ? "text-primary" : "text-muted hover:text-text"}`}
+              onClick={() => setActiveSection('mcq')}
+              className={`flex items-center gap-2 py-3 px-4 text-sm font-medium transition-all relative ${
+                activeSection === 'mcq'
+                  ? 'text-primary'
+                  : 'text-muted hover:text-text'
+              }`}
             >
               <HelpCircle className="w-4 h-4" /> MCQ
               {submitted &&
                 mcqResults.length > 0 &&
                 ` (${mcqResults.filter((r) => r.isCorrect).length}/${mcqList.length})`}
-              {activeSection === "mcq" && (
+              {activeSection === 'mcq' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
               )}
             </button>
             <button
-              onClick={() => setActiveSection("text")}
-              className={`flex items-center gap-2 py-3 px-4 text-sm font-medium transition-all relative ${activeSection === "text" ? "text-primary" : "text-muted hover:text-text"}`}
+              onClick={() => setActiveSection('text')}
+              className={`flex items-center gap-2 py-3 px-4 text-sm font-medium transition-all relative ${
+                activeSection === 'text'
+                  ? 'text-primary'
+                  : 'text-muted hover:text-text'
+              }`}
             >
               <FileText className="w-4 h-4" /> Essay Questions
-              {activeSection === "text" && (
+              {activeSection === 'text' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
               )}
             </button>
@@ -287,7 +309,7 @@ export default function InterviewCVPage() {
           >
             {/* MCQ Section */}
             <div
-              style={{ display: activeSection === "mcq" ? "block" : "none" }}
+              style={{ display: activeSection === 'mcq' ? 'block' : 'none' }}
             >
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-text flex items-center gap-2">
@@ -305,9 +327,9 @@ export default function InterviewCVPage() {
                       className={`group rounded-xl p-5 border transition-all duration-300 ${
                         submitted
                           ? isCorrect
-                            ? "border-success/50 bg-success/5"
-                            : "border-error/50 bg-error/5"
-                          : "bg-muted/5 border-border hover:border-primary/30"
+                            ? 'border-success/50 bg-success/5'
+                            : 'border-error/50 bg-error/5'
+                          : 'bg-muted/5 border-border hover:border-primary/30'
                       }`}
                     >
                       <div className="flex items-start gap-3 mb-3">
@@ -333,16 +355,16 @@ export default function InterviewCVPage() {
                             key={`${idx}-opt-${optIdx}`}
                             className={`flex items-start gap-3 cursor-pointer p-2 rounded-lg transition-colors ${
                               submitted
-                                ? "cursor-default"
-                                : "hover:bg-primary/10"
+                                ? 'cursor-default'
+                                : 'hover:bg-primary/10'
                             } ${
                               submitted && opt === q.correctAnswer
-                                ? "bg-success/20 border-success/50"
-                                : ""
+                                ? 'bg-success/20 border-success/50'
+                                : ''
                             } ${
                               submitted && userChoice === opt && !isCorrect
-                                ? "bg-error/20 border-error/50"
-                                : ""
+                                ? 'bg-error/20 border-error/50'
+                                : ''
                             }`}
                           >
                             <input
@@ -359,12 +381,12 @@ export default function InterviewCVPage() {
                             <span
                               className={`text-sm ${
                                 submitted && opt === q.correctAnswer
-                                  ? "text-success font-medium"
+                                  ? 'text-success font-medium'
                                   : submitted &&
                                       userChoice === opt &&
                                       !isCorrect
-                                    ? "text-error font-medium"
-                                    : "text-text"
+                                    ? 'text-error font-medium'
+                                    : 'text-text'
                               }`}
                             >
                               {opt}
@@ -380,7 +402,7 @@ export default function InterviewCVPage() {
                             </p>
                             <p className="text-sm text-text">
                               {mcqResults[idx].explanation ||
-                                "No explanation available."}
+                                'No explanation available.'}
                             </p>
                           </div>
                           <div className="p-3 rounded-lg bg-warning/5 border-l-4 border-warning">
@@ -388,7 +410,7 @@ export default function InterviewCVPage() {
                               <User className="w-3 h-3" /> Your answer
                             </p>
                             <p className="text-sm text-text">
-                              {userChoice || "Not answered"}
+                              {userChoice || 'Not answered'}
                             </p>
                           </div>
                           <div className="p-3 rounded-lg bg-success/5 border-l-4 border-success">
@@ -399,10 +421,14 @@ export default function InterviewCVPage() {
                               {q.correctAnswer}
                             </p>
                           </div>
-                          <div className="p-3 rounded-lg bg-primary/10 text-primary font-semibold text-sm flex items-center gap-2">
+                          <BaseBadge
+                            variant={resultScore >= 7 ? 'success' : 'error'}
+                            rounded
+                            className="p-3 text-sm font-semibold flex items-center gap-2"
+                          >
                             <span>Score:</span>
                             <span>{resultScore}/10</span>
-                          </div>
+                          </BaseBadge>
                         </div>
                       )}
                     </div>
@@ -418,7 +444,7 @@ export default function InterviewCVPage() {
 
             {/* Essay Section */}
             <div
-              style={{ display: activeSection === "text" ? "block" : "none" }}
+              style={{ display: activeSection === 'text' ? 'block' : 'none' }}
             >
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-text flex items-center gap-2">
@@ -434,9 +460,9 @@ export default function InterviewCVPage() {
                       className={`rounded-xl p-5 border transition-all duration-300 ${
                         submitted
                           ? isLowScore
-                            ? "border-error/50 bg-error/5"
-                            : "border-success/50 bg-success/5"
-                          : "bg-muted/5 border-border hover:border-primary/30"
+                            ? 'border-error/50 bg-error/5'
+                            : 'border-success/50 bg-success/5'
+                          : 'bg-muted/5 border-border hover:border-primary/30'
                       }`}
                     >
                       <div className="flex items-start gap-3 mb-3">
@@ -452,7 +478,7 @@ export default function InterviewCVPage() {
                           rows={4}
                           className="w-full p-3 rounded-xl border border-border bg-card text-text focus:ring-2 focus:ring-primary transition-all disabled:opacity-80"
                           placeholder="Type your answer here..."
-                          value={answers[`text_${idx}`] || ""}
+                          value={answers[`text_${idx}`] || ''}
                           onChange={(e) =>
                             handleAnswerChange(`text_${idx}`, e.target.value)
                           }
@@ -467,7 +493,7 @@ export default function InterviewCVPage() {
                               <User className="w-3 h-3" /> Your Answer
                             </p>
                             <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                              {essayResult.yourAnswer || "Not answered"}
+                              {essayResult.yourAnswer || 'Not answered'}
                             </p>
                           </div>
 
@@ -484,7 +510,7 @@ export default function InterviewCVPage() {
                             </div>
                           )}
 
-                          {/* Detailed Feedback - đã bao gồm strengths và weaknesses */}
+                          {/* Detailed Feedback */}
                           {essayResult.detailedFeedback && (
                             <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border-l-4 border-blue-500">
                               <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
@@ -498,16 +524,14 @@ export default function InterviewCVPage() {
                           )}
 
                           {/* Score */}
-                          <div
-                            className={`p-3 rounded-lg font-semibold text-sm flex items-center gap-2 ${
-                              resultScore >= 7
-                                ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-l-4 border-emerald-500"
-                                : "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border-l-4 border-red-500"
-                            }`}
+                          <BaseBadge
+                            variant={resultScore >= 7 ? 'success' : 'error'}
+                            rounded
+                            className="p-3 text-sm font-semibold flex items-center gap-2"
                           >
                             <span>📊 Score:</span>
                             <span>{resultScore}/10</span>
-                          </div>
+                          </BaseBadge>
                         </div>
                       )}
                     </div>
@@ -524,22 +548,18 @@ export default function InterviewCVPage() {
             {/* Submit Button */}
             {!submitted && totalQuestions > 0 && (
               <div className="mt-8 pt-4 border-t border-border">
-                <button
+                <BaseButton
                   type="submit"
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  loading={submitting}
+                  leftIcon={!submitting && <Send className="w-5 h-5" />}
                   disabled={submitting}
-                  className="w-full py-3.5 bg-primary hover:brightness-105 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 active:scale-95"
+                  className="py-3.5 shadow-md hover:shadow-lg transition-all duration-300 active:scale-95"
                 >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Grading...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5" /> Submit Answers
-                    </>
-                  )}
-                </button>
+                  {submitting ? 'Grading...' : 'Submit Answers'}
+                </BaseButton>
                 <p className="text-center text-xs text-muted mt-3">
                   * Review your answers carefully before submitting
                 </p>
@@ -593,24 +613,21 @@ export default function InterviewCVPage() {
                   )}
 
                   <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
-                    <button
-                      onClick={handleBack}
-                      className="px-5 py-2 bg-primary text-white rounded-lg hover:brightness-105 transition shadow-md"
-                    >
+                    <BaseButton variant="primary" onClick={handleBack}>
                       Back to Dashboard
-                    </button>
-                    <button
-                      onClick={() => navigate("/history")}
-                      className="px-5 py-2 bg-secondary text-white rounded-lg hover:brightness-105 transition shadow-md"
+                    </BaseButton>
+                    <BaseButton
+                      variant="secondary"
+                      onClick={() => navigate('/history')}
                     >
                       View History
-                    </button>
+                    </BaseButton>
                   </div>
                 </div>
               </div>
             )}
           </form>
-        </div>
+        </BaseCard>
 
         <div className="mt-6 text-center text-xs text-muted">
           <TrendingUp className="inline w-3 h-3 mr-1" /> Powered by AI

@@ -7,34 +7,31 @@ const saveActivity = async (userId, type = 'interview') => {
     // 👉 convert sang giờ VN chuẩn
     const vnNow = new Date(
       now.toLocaleString('en-US', {
-        timeZone: 'Asia/Ho_Chi_Minh'
+        timeZone: 'Asia/Ho_Chi_Minh',
       })
     );
-
+    // lưu activity theo ngày
     // 👉 normalize về 00:00 VN nhưng lưu UTC
-    const dateOnly = new Date(Date.UTC(
-      vnNow.getFullYear(),
-      vnNow.getMonth(),
-      vnNow.getDate()
-    ));
+    const dateOnly = new Date(
+      Date.UTC(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate())
+    );
 
     await Activity.findOneAndUpdate(
       {
         userId,
-        date: dateOnly
+        date: dateOnly,
       },
       {
         $setOnInsert: {
           userId,
           date: dateOnly,
-          type
-        }
+          type,
+        },
       },
       {
-        upsert: true
+        upsert: true,
       }
     );
-
   } catch (err) {
     console.error('Save activity error:', err);
   }
