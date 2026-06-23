@@ -12,7 +12,6 @@ import {
   MessageCircle,
   TrendingUp,
   FileText,
-  Clock,
   Flame,
   Target,
   Award,
