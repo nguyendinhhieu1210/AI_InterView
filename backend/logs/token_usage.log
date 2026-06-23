@@ -1,0 +1,5 @@
+{"timestamp":"2026-06-23T10:59:02.255Z","level":"INFO","type":"TOKEN_USAGE","feature":"generateInterviewQuestions","model":"llama-3.3-70b-versatile","requestId":"1782212338453-j27r3tco","inputTokens":528,"outputTokens":1601,"totalTokens":2129}
+{"timestamp":"2026-06-23T10:59:25.295Z","level":"INFO","type":"TOKEN_USAGE","feature":"gradeEssay","model":"llama-3.3-70b-versatile","requestId":"1782212364583-s2ka0a3i","inputTokens":122,"outputTokens":115,"totalTokens":237}
+{"timestamp":"2026-06-23T10:59:25.857Z","level":"INFO","type":"TOKEN_USAGE","feature":"gradeEssay","model":"llama-3.3-70b-versatile","requestId":"1782212365295-793n4wsn","inputTokens":107,"outputTokens":121,"totalTokens":228}
+{"timestamp":"2026-06-23T10:59:26.453Z","level":"INFO","type":"TOKEN_USAGE","feature":"gradeEssay","model":"llama-3.3-70b-versatile","requestId":"1782212365857-zzw62eot","inputTokens":106,"outputTokens":123,"totalTokens":229}
+{"timestamp":"2026-06-23T11:03:05.189Z","level":"INFO","type":"TOKEN_USAGE","feature":"parseCV","model":"llama-3.3-70b-versatile","requestId":"1782212584359-s0fdojdb","inputTokens":1259,"outputTokens":194,"totalTokens":1453}
