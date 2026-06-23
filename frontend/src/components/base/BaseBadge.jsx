@@ -1,7 +1,6 @@
 // components/base/BaseBadge.jsx
 import React from 'react';
 import { cn } from '../../utils/cn';
-//  compoment base trong Project
 export const BaseBadge = ({
   children,
   variant = 'default',
