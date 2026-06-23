@@ -87,13 +87,6 @@ export default function InterviewHistoryPage() {
     return 'text-error';
   };
 
-  const getScoreBadgeVariant = (score) => {
-    if (score >= 80) return 'success';
-    if (score >= 60) return 'warning';
-    if (score >= 40) return 'warning';
-    return 'error';
-  };
-
   const totalPages = Math.ceil(history.length / itemsPerPage);
   const paginatedHistory = history.slice(
     (currentPage - 1) * itemsPerPage,

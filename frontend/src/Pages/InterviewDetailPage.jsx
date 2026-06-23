@@ -77,13 +77,6 @@ export default function InterviewDetailPage() {
     return 'text-error';
   };
 
-  const getScoreBg = (score) => {
-    if (score >= 80) return 'bg-success/20 text-success';
-    if (score >= 60) return 'bg-warning/20 text-warning';
-    if (score >= 40) return 'bg-warning/10 text-warning/80';
-    return 'bg-error/20 text-error';
-  };
-
   const getScoreBadgeVariant = (score) => {
     if (score >= 80) return 'success';
     if (score >= 60) return 'warning';

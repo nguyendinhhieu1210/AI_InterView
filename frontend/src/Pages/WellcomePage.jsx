@@ -352,9 +352,11 @@ export default function WelcomePage() {
       {/* ─── Header ─── */}
       <header className="bg-card/80 backdrop-blur-xl border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-          <div
-            className="flex items-center gap-3 cursor-pointer group"
+          <BaseButton
+            variant="ghost"
+            size="sm"
             onClick={() => navigate('/welcome')}
+            className="flex items-center gap-3 group p-0 hover:bg-transparent"
           >
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
               <span className="text-white font-bold text-base">AI</span>
@@ -365,7 +367,7 @@ export default function WelcomePage() {
               </h1>
               <p className="text-xs text-muted mt-0.5">Smart Platform</p>
             </div>
-          </div>
+          </BaseButton>
 
           <BaseDropdown
             ref={dropdownRef}
@@ -373,7 +375,11 @@ export default function WelcomePage() {
             onToggle={() => setDropdownOpen(!dropdownOpen)}
             align="right"
             trigger={
-              <div className="flex items-center gap-2.5 group cursor-pointer">
+              <BaseButton
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2.5 group p-0 hover:bg-transparent"
+              >
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center ring-2 ring-white dark:ring-gray-800 group-hover:ring-primary/40 transition-all shadow-sm">
                   <span className="text-white font-semibold text-sm">
                     {avatarLetter}
@@ -388,7 +394,7 @@ export default function WelcomePage() {
                 <ChevronDown
                   className={`w-4 h-4 text-muted transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
                 />
-              </div>
+              </BaseButton>
             }
           >
             <DropdownItem
@@ -516,10 +522,13 @@ export default function WelcomePage() {
                 );
               }
               return (
-                <button
+                <BaseButton
                   key={idx}
+                  variant="ghost"
+                  size="lg"
+                  fullWidth
                   onClick={action.onClick}
-                  className="group relative flex flex-col items-start gap-3 p-5 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-200 text-left shadow-sm hover:shadow-md"
+                  className="group relative flex flex-col items-start gap-3 p-5 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-200 text-left shadow-sm hover:shadow-md h-auto"
                 >
                   <div
                     className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity`}
@@ -529,14 +538,14 @@ export default function WelcomePage() {
                   >
                     <action.icon className="w-5 h-5 text-white" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 text-left">
                     <p className="font-semibold text-text text-sm">
                       {action.label}
                     </p>
                     <p className="text-xs text-muted mt-0.5">{action.desc}</p>
                   </div>
                   <ArrowRight className="w-4 h-4 text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                </button>
+                </BaseButton>
               );
             })}
           </div>

@@ -3,3 +3,4 @@
 {"timestamp":"2026-06-23T10:59:25.857Z","level":"INFO","type":"TOKEN_USAGE","feature":"gradeEssay","model":"llama-3.3-70b-versatile","requestId":"1782212365295-793n4wsn","inputTokens":107,"outputTokens":121,"totalTokens":228}
 {"timestamp":"2026-06-23T10:59:26.453Z","level":"INFO","type":"TOKEN_USAGE","feature":"gradeEssay","model":"llama-3.3-70b-versatile","requestId":"1782212365857-zzw62eot","inputTokens":106,"outputTokens":123,"totalTokens":229}
 {"timestamp":"2026-06-23T11:03:05.189Z","level":"INFO","type":"TOKEN_USAGE","feature":"parseCV","model":"llama-3.3-70b-versatile","requestId":"1782212584359-s0fdojdb","inputTokens":1259,"outputTokens":194,"totalTokens":1453}
+{"timestamp":"2026-06-23T11:27:07.193Z","level":"INFO","type":"TOKEN_USAGE","feature":"generateInterviewQuestions","model":"llama-3.3-70b-versatile","requestId":"1782214023476-yzth29je","inputTokens":528,"outputTokens":1557,"totalTokens":2085}

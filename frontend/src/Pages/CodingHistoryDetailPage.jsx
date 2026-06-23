@@ -126,14 +126,6 @@ export default function CodingHistoryDetailPage() {
     return 'text-error';
   };
 
-  const getScoreBadgeVariant = (score, max = 100) => {
-    const percent = (score / max) * 100;
-    if (percent >= 80) return 'success';
-    if (percent >= 60) return 'warning';
-    if (percent >= 40) return 'warning';
-    return 'error';
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-bg">
