@@ -1,6 +1,6 @@
 // src/pages/WelcomePage.jsx
-import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LogOut,
   User,
@@ -17,38 +17,38 @@ import {
   Target,
   Award,
   BarChart3,
-} from "lucide-react";
+} from 'lucide-react';
 
 // Import Base Components
-import { BaseButton } from "../components/base/BaseButton";
-import { BaseCard } from "../components/base/BaseCard";
-import { BaseBadge } from "../components/base/BaseBadge";
-import { BaseDropdown, DropdownItem } from "../components/base/BaseDropdown";
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
+import { BaseDropdown, DropdownItem } from '../components/base/BaseDropdown';
 
 // Import existing components
-import { StartInterviewModal } from "../components/StartInterviewModal";
-import { UploadCV } from "../components/UploadCV";
-import { AIFeedback } from "../components/AIFeedback";
-import PerformanceTrendChart from "../components/PerformanceTrendChart";
-import ActivityCalendar from "../components/ActivityCalendar";
-import { CVInfoModal } from "../components/CVInfoModal";
-import { useAuth } from "../contexts/AuthContext";
-import { useHistory } from "../contexts/HistoryContext";
+import { StartInterviewModal } from '../components/StartInterviewModal';
+import { UploadCV } from '../components/UploadCV';
+import { AIFeedback } from '../components/AIFeedback';
+import PerformanceTrendChart from '../components/PerformanceTrendChart';
+import ActivityCalendar from '../components/ActivityCalendar';
+import { CVInfoModal } from '../components/CVInfoModal';
+import { useAuth } from '../contexts/AuthContext';
+import { useHistory } from '../contexts/HistoryContext';
 
 const toVietnamDateKey = (dateInput) => {
   if (!dateInput) return null;
   const date = new Date(dateInput);
   if (isNaN(date.getTime())) return null;
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   });
   const parts = formatter.formatToParts(date);
-  const year = parts.find((p) => p.type === "year")?.value;
-  const month = parts.find((p) => p.type === "month")?.value;
-  const day = parts.find((p) => p.type === "day")?.value;
+  const year = parts.find((p) => p.type === 'year')?.value;
+  const month = parts.find((p) => p.type === 'month')?.value;
+  const day = parts.find((p) => p.type === 'day')?.value;
   return `${year}-${month}-${day}`;
 };
 
@@ -84,32 +84,32 @@ export default function WelcomePage() {
   const [cvData, setCvData] = useState(null);
 
   const texts = {
-    totalSessions: "Total Interviews",
-    streak: "Current Streak",
-    days: "days",
-    performanceTrend: "Performance Overview",
-    quickActions: "Quick Actions",
-    startNewInterview: "Start Interview",
-    uploadCV: "CV-based Interview",
-    interviewHistory: "History",
-    logout: "Sign Out",
-    settings: "Settings",
-    helpSupport: "Help & Support",
-    yourProfile: "Your Profile",
-    goodMorning: "Good Morning",
-    goodAfternoon: "Good Afternoon",
-    goodEvening: "Good Evening",
+    totalSessions: 'Total Interviews',
+    streak: 'Current Streak',
+    days: 'days',
+    performanceTrend: 'Performance Overview',
+    quickActions: 'Quick Actions',
+    startNewInterview: 'Start Interview',
+    uploadCV: 'CV-based Interview',
+    interviewHistory: 'History',
+    logout: 'Sign Out',
+    settings: 'Settings',
+    helpSupport: 'Help & Support',
+    yourProfile: 'Your Profile',
+    goodMorning: 'Good Morning',
+    goodAfternoon: 'Good Afternoon',
+    goodEvening: 'Good Evening',
     readyMessage:
-      "Ready to ace your next interview? Your AI coach is here to help.",
+      'Ready to ace your next interview? Your AI coach is here to help.',
     todaySessions: "Today's Activity",
-    normalInt: "Standard",
-    cvInt: "CV Based",
-    adaptiveInt: "Adaptive",
-    codingInt: "Coding",
-    total: "Total",
-    keepGoing: "Great progress today! Keep going! 💪",
-    restDay: "Take a break today",
-    codingInterview: "Coding Challenge",
+    normalInt: 'Standard',
+    cvInt: 'CV Based',
+    adaptiveInt: 'Adaptive',
+    codingInt: 'Coding',
+    total: 'Total',
+    keepGoing: 'Great progress today! Keep going! 💪',
+    restDay: 'Take a break today',
+    codingInterview: 'Coding Challenge',
   };
 
   const getGreeting = () => {
@@ -120,19 +120,19 @@ export default function WelcomePage() {
   };
 
   const formatDate = (date) =>
-    date.toLocaleDateString("en-US", {
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
+    date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
   const formatTime = (date) =>
-    date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
   const calculateStreakFromActivities = (activitiesList) => {
     if (!activitiesList || activitiesList.length === 0) return 0;
     const activeDates = new Set(
-      activitiesList.map((act) => act.dateVN).filter(Boolean),
+      activitiesList.map((act) => act.dateVN).filter(Boolean)
     );
     let streak = 0;
     let currentDate = new Date();
@@ -149,8 +149,8 @@ export default function WelcomePage() {
 
   const fetchActivities = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const baseURL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+      const token = localStorage.getItem('token');
+      const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const res = await fetch(`${baseURL}/activity/calendar`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -161,7 +161,7 @@ export default function WelcomePage() {
         setStats((prev) => ({ ...prev, streak: newStreak }));
       }
     } catch (err) {
-      console.error("Fetch activities error:", err);
+      console.error('Fetch activities error:', err);
     }
   };
 
@@ -171,16 +171,16 @@ export default function WelcomePage() {
     const total = allSessions.length;
     const todayKey = toVietnamDateKey(new Date());
     const normalCount = normal.filter(
-      (s) => toVietnamDateKey(s.createdAt) === todayKey,
+      (s) => toVietnamDateKey(s.createdAt) === todayKey
     ).length;
     const cvCount = cv.filter(
-      (s) => toVietnamDateKey(s.createdAt) === todayKey,
+      (s) => toVietnamDateKey(s.createdAt) === todayKey
     ).length;
     const adaptiveCount = adaptive.filter(
-      (s) => toVietnamDateKey(s.createdAt) === todayKey,
+      (s) => toVietnamDateKey(s.createdAt) === todayKey
     ).length;
     const codingCount = coding.filter(
-      (s) => toVietnamDateKey(s.createdAt) === todayKey,
+      (s) => toVietnamDateKey(s.createdAt) === todayKey
     ).length;
     setTodayStats({
       normalInterview: normalCount,
@@ -193,7 +193,7 @@ export default function WelcomePage() {
   }, [normal, cv, adaptive, coding, historyLoading]);
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) navigate("/login");
+    if (!authLoading && !isAuthenticated) navigate('/login');
   }, [authLoading, isAuthenticated, navigate]);
 
   useEffect(() => {
@@ -206,8 +206,8 @@ export default function WelcomePage() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target))
         setDropdownOpen(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -216,11 +216,11 @@ export default function WelcomePage() {
   }, []);
 
   useEffect(() => {
-    window.history.pushState(null, "", window.location.href);
+    window.history.pushState(null, '', window.location.href);
     const handlePopState = () =>
-      window.history.pushState(null, "", window.location.href);
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+      window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const handleLogout = async () => {
@@ -228,12 +228,12 @@ export default function WelcomePage() {
     setIsLoggingOut(true);
     setTimeout(async () => {
       await logout();
-      navigate("/login");
+      navigate('/login');
     }, 2000);
   };
 
   const handleStartInterview = (data) => {
-    console.log("Starting interview:", data);
+    console.log('Starting interview:', data);
     fetchActivities();
     refreshHistory();
   };
@@ -251,29 +251,29 @@ export default function WelcomePage() {
   };
 
   const handleStartCVInterview = (interviewData) => {
-    console.log("Start CV interview:", interviewData);
+    console.log('Start CV interview:', interviewData);
     setIsCVModalOpen(false);
     fetchActivities();
     refreshHistory();
   };
 
   const displayName = user?.fullName || user?.userName;
-  const avatarLetter = displayName?.charAt(0).toUpperCase() || "U";
+  const avatarLetter = displayName?.charAt(0).toUpperCase() || 'U';
 
   const statsCards = [
     {
       icon: BarChart3,
       label: texts.totalSessions,
       value: stats.totalInterviews,
-      color: "text-primary",
-      bg: "bg-primary/10",
+      color: 'text-primary',
+      bg: 'bg-primary/10',
     },
     {
       icon: Flame,
       label: texts.streak,
       value: `${stats.streak} ${texts.days}`,
-      color: "text-orange-500",
-      bg: "bg-orange-500/10",
+      color: 'text-orange-500',
+      bg: 'bg-orange-500/10',
     },
   ];
 
@@ -282,33 +282,33 @@ export default function WelcomePage() {
       label: texts.normalInt,
       value: todayStats.normalInterview,
       icon: MessageCircle,
-      color: "text-blue-600 dark:text-blue-400",
-      bgColor: "bg-blue-100 dark:bg-blue-900/40",
-      borderColor: "#3b82f6",
+      color: 'text-blue-600 dark:text-blue-400',
+      bgColor: 'bg-blue-100 dark:bg-blue-900/40',
+      borderColor: '#3b82f6',
     },
     {
       label: texts.cvInt,
       value: todayStats.cvInterview,
       icon: FileText,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bgColor: "bg-emerald-100 dark:bg-emerald-900/40",
-      borderColor: "#10b981",
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bgColor: 'bg-emerald-100 dark:bg-emerald-900/40',
+      borderColor: '#10b981',
     },
     {
       label: texts.adaptiveInt,
       value: todayStats.adaptiveInterview,
       icon: Brain,
-      color: "text-violet-600 dark:text-violet-400",
-      bgColor: "bg-violet-100 dark:bg-violet-900/40",
-      borderColor: "#8b5cf6",
+      color: 'text-violet-600 dark:text-violet-400',
+      bgColor: 'bg-violet-100 dark:bg-violet-900/40',
+      borderColor: '#8b5cf6',
     },
     {
       label: texts.codingInt,
       value: todayStats.codingInterview,
       icon: Zap,
-      color: "text-rose-600 dark:text-rose-400",
-      bgColor: "bg-rose-100 dark:bg-rose-900/40",
-      borderColor: "#f43f5e",
+      color: 'text-rose-600 dark:text-rose-400',
+      bgColor: 'bg-rose-100 dark:bg-rose-900/40',
+      borderColor: '#f43f5e',
     },
   ];
 
@@ -346,7 +346,7 @@ export default function WelcomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center">
           <div
             className="flex items-center gap-3 cursor-pointer group"
-            onClick={() => navigate("/welcome")}
+            onClick={() => navigate('/welcome')}
           >
             <div className="w-11 h-11 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
               <span className="text-white font-bold text-xl">AI</span>
@@ -377,7 +377,7 @@ export default function WelcomePage() {
                 </div>
                 <ChevronDown
                   className={`w-4 h-4 text-muted transition-transform duration-200 ${
-                    dropdownOpen ? "rotate-180" : ""
+                    dropdownOpen ? 'rotate-180' : ''
                   }`}
                 />
               </div>
@@ -387,7 +387,7 @@ export default function WelcomePage() {
               icon={<User className="w-4 h-4" />}
               onClick={() => {
                 setDropdownOpen(false);
-                navigate("/profile");
+                navigate('/profile');
               }}
             >
               {texts.yourProfile}
@@ -396,7 +396,7 @@ export default function WelcomePage() {
               icon={<Settings className="w-4 h-4" />}
               onClick={() => {
                 setDropdownOpen(false);
-                navigate("/settings");
+                navigate('/settings');
               }}
             >
               {texts.settings}
@@ -405,7 +405,7 @@ export default function WelcomePage() {
               icon={<HelpCircle className="w-4 h-4" />}
               onClick={() => {
                 setDropdownOpen(false);
-                navigate("/help");
+                navigate('/help');
               }}
             >
               {texts.helpSupport}
@@ -414,7 +414,7 @@ export default function WelcomePage() {
               icon={<FileText className="w-4 h-4" />}
               onClick={() => {
                 setDropdownOpen(false);
-                navigate("/history");
+                navigate('/history');
               }}
             >
               {texts.interviewHistory}
@@ -465,7 +465,7 @@ export default function WelcomePage() {
                 <div>
                   <p className="text-sm text-muted mb-1">{stat.label}</p>
                   <p className="text-3xl font-bold text-text">
-                    {historyLoading ? "--" : stat.value}
+                    {historyLoading ? '--' : stat.value}
                   </p>
                 </div>
                 <div className={`p-3 rounded-xl ${stat.bg}`}>
@@ -510,7 +510,7 @@ export default function WelcomePage() {
                   </div>
                 </div>
                 <p className="text-2xl font-bold text-text">
-                  {historyLoading ? "..." : item.value}
+                  {historyLoading ? '...' : item.value}
                 </p>
                 <p className="text-xs text-muted mt-1 font-medium">
                   {item.label}
@@ -522,7 +522,7 @@ export default function WelcomePage() {
           <div className="mt-5 pt-4 text-center border-t border-border">
             <p
               className={`text-sm font-semibold flex items-center justify-center gap-2 ${
-                todayStats.total > 0 ? "text-success" : "text-muted"
+                todayStats.total > 0 ? 'text-success' : 'text-muted'
               }`}
             >
               <Award className="w-4 h-4" />
@@ -576,7 +576,7 @@ export default function WelcomePage() {
                   fullWidth
                   className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 border-0 shadow-purple-500/30"
                   leftIcon={<Zap className="w-4 h-4" />}
-                  onClick={() => navigate("/live-coding")}
+                  onClick={() => navigate('/live-coding')}
                 >
                   {texts.codingInterview}
                 </BaseButton>
@@ -586,7 +586,7 @@ export default function WelcomePage() {
                   size="lg"
                   fullWidth
                   leftIcon={<FileText className="w-4 h-4" />}
-                  onClick={() => navigate("/history")}
+                  onClick={() => navigate('/history')}
                 >
                   {texts.interviewHistory}
                 </BaseButton>
@@ -610,7 +610,6 @@ export default function WelcomePage() {
       <StartInterviewModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onStart={handleStartInterview}
       />
 
       {isCVModalOpen && cvData && (
@@ -619,7 +618,7 @@ export default function WelcomePage() {
           onClose={handleCloseCVModal}
           onStartInterview={handleStartCVInterview}
           onQuestionsGenerated={(data) =>
-            console.log("Questions generated from CV:", data)
+            console.log('Questions generated from CV:', data)
           }
         />
       )}

@@ -1,6 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, HelpCircle, Brain, Loader2, RefreshCw, AlertCircle, Eye, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  HelpCircle,
+  Brain,
+  Loader2,
+  RefreshCw,
+  AlertCircle,
+  Eye,
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
+
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -22,8 +40,11 @@ export default function InterviewHistoryPage() {
       setLoading(true);
       setError(null);
       const res = await api.get('/interview/history');
-      const rawList = res.data?.success && Array.isArray(res.data.history) ? res.data.history : [];
-      const normalized = rawList.map(item => ({
+      const rawList =
+        res.data?.success && Array.isArray(res.data.history)
+          ? res.data.history
+          : [];
+      const normalized = rawList.map((item) => ({
         id: item.id,
         topic: item.topic || 'General',
         difficulty: item.difficulty || 'N/A',
@@ -34,7 +55,7 @@ export default function InterviewHistoryPage() {
         mcqCount: item.mcqCount,
         essayScore: item.essayScore,
         essayCount: item.essayCount,
-        detailPath: `/history/${item.id}`
+        detailPath: `/history/${item.id}`,
       }));
       normalized.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setHistory(normalized);
@@ -51,8 +72,11 @@ export default function InterviewHistoryPage() {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Invalid date';
     return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(date);
   };
 
@@ -63,8 +87,19 @@ export default function InterviewHistoryPage() {
     return 'text-error';
   };
 
+  const getScoreBadgeVariant = (score) => {
+    if (score >= 80) return 'success';
+    if (score >= 60) return 'warning';
+    if (score >= 40) return 'warning';
+    return 'error';
+  };
+
   const totalPages = Math.ceil(history.length / itemsPerPage);
-  const paginatedHistory = history.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedHistory = history.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -82,13 +117,17 @@ export default function InterviewHistoryPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-bg">
-        <div className="bg-card rounded-2xl p-8 text-center max-w-md shadow-soft border border-border">
+        <BaseCard className="p-8 text-center max-w-md">
           <AlertCircle className="w-14 h-14 text-error mx-auto mb-4" />
           <p className="text-text mb-6">{error}</p>
-          <button onClick={fetchInterviewHistory} className="px-5 py-2.5 bg-primary text-white rounded-xl flex items-center gap-2 mx-auto hover:brightness-105 transition-all shadow-md">
-            <RefreshCw className="w-4 h-4" /> Retry
-          </button>
-        </div>
+          <BaseButton
+            variant="primary"
+            leftIcon={<RefreshCw className="w-4 h-4" />}
+            onClick={fetchInterviewHistory}
+          >
+            Retry
+          </BaseButton>
+        </BaseCard>
       </div>
     );
   }
@@ -98,16 +137,22 @@ export default function InterviewHistoryPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         {/* Header with Back button and Stats */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-          <button
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            leftIcon={
+              <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+            }
             onClick={() => navigate('/history')}
-            className="group flex items-center gap-2 text-primary hover:text-primary/80 transition-all duration-300 hover:gap-3 font-medium bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
+            className="group gap-2 text-primary hover:text-primary/80 bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
           >
-            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
             Back
-          </button>
+          </BaseButton>
           <div className="bg-card/80 backdrop-blur-sm rounded-full px-5 py-2 shadow-soft border border-border">
             <BarChart3 className="w-4 h-4 inline mr-2 text-primary" />
-            <span className="font-semibold text-text">{history.length} Interview sessions</span>
+            <span className="font-semibold text-text">
+              {history.length} Interview sessions
+            </span>
           </div>
         </div>
 
@@ -122,64 +167,80 @@ export default function InterviewHistoryPage() {
         </div>
 
         {history.length === 0 ? (
-          <div className="bg-card rounded-2xl p-12 text-center shadow-soft border border-border">
+          <BaseCard className="p-12 text-center">
             <Brain className="w-20 h-20 text-primary/40 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-text">No interviews yet</h3>
-            <button onClick={() => navigate('/welcome')} className="mt-4 px-6 py-2.5 bg-primary text-white rounded-xl hover:brightness-105 transition shadow-md">
+            <h3 className="text-xl font-semibold text-text">
+              No interviews yet
+            </h3>
+            <BaseButton
+              variant="primary"
+              onClick={() => navigate('/welcome')}
+              className="mt-4"
+            >
               Start your first interview →
-            </button>
-          </div>
+            </BaseButton>
+          </BaseCard>
         ) : (
           <>
             {/* Grid of interview cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedHistory.map((item) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="group bg-card rounded-2xl shadow-soft hover:shadow-lg transition-all duration-300 border-l-8 border-l-primary overflow-hidden flex flex-col"
                 >
                   <div className="p-5 flex-1">
                     {/* Topic and Difficulty badges */}
                     <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
-                      <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-bold rounded-full">
+                      <BaseBadge variant="primary" rounded>
                         {item.topic}
-                      </span>
-                      <span className="px-2 py-1 bg-muted/10 text-muted text-xs rounded-full">
+                      </BaseBadge>
+                      <BaseBadge variant="default" size="sm" rounded>
                         {item.difficulty}
-                      </span>
+                      </BaseBadge>
                     </div>
-                    
+
                     {/* Date and questions count */}
                     <div className="flex items-center gap-3 text-xs text-muted mb-3">
-                      <Calendar className="w-3.5 h-3.5" /> 
+                      <Calendar className="w-3.5 h-3.5" />
                       <span>{formatDate(item.createdAt)}</span>
-                      <HelpCircle className="w-3.5 h-3.5 ml-1" /> 
+                      <HelpCircle className="w-3.5 h-3.5 ml-1" />
                       <span>{item.totalQuestions} questions</span>
                     </div>
-                    
+
                     {/* MCQ & Essay scores */}
                     <div className="flex justify-between text-sm text-text/80 mb-2">
-                      <span>MCQ: {item.mcqScore}/{item.mcqCount * 10}</span>
-                      <span>Essay: {item.essayScore}/{item.essayCount * 10}</span>
+                      <span>
+                        MCQ: {item.mcqScore}/{item.mcqCount * 10}
+                      </span>
+                      <span>
+                        Essay: {item.essayScore}/{item.essayCount * 10}
+                      </span>
                     </div>
-                    
+
                     {/* Total score */}
                     <div className="flex justify-end items-baseline gap-1 mt-2 pt-2 border-t border-border">
                       <span className="text-xs text-muted">Total</span>
-                      <span className={`text-2xl font-bold ${getScoreColor(item.totalScore)}`}>
-                        {item.totalScore}<span className="text-sm text-muted">/100</span>
+                      <span
+                        className={`text-2xl font-bold ${getScoreColor(item.totalScore)}`}
+                      >
+                        {item.totalScore}
+                        <span className="text-sm text-muted">/100</span>
                       </span>
                     </div>
                   </div>
-                  
+
                   {/* Detail button */}
                   <div className="p-4 pt-0">
-                    <button 
-                      onClick={() => navigate(item.detailPath)} 
-                      className="w-full flex items-center justify-center gap-2 text-primary hover:bg-primary/10 py-2 rounded-xl transition font-medium"
+                    <BaseButton
+                      variant="ghost"
+                      fullWidth
+                      rightIcon={<Eye className="w-4 h-4" />}
+                      onClick={() => navigate(item.detailPath)}
+                      className="gap-2 text-primary hover:bg-primary/10 py-2 rounded-xl font-medium"
                     >
-                      Details <Eye className="w-4 h-4" />
-                    </button>
+                      Details
+                    </BaseButton>
                   </div>
                 </div>
               ))}
@@ -188,33 +249,41 @@ export default function InterviewHistoryPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center gap-2 mt-12">
-                <button 
-                  disabled={currentPage === 1} 
-                  onClick={() => handlePageChange(currentPage - 1)} 
-                  className="p-2 rounded-xl disabled:opacity-40 text-text hover:bg-card/50 transition"
+                <BaseButton
+                  variant="ghost"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="p-2 rounded-xl disabled:opacity-40"
                 >
                   <ChevronLeft className="w-5 h-5" />
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                  <button 
-                    key={p} 
-                    onClick={() => handlePageChange(p)} 
-                    className={`w-9 h-9 rounded-full font-medium transition ${
-                      currentPage === p 
-                        ? 'bg-primary text-white shadow-md' 
-                        : 'bg-card text-text hover:bg-primary/10'
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
-                <button 
-                  disabled={currentPage === totalPages} 
-                  onClick={() => handlePageChange(currentPage + 1)} 
-                  className="p-2 rounded-xl disabled:opacity-40 text-text hover:bg-card/50 transition"
+                </BaseButton>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (p) => (
+                    <BaseButton
+                      key={p}
+                      variant={currentPage === p ? 'primary' : 'ghost'}
+                      size="sm"
+                      onClick={() => handlePageChange(p)}
+                      className={`w-9 h-9 rounded-full font-medium transition ${
+                        currentPage === p ? 'shadow-md' : 'hover:bg-primary/10'
+                      }`}
+                    >
+                      {p}
+                    </BaseButton>
+                  )
+                )}
+
+                <BaseButton
+                  variant="ghost"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="p-2 rounded-xl disabled:opacity-40"
                 >
                   <ChevronRight className="w-5 h-5" />
-                </button>
+                </BaseButton>
               </div>
             )}
           </>
