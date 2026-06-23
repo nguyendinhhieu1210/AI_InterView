@@ -1,5 +1,10 @@
-import { useState } from "react";
-import { X, ChevronDown, ChevronUp, Award, Clock } from "lucide-react";
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, Award, Clock } from 'lucide-react';
+
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseBadge } from '../components/base/BaseBadge';
+import { BaseModal } from '../components/base/BaseModal';
 
 export default function InterviewReportModal({ reportData, onClose }) {
   const [expandedItems, setExpandedItems] = useState({});
@@ -11,15 +16,15 @@ export default function InterviewReportModal({ reportData, onClose }) {
   };
 
   const formatScore = (score) => {
-    if (score === null || score === undefined) return "—";
+    if (score === null || score === undefined) return '—';
     return `${score}/10`;
   };
 
-  const getScoreColor = (score) => {
-    if (score === null) return "text-gray-400";
-    if (score >= 8) return "text-green-600 dark:text-green-400";
-    if (score >= 6) return "text-yellow-600 dark:text-yellow-400";
-    return "text-red-600 dark:text-red-400";
+  const getScoreBadgeVariant = (score) => {
+    if (score === null || score === undefined) return 'default';
+    if (score >= 8) return 'success';
+    if (score >= 6) return 'warning';
+    return 'error';
   };
 
   const getUserAnswer = (questionNumber) => {
@@ -27,11 +32,11 @@ export default function InterviewReportModal({ reportData, onClose }) {
     let qCount = 0;
     for (let i = 0; i < conversation.length; i++) {
       if (
-        conversation[i].role === "assistant" &&
-        conversation[i].type === "question"
+        conversation[i].role === 'assistant' &&
+        conversation[i].type === 'question'
       ) {
         qCount++;
-        if (qCount === questionNumber && conversation[i + 1]?.role === "user") {
+        if (qCount === questionNumber && conversation[i + 1]?.role === 'user') {
           return conversation[i + 1].content;
         }
       }
@@ -40,50 +45,46 @@ export default function InterviewReportModal({ reportData, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full h-auto max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
-        {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center z-10">
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      size="2xl"
+      showCloseButton={true}
+      className="max-h-[92vh] flex flex-col"
+      title={
+        <div className="flex items-center justify-between w-full">
           <div>
-            <h3 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              <Award className="w-7 h-7 text-yellow-500" />
+            <h3 className="text-2xl font-bold text-text flex items-center gap-2">
+              <Award className="w-7 h-7 text-warning" />
               Interview Report
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm text-muted mt-1">
               {topic} • {difficulty?.toUpperCase()} • Final Score: {finalScore}
               /10
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1"
-          >
-            <X className="w-6 h-6" />
-          </button>
         </div>
-
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      }
+    >
+      {/* Content với scroll */}
+      <div className="flex-1 overflow-y-auto px-1 -mr-1 max-h-[65vh]">
+        <div className="space-y-6 pr-1">
           {/* Overall Score */}
           <div className="flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-5">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                Overall Score
-              </p>
-              <p className="text-5xl font-bold text-indigo-600 dark:text-indigo-400">
-                {finalScore}/10
-              </p>
+              <p className="text-sm font-medium text-muted">Overall Score</p>
+              <p className="text-5xl font-bold text-primary">{finalScore}/10</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted">
                 Based on {questionBreakdown.length} answers
               </p>
             </div>
           </div>
 
-          {/* Interview Timeline with full details */}
+          {/* Interview Timeline */}
           <div className="space-y-4">
-            <h4 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <h4 className="text-lg font-bold text-text flex items-center gap-2 sticky top-0 bg-card py-2 z-10">
               <Clock className="w-5 h-5" /> Interview Timeline
             </h4>
             <div className="space-y-3">
@@ -92,92 +93,132 @@ export default function InterviewReportModal({ reportData, onClose }) {
                 return (
                   <div
                     key={idx}
-                    className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
+                    className="border border-border rounded-xl overflow-hidden transition-all hover:border-primary/30"
                   >
                     <button
                       onClick={() => toggleItem(idx)}
-                      className="w-full flex justify-between items-start p-4 text-left bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                      className="w-full flex justify-between items-start p-4 text-left bg-muted/5 hover:bg-muted/10 transition-colors"
                     >
                       <div className="flex-1 pr-4">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-mono text-sm font-semibold text-gray-500 dark:text-gray-400">
+                          <span className="font-mono text-sm font-semibold text-muted">
                             Q{item.questionNumber}
                           </span>
-                          <span
-                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${getScoreColor(item.score)} bg-opacity-20`}
+                          <BaseBadge
+                            variant={getScoreBadgeVariant(item.score)}
+                            size="sm"
+                            rounded
                           >
                             Score: {formatScore(item.score)} (
-                            {item.verdict || "N/A"})
-                          </span>
+                            {item.verdict || 'N/A'})
+                          </BaseBadge>
                         </div>
-                        <p className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed">
+                        <p className="text-text text-sm leading-relaxed line-clamp-2">
                           {item.question}
                         </p>
                       </div>
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0 ml-2">
                         {expandedItems[idx] ? (
-                          <ChevronUp className="w-5 h-5 text-gray-400" />
+                          <ChevronUp className="w-5 h-5 text-muted" />
                         ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                          <ChevronDown className="w-5 h-5 text-muted" />
                         )}
                       </div>
                     </button>
+
                     {expandedItems[idx] && (
-                      <div className="p-5 border-t border-gray-200 dark:border-gray-700 space-y-4 bg-white dark:bg-gray-800">
+                      <div className="p-5 border-t border-border space-y-4 bg-card animate-slideDown">
+                        {/* Full Question */}
                         <div>
-                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                            Your Answer
+                          <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">
+                            Question
                           </p>
-                          <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">
-                            {userAnswer || "No answer recorded."}
+                          <div className="bg-primary/5 rounded-lg p-3 text-text text-sm">
+                            {item.question}
                           </div>
                         </div>
+
+                        {/* Your Answer */}
+                        <div>
+                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+                            Your Answer
+                          </p>
+                          <div className="bg-muted/5 rounded-lg p-3 text-text text-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
+                            {userAnswer || 'No answer recorded.'}
+                          </div>
+                        </div>
+
+                        {/* Score & Verdict */}
+                        <div className="flex items-center gap-3">
+                          <BaseBadge
+                            variant={getScoreBadgeVariant(item.score)}
+                            rounded
+                            className="px-3 py-1.5 text-sm font-bold"
+                          >
+                            Score: {formatScore(item.score)}
+                          </BaseBadge>
+                          <span className="text-sm text-muted">
+                            Verdict:{' '}
+                            <span className="font-semibold text-text">
+                              {item.verdict || 'N/A'}
+                            </span>
+                          </span>
+                        </div>
+
+                        {/* Ideal Answer */}
                         {item.idealAnswer && (
                           <div>
-                            <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2">
+                            <p className="text-xs font-semibold text-success uppercase tracking-wide mb-2">
                               Ideal Answer
                             </p>
-                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-gray-700 dark:text-gray-300 text-sm">
+                            <div className="bg-success/5 rounded-lg p-3 text-text text-sm max-h-40 overflow-y-auto">
                               {item.idealAnswer}
                             </div>
                           </div>
                         )}
+
+                        {/* Feedback */}
                         {item.feedback && (
                           <div>
-                            <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-2">
+                            <p className="text-xs font-semibold text-secondary uppercase tracking-wide mb-2">
                               Feedback
                             </p>
-                            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 text-gray-700 dark:text-gray-300 text-sm">
+                            <div className="bg-secondary/5 rounded-lg p-3 text-text text-sm">
                               {item.feedback}
                             </div>
                           </div>
                         )}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          {item.correctConcepts?.length > 0 && (
-                            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
-                              <p className="font-semibold text-green-700 dark:text-green-300 mb-1">
-                                ✓ Correct Concepts
-                              </p>
-                              <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
-                                {item.correctConcepts.map((c, i) => (
-                                  <li key={i}>{c}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {item.missingConcepts?.length > 0 && (
-                            <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
-                              <p className="font-semibold text-yellow-700 dark:text-yellow-300 mb-1">
-                                📚 Missing Concepts
-                              </p>
-                              <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
-                                {item.missingConcepts.map((m, i) => (
-                                  <li key={i}>{m}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
+
+                        {/* Correct & Missing Concepts */}
+                        {(item.correctConcepts?.length > 0 ||
+                          item.missingConcepts?.length > 0) && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            {item.correctConcepts?.length > 0 && (
+                              <div className="bg-success/5 rounded-lg p-3">
+                                <p className="font-semibold text-success mb-1">
+                                  ✓ Correct Concepts
+                                </p>
+                                <ul className="list-disc list-inside text-muted space-y-1 max-h-32 overflow-y-auto">
+                                  {item.correctConcepts.map((c, i) => (
+                                    <li key={i}>{c}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {item.missingConcepts?.length > 0 && (
+                              <div className="bg-warning/5 rounded-lg p-3">
+                                <p className="font-semibold text-warning mb-1">
+                                  📚 Missing Concepts
+                                </p>
+                                <ul className="list-disc list-inside text-muted space-y-1 max-h-32 overflow-y-auto">
+                                  {item.missingConcepts.map((m, i) => (
+                                    <li key={i}>{m}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -186,18 +227,45 @@ export default function InterviewReportModal({ reportData, onClose }) {
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition font-medium"
-          >
-            Close Report
-          </button>
-        </div>
       </div>
-      <style>{`@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }.animate-fadeIn { animation: fadeIn 0.2s ease-out; }`}</style>
-    </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-border sticky bottom-0 bg-card">
+        <div className="text-xs text-muted">
+          {questionBreakdown.length} questions answered
+        </div>
+        <BaseButton variant="primary" onClick={onClose} className="px-6 py-2.5">
+          Close Report
+        </BaseButton>
+      </div>
+
+      <style>{`
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slideDown { animation: slideDown 0.25s ease-out; }
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        /* Custom scrollbar */
+        .overflow-y-auto::-webkit-scrollbar {
+          width: 6px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+          background: var(--border-color);
+          border-radius: 3px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+          background: var(--muted-text);
+        }
+      `}</style>
+    </BaseModal>
   );
 }

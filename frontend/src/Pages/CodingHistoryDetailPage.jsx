@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Calendar,
@@ -23,8 +23,14 @@ import {
   ThumbsDown,
   ChevronUp,
   ChevronDown,
-} from "lucide-react";
-import api from "../services/api";
+} from 'lucide-react';
+
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
+
+import api from '../services/api';
 
 export default function CodingHistoryDetailPage() {
   const { sessionId } = useParams();
@@ -48,14 +54,14 @@ export default function CodingHistoryDetailPage() {
       if (res.data.success && res.data.session) {
         setSession(res.data.session);
       } else {
-        throw new Error("Session not found");
+        throw new Error('Session not found');
       }
     } catch (err) {
-      console.error("Failed to load session detail:", err);
+      console.error('Failed to load session detail:', err);
       setError(
         err.response?.data?.message ||
           err.response?.data?.error ||
-          "Failed to load session details",
+          'Failed to load session details'
       );
     } finally {
       setLoading(false);
@@ -63,14 +69,14 @@ export default function CodingHistoryDetailPage() {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(date);
   };
 
@@ -86,7 +92,7 @@ export default function CodingHistoryDetailPage() {
       if (round.evaluation?.score) total += round.evaluation.score;
       else if (round.explainAnswers) {
         const correctCount = round.explainAnswers.filter(
-          (a) => a.isCorrect,
+          (a) => a.isCorrect
         ).length;
         total += correctCount * 10;
       }
@@ -114,10 +120,18 @@ export default function CodingHistoryDetailPage() {
 
   const getScoreColor = (score, max = 100) => {
     const percent = (score / max) * 100;
-    if (percent >= 80) return "text-success";
-    if (percent >= 60) return "text-warning";
-    if (percent >= 40) return "text-warning/80";
-    return "text-error";
+    if (percent >= 80) return 'text-success';
+    if (percent >= 60) return 'text-warning';
+    if (percent >= 40) return 'text-warning/80';
+    return 'text-error';
+  };
+
+  const getScoreBadgeVariant = (score, max = 100) => {
+    const percent = (score / max) * 100;
+    if (percent >= 80) return 'success';
+    if (percent >= 60) return 'warning';
+    if (percent >= 40) return 'warning';
+    return 'error';
   };
 
   if (loading) {
@@ -132,16 +146,17 @@ export default function CodingHistoryDetailPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-bg">
-        <div className="bg-card rounded-2xl p-8 text-center max-w-md shadow-soft border border-border">
+        <BaseCard className="p-8 text-center max-w-md">
           <AlertCircle className="w-14 h-14 text-error mx-auto mb-4" />
           <p className="text-text mb-6">{error}</p>
-          <button
+          <BaseButton
+            variant="primary"
+            leftIcon={<RefreshCw className="w-4 h-4" />}
             onClick={fetchSessionDetail}
-            className="px-5 py-2.5 bg-primary text-white rounded-xl flex items-center gap-2 mx-auto hover:brightness-105 transition shadow-md"
           >
-            <RefreshCw className="w-4 h-4" /> Retry
-          </button>
-        </div>
+            Retry
+          </BaseButton>
+        </BaseCard>
       </div>
     );
   }
@@ -161,17 +176,21 @@ export default function CodingHistoryDetailPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 md:py-10">
         {/* Header */}
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-          <button
-            onClick={() => navigate("/coding-history")}
-            className="group flex items-center gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border transition-all duration-300"
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            leftIcon={
+              <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+            }
+            onClick={() => navigate('/coding-history')}
+            className="group gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
           >
-            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
             Back
-          </button>
+          </BaseButton>
         </div>
 
-        {/* Session Info Card - cải thiện layout với nhãn rõ ràng */}
-        <div className="bg-card rounded-2xl shadow-soft border border-border p-6 mb-8">
+        {/* Session Info Card */}
+        <BaseCard className="p-6 mb-8">
           <div className="flex flex-wrap justify-between items-start gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 text-primary text-sm font-medium mb-2">
@@ -205,15 +224,19 @@ export default function CodingHistoryDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20">
+            <BaseBadge
+              variant="primary"
+              rounded
+              className="border border-primary/20"
+            >
               Difficulty: {session.difficulty}
-            </div>
+            </BaseBadge>
           </div>
-        </div>
+        </BaseCard>
 
-        {/* 4 Stats Cards - màu rose */}
+        {/* 4 Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-12">
-          <div className="group bg-card rounded-2xl p-5 text-center shadow-soft hover:shadow-lg transition-all duration-300 border border-border hover:scale-105">
+          <BaseCard className="p-5 text-center hover:scale-105 transition-all duration-300">
             <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center mx-auto mb-3 group-hover:bg-rose-200 dark:group-hover:bg-rose-900/60 transition">
               <TrendingUp className="w-6 h-6 text-rose-600 dark:text-rose-400" />
             </div>
@@ -226,9 +249,9 @@ export default function CodingHistoryDetailPage() {
             <div className="text-xs text-muted mt-2 font-medium">
               Total Score
             </div>
-          </div>
+          </BaseCard>
 
-          <div className="group bg-card rounded-2xl p-5 text-center shadow-soft hover:shadow-lg transition-all duration-300 border border-border hover:scale-105">
+          <BaseCard className="p-5 text-center hover:scale-105 transition-all duration-300">
             <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 transition">
               <ListChecks className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
@@ -238,9 +261,9 @@ export default function CodingHistoryDetailPage() {
             <div className="text-xs text-muted mt-2 font-medium">
               Total Questions
             </div>
-          </div>
+          </BaseCard>
 
-          <div className="group bg-card rounded-2xl p-5 text-center shadow-soft hover:shadow-lg transition-all duration-300 border border-border hover:scale-105">
+          <BaseCard className="p-5 text-center hover:scale-105 transition-all duration-300">
             <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-3 group-hover:bg-success/30 transition">
               <CheckCircle className="w-6 h-6 text-success" />
             </div>
@@ -250,9 +273,9 @@ export default function CodingHistoryDetailPage() {
             <div className="text-xs text-muted mt-2 font-medium">
               Correct Answers
             </div>
-          </div>
+          </BaseCard>
 
-          <div className="group bg-card rounded-2xl p-5 text-center shadow-soft hover:shadow-lg transition-all duration-300 border border-border hover:scale-105">
+          <BaseCard className="p-5 text-center hover:scale-105 transition-all duration-300">
             <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/60 transition">
               <BarChart className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
@@ -260,17 +283,17 @@ export default function CodingHistoryDetailPage() {
               {accuracy}%
             </div>
             <div className="text-xs text-muted mt-2 font-medium">Accuracy</div>
-          </div>
+          </BaseCard>
         </div>
 
         {/* Code History Rounds */}
         {codeHistory.length === 0 ? (
-          <div className="bg-card rounded-2xl p-12 text-center shadow-soft border border-border">
+          <BaseCard className="p-12 text-center">
             <Code className="w-20 h-20 text-primary/40 mx-auto mb-4" />
             <p className="text-muted">
               No code submissions in this session yet.
             </p>
-          </div>
+          </BaseCard>
         ) : (
           <div className="space-y-5">
             <h2 className="text-2xl font-bold flex items-center gap-2 text-text border-l-4 border-primary pl-3">
@@ -294,9 +317,9 @@ export default function CodingHistoryDetailPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 shadow-sm">
+                        <BaseBadge variant="error" size="sm" rounded>
                           Round {idx + 1}
-                        </span>
+                        </BaseBadge>
                         <span className="text-xs text-muted">
                           {formatDate(round.submittedAt)}
                         </span>
@@ -331,17 +354,21 @@ export default function CodingHistoryDetailPage() {
                         <p className="font-semibold text-text text-sm flex items-center gap-1">
                           <Terminal className="w-4 h-4" /> Your Code
                         </p>
-                        <button
+                        <BaseButton
+                          variant="ghost"
+                          size="sm"
+                          leftIcon={
+                            copiedCodeIndex === idx ? (
+                              <Check className="w-4 h-4" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )
+                          }
                           onClick={() => copyToClipboard(round.code, idx)}
-                          className="text-xs px-3 py-1.5 rounded-lg bg-muted/20 hover:bg-muted/30 transition text-muted"
+                          className="text-xs px-3 py-1.5 rounded-lg bg-muted/20 hover:bg-muted/30 text-muted"
                         >
-                          {copiedCodeIndex === idx ? (
-                            <Check className="w-4 h-4 inline mr-1" />
-                          ) : (
-                            <Copy className="w-4 h-4 inline mr-1" />
-                          )}
-                          {copiedCodeIndex === idx ? "Copied" : "Copy"}
-                        </button>
+                          {copiedCodeIndex === idx ? 'Copied' : 'Copy'}
+                        </BaseButton>
                       </div>
                       <pre className="text-sm font-mono bg-gray-900 text-gray-100 p-4 rounded-xl overflow-x-auto whitespace-pre-wrap">
                         {round.code}
@@ -387,8 +414,8 @@ export default function CodingHistoryDetailPage() {
                                   <div
                                     className={`text-sm p-2 rounded ${
                                       qa.isCorrect
-                                        ? "bg-success/10 text-success"
-                                        : "bg-error/10 text-error"
+                                        ? 'bg-success/10 text-success'
+                                        : 'bg-error/10 text-error'
                                     }`}
                                   >
                                     {qa.feedback}
@@ -398,7 +425,7 @@ export default function CodingHistoryDetailPage() {
                                   <div className="mt-2 text-sm bg-primary/10 p-2 rounded text-muted">
                                     <span className="font-semibold text-primary">
                                       AI answer:
-                                    </span>{" "}
+                                    </span>{' '}
                                     {qa.modelAnswer}
                                   </div>
                                 )}
@@ -419,7 +446,7 @@ export default function CodingHistoryDetailPage() {
                         </p>
                         {round.evaluation.feedback && (
                           <div className="mb-3 p-2 bg-card rounded-lg text-sm text-muted border border-border">
-                            <span className="font-semibold">Feedback:</span>{" "}
+                            <span className="font-semibold">Feedback:</span>{' '}
                             {round.evaluation.feedback}
                           </div>
                         )}
@@ -459,18 +486,18 @@ export default function CodingHistoryDetailPage() {
       </div>
 
       <style>{`
-                @keyframes slideDown {
-                    from { opacity: 0; transform: translateY(-8px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .animate-slideDown { animation: slideDown 0.25s ease-out; }
-                .line-clamp-1 {
-                    display: -webkit-box;
-                    -webkit-line-clamp: 1;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                }
-            `}</style>
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slideDown { animation: slideDown 0.25s ease-out; }
+        .line-clamp-1 {
+          display: -webkit-box;
+          -webkit-line-clamp: 1;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 }

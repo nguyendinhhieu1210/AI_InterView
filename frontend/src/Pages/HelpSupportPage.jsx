@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Brain,
   Zap,
@@ -17,9 +17,15 @@ import {
   PlayCircle,
   Loader2,
   Code,
-} from "lucide-react";
-import { FaLinkedin } from "react-icons/fa";
-import { useAuth } from "../contexts/AuthContext";
+} from 'lucide-react';
+import { FaLinkedin } from 'react-icons/fa';
+
+// Import Base Components
+import { BaseButton } from '../components/base/BaseButton';
+import { BaseCard } from '../components/base/BaseCard';
+import { BaseBadge } from '../components/base/BaseBadge';
+
+import { useAuth } from '../contexts/AuthContext';
 
 export default function HelpSupportPage() {
   const navigate = useNavigate();
@@ -27,11 +33,11 @@ export default function HelpSupportPage() {
   const guideRef = useRef(null);
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) navigate("/login");
+    if (!authLoading && !isAuthenticated) navigate('/login');
   }, [authLoading, isAuthenticated, navigate]);
 
   const scrollToGuide = () => {
-    guideRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    guideRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   if (authLoading) {
@@ -51,93 +57,108 @@ export default function HelpSupportPage() {
 
   const features = [
     {
-      id: "standard",
-      title: "📋 Standard Interview",
+      id: 'standard',
+      title: '📋 Standard Interview',
       icon: MessageCircle,
-      gradient: "from-primary to-secondary",
-      badgeColor: "bg-primary/10 text-primary",
+      gradient: 'from-primary to-secondary',
+      badgeColor: 'bg-primary/10 text-primary',
       description:
-        "Manually enter any topic / technology you want to practice. AI generates MCQ + essay questions tailored to your input.",
+        'Manually enter any topic / technology you want to practice. AI generates MCQ + essay questions tailored to your input.',
       steps: [
-        "Step 1: Enter a topic (e.g., Java, React, OOP, Node.js, SQL)",
-        "Step 2: Choose difficulty (Easy / Medium / Hard)",
-        "Step 3: AI generates 6–8 questions (MCQ + Essay) based on the topic",
-        "Step 4: Answer questions directly in the interface",
-        "Step 5: Submit → AI grades, explains answers, and gives detailed feedback",
+        'Step 1: Enter a topic (e.g., Java, React, OOP, Node.js, SQL)',
+        'Step 2: Choose difficulty (Easy / Medium / Hard)',
+        'Step 3: AI generates 6–8 questions (MCQ + Essay) based on the topic',
+        'Step 4: Answer questions directly in the interface',
+        'Step 5: Submit → AI grades, explains answers, and gives detailed feedback',
       ],
     },
     {
-      id: "cv",
-      title: "📄 CV‑Based Interview",
+      id: 'cv',
+      title: '📄 CV‑Based Interview',
       icon: FileText,
-      gradient: "from-emerald-500 to-teal-500",
-      badgeColor: "bg-emerald-500/10 text-emerald-600",
+      gradient: 'from-emerald-500 to-teal-500',
+      badgeColor: 'bg-emerald-500/10 text-emerald-600',
       description:
-        "Upload your CV – AI extracts skills, projects, and experience to generate personalized questions.",
+        'Upload your CV – AI extracts skills, projects, and experience to generate personalized questions.',
       steps: [
-        "Step 1: Upload your CV (PDF)",
-        "Step 2: AI analyzes and extracts information (skills, projects, experience)",
-        "Step 3: Select focus areas / skills",
-        "Step 4: AI generates MCQ + essay questions based on your CV",
-        "Step 5: Answer and receive score + detailed feedback",
+        'Step 1: Upload your CV (PDF)',
+        'Step 2: AI analyzes and extracts information (skills, projects, experience)',
+        'Step 3: Select focus areas / skills',
+        'Step 4: AI generates MCQ + essay questions based on your CV',
+        'Step 5: Answer and receive score + detailed feedback',
       ],
     },
     {
-      id: "adaptive",
-      title: "🤖 Adaptive Interview",
+      id: 'adaptive',
+      title: '🤖 Adaptive Interview',
       icon: Brain,
-      gradient: "from-violet-500 to-purple-500",
-      badgeColor: "bg-violet-500/10 text-violet-600",
+      gradient: 'from-violet-500 to-purple-500',
+      badgeColor: 'bg-violet-500/10 text-violet-600',
       description:
-        "One-on-one interview with AI. Questions adapt in real-time based on your answers.",
+        'One-on-one interview with AI. Questions adapt in real-time based on your answers.',
       steps: [
-        "Step 1: Enter a topic (e.g., React, Java, DSA)",
-        "Step 2: Choose difficulty (Easy / Medium / Hard)",
-        "Step 3: AI asks a question – you answer via voice or text",
-        "Step 4: Based on your answer, AI decides next question (harder / easier / deeper)",
-        "Step 5: After 5 questions, AI provides final score",
+        'Step 1: Enter a topic (e.g., React, Java, DSA)',
+        'Step 2: Choose difficulty (Easy / Medium / Hard)',
+        'Step 3: AI asks a question – you answer via voice or text',
+        'Step 4: Based on your answer, AI decides next question (harder / easier / deeper)',
+        'Step 5: After 5 questions, AI provides final score',
       ],
     },
     {
-      id: "coding",
-      title: "💻 Coding Interview",
+      id: 'coding',
+      title: '💻 Coding Interview',
       icon: Code,
-      gradient: "from-cyan-500 to-blue-500",
-      badgeColor: "bg-cyan-500/10 text-cyan-600",
+      gradient: 'from-cyan-500 to-blue-500',
+      badgeColor: 'bg-cyan-500/10 text-cyan-600',
       description:
-        "Solve AI-generated coding problems, run tests, then answer conceptual questions about your code.",
+        'Solve AI-generated coding problems, run tests, then answer conceptual questions about your code.',
       steps: [
-        "Step 1: Choose programming language (Java, Python, JavaScript, C++, ...)",
-        "Step 2: Choose Domain (DSA, OOP, Concurrency, ...)",
-        "Step 3: Choose specific Topic (Array, LinkedList, Tree, ...)",
-        "Step 4: Choose difficulty (Beginner / Intermediate / Advanced)",
-        "Step 5: AI generates a coding problem with test cases",
-        "Step 6: Write code, run tests → if correct, proceed to 3 explanation questions",
-        "Step 7: Answer questions (complexity, edge cases, etc.) → AI evaluates overall",
+        'Step 1: Choose programming language (Java, Python, JavaScript, C++, ...)',
+        'Step 2: Choose Domain (DSA, OOP, Concurrency, ...)',
+        'Step 3: Choose specific Topic (Array, LinkedList, Tree, ...)',
+        'Step 4: Choose difficulty (Beginner / Intermediate / Advanced)',
+        'Step 5: AI generates a coding problem with test cases',
+        'Step 6: Write code, run tests → if correct, proceed to 3 explanation questions',
+        'Step 7: Answer questions (complexity, edge cases, etc.) → AI evaluates overall',
       ],
     },
   ];
 
   const contactLinks = {
-    email: "nguyendhieu1210@gmail.com",
-    phone: "0866638629",
-    facebookUrl: "https://facebook.com/yourpage",
-    linkedinUrl: "https://linkedin.com/company/yourcompany",
+    email: 'nguyendhieu1210@gmail.com',
+    phone: '0866638629',
+    facebookUrl: 'https://facebook.com/yourpage',
+    linkedinUrl: 'https://linkedin.com/company/yourcompany',
+  };
+
+  const getNavigatePath = (featureId) => {
+    const paths = {
+      standard: '/interview',
+      cv: '/cv-upload',
+      adaptive: '/adaptive-interview',
+      coding: '/live-coding',
+    };
+    return paths[featureId] || '/welcome';
   };
 
   return (
     <div className="min-h-screen bg-bg py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <button
-          onClick={() => navigate("/welcome")}
-          className="group mb-8 flex items-center gap-2 text-muted hover:text-primary transition-all duration-300 font-medium bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
+        {/* Back Button */}
+        <BaseButton
+          variant="ghost"
+          size="sm"
+          leftIcon={
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          }
+          onClick={() => navigate('/welcome')}
+          className="group mb-8 gap-2 text-muted hover:text-primary bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft border border-border"
         >
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-          <span>Back to Dashboard</span>
-        </button>
+          Back to Dashboard
+        </BaseButton>
 
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-secondary p-6 md:p-8 mb-12 text-white shadow-soft">
+        <BaseCard className="relative overflow-hidden bg-gradient-to-r from-primary to-secondary p-6 md:p-8 mb-12 text-white border-0 shadow-soft">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
           <div className="relative">
             <div className="flex items-center gap-3 mb-2">
@@ -148,24 +169,23 @@ export default function HelpSupportPage() {
               Learn how to use the 4 interview modes of AI Interview. Each mode
               is designed to help you practice effectively.
             </p>
-            <button
+            <BaseButton
+              variant="secondary"
+              leftIcon={<PlayCircle className="w-4 h-4" />}
               onClick={scrollToGuide}
-              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md"
+              className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-0 shadow-md"
             >
-              <PlayCircle className="w-4 h-4" /> View detailed guide
-            </button>
+              View detailed guide
+            </BaseButton>
           </div>
-        </div>
+        </BaseCard>
 
         {/* 4 Feature Cards - Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
           {features.map((feature) => {
             const Icon = feature.icon;
             return (
-              <div
-                key={feature.id}
-                className="bg-card rounded-2xl shadow-soft border border-border p-5 transition-all hover:-translate-y-1 hover:shadow-md"
-              >
+              <BaseCard key={feature.id} hover className="p-5 transition-all">
                 <div
                   className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 shadow-md`}
                 >
@@ -177,7 +197,7 @@ export default function HelpSupportPage() {
                 <p className="text-sm text-muted line-clamp-2">
                   {feature.description}
                 </p>
-              </div>
+              </BaseCard>
             );
           })}
         </div>
@@ -187,9 +207,9 @@ export default function HelpSupportPage() {
           {features.map((feature) => {
             const Icon = feature.icon;
             return (
-              <div
+              <BaseCard
                 key={feature.id}
-                className="bg-card rounded-2xl shadow-soft border border-border overflow-hidden transition-all hover:shadow-md"
+                className="overflow-hidden transition-all hover:shadow-md border-border"
               >
                 <div
                   className={`bg-gradient-to-r ${feature.gradient} px-6 py-4`}
@@ -216,25 +236,17 @@ export default function HelpSupportPage() {
                     ))}
                   </div>
                   <div className="mt-6 pt-4 border-t border-border flex justify-end">
-                    <button
-                      onClick={() => {
-                        if (feature.id === "standard")
-                          navigate("/interview", {
-                            state: { topic: "", difficulty: "medium" },
-                          });
-                        else if (feature.id === "cv") navigate("/cv-upload");
-                        else if (feature.id === "adaptive")
-                          navigate("/adaptive-interview");
-                        else if (feature.id === "coding")
-                          navigate("/live-coding");
-                      }}
-                      className="px-5 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 font-medium text-sm transition"
+                    <BaseButton
+                      variant="primary"
+                      size="sm"
+                      onClick={() => navigate(getNavigatePath(feature.id))}
+                      className="bg-primary/10 text-primary hover:bg-primary/20 border-0"
                     >
                       Try now →
-                    </button>
+                    </BaseButton>
                   </div>
                 </div>
-              </div>
+              </BaseCard>
             );
           })}
         </div>
@@ -242,7 +254,7 @@ export default function HelpSupportPage() {
         {/* Contact Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
           <div className="lg:col-span-2">
-            <div className="bg-card rounded-3xl shadow-soft border border-border p-6 transition-all">
+            <BaseCard className="p-6 transition-all">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-primary/10 rounded-xl">
                   <MessageCircle className="w-5 h-5 text-primary" />
@@ -329,39 +341,50 @@ export default function HelpSupportPage() {
                 <Clock className="inline w-3 h-3 mr-1" /> Support team ready to
                 assist you from Monday to Friday.
               </div>
-            </div>
+            </BaseCard>
           </div>
 
           <div className="space-y-6">
-            <div className="bg-card rounded-3xl shadow-soft border border-border p-6 transition-all">
+            <BaseCard className="p-6 transition-all">
               <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
                 <Zap className="w-5 h-5 text-primary" /> Quick Actions
               </h3>
               <div className="space-y-3">
-                <button
-                  onClick={() => navigate("/welcome")}
-                  className="w-full flex items-center justify-between p-3 rounded-xl transition group bg-primary/5 hover:bg-primary/10"
+                <BaseButton
+                  variant="ghost"
+                  fullWidth
+                  rightIcon={
+                    <BarChart3 className="w-4 h-4 group-hover:translate-x-1 transition" />
+                  }
+                  onClick={() => navigate('/welcome')}
+                  className="justify-between p-3 rounded-xl bg-primary/5 hover:bg-primary/10 text-primary"
                 >
-                  <span className="text-sm font-medium text-primary">
-                    Back to Dashboard
-                  </span>
-                  <BarChart3 className="w-4 h-4 text-primary group-hover:translate-x-1 transition" />
-                </button>
-                <button className="w-full flex items-center justify-between p-3 rounded-xl transition group bg-muted/5 hover:bg-muted/10">
-                  <span className="text-sm font-medium text-text">
-                    Knowledge Base
-                  </span>
-                  <FileText className="w-4 h-4 text-muted group-hover:translate-x-1 transition" />
-                </button>
-                <button className="w-full flex items-center justify-between p-3 rounded-xl transition group bg-muted/5 hover:bg-muted/10">
-                  <span className="text-sm font-medium text-text">
-                    Report an Issue
-                  </span>
-                  <HelpCircle className="w-4 h-4 text-muted group-hover:translate-x-1 transition" />
-                </button>
+                  <span className="text-sm font-medium">Back to Dashboard</span>
+                </BaseButton>
+                <BaseButton
+                  variant="ghost"
+                  fullWidth
+                  rightIcon={
+                    <FileText className="w-4 h-4 group-hover:translate-x-1 transition" />
+                  }
+                  className="justify-between p-3 rounded-xl bg-muted/5 hover:bg-muted/10 text-text"
+                >
+                  <span className="text-sm font-medium">Knowledge Base</span>
+                </BaseButton>
+                <BaseButton
+                  variant="ghost"
+                  fullWidth
+                  rightIcon={
+                    <HelpCircle className="w-4 h-4 group-hover:translate-x-1 transition" />
+                  }
+                  className="justify-between p-3 rounded-xl bg-muted/5 hover:bg-muted/10 text-text"
+                >
+                  <span className="text-sm font-medium">Report an Issue</span>
+                </BaseButton>
               </div>
-            </div>
-            <div className="bg-primary/5 rounded-3xl border border-primary/20 p-5 transition-all">
+            </BaseCard>
+
+            <BaseCard className="bg-primary/5 border-primary/20 p-5 transition-all">
               <div className="flex items-start gap-3">
                 <CheckCircle className="w-5 h-5 text-primary mt-0.5" />
                 <div>
@@ -374,25 +397,20 @@ export default function HelpSupportPage() {
                   </p>
                 </div>
               </div>
-            </div>
+            </BaseCard>
           </div>
         </div>
       </div>
 
       <style>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-                .scroll-mt-24 { scroll-margin-top: 6rem; }
-                .line-clamp-2 {
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                }
-            `}</style>
+        .scroll-mt-24 { scroll-margin-top: 6rem; }
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 }
