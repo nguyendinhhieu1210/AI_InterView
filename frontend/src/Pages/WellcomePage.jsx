@@ -232,12 +232,6 @@ export default function WelcomePage() {
     }, 2000);
   };
 
-  const handleStartInterview = (data) => {
-    console.log('Starting interview:', data);
-    fetchActivities();
-    refreshHistory();
-  };
-
   const handleCVUploadSuccess = (uploadedCvData) => {
     if (uploadedCvData && uploadedCvData.fileUrl) {
       setCvData(uploadedCvData);

@@ -23,7 +23,6 @@ import { FaLinkedin } from 'react-icons/fa';
 // Import Base Components
 import { BaseButton } from '../components/base/BaseButton';
 import { BaseCard } from '../components/base/BaseCard';
-import { BaseBadge } from '../components/base/BaseBadge';
 
 import { useAuth } from '../contexts/AuthContext';
 

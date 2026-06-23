@@ -75,13 +75,6 @@ export default function AdaptiveHistoryPage() {
     return 'text-error';
   };
 
-  const getScoreBadgeVariant = (score10) => {
-    if (score10 >= 8) return 'success';
-    if (score10 >= 6) return 'warning';
-    if (score10 >= 4) return 'warning';
-    return 'error';
-  };
-
   const getDifficultyVariant = (difficulty) => {
     const map = {
       easy: 'success',

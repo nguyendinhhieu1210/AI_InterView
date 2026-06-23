@@ -18,7 +18,6 @@ import { useAuth } from '../contexts/AuthContext';
 // Import Base Components
 import { BaseButton } from './base/BaseButton';
 import { BaseCard } from './base/BaseCard';
-import { BaseModal } from './base/BaseModal';
 import { BaseBadge } from './base/BaseBadge';
 
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';

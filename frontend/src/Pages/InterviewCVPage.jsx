@@ -6,7 +6,6 @@ import {
   Send,
   Award,
   User,
-  Loader2,
   ClipboardList,
   FileText,
   HelpCircle,

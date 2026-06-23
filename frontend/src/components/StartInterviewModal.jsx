@@ -1,19 +1,10 @@
 // components/StartInterviewModal.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  X,
-  Loader2,
-  Brain,
-  Target,
-  Sparkles,
-  Zap,
-  MessageSquare,
-} from 'lucide-react';
+import { Brain, Target, Sparkles, Zap, MessageSquare } from 'lucide-react';
 
 // Import Base Components
 import { BaseButton } from './base/BaseButton';
-import { BaseCard } from './base/BaseCard';
 import { BaseInput } from './base/BaseInput';
 import { BaseModal } from './base/BaseModal';
 

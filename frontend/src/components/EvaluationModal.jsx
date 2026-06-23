@@ -1,11 +1,10 @@
 import { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import toast from 'react-hot-toast';
-import { X, CheckCircle, XCircle, Copy, Check } from 'lucide-react';
+import { X, Copy, Check } from 'lucide-react';
 
 // Import Base Components
 import { BaseButton } from '../components/base/BaseButton';
-import { BaseCard } from '../components/base/BaseCard';
 import { BaseBadge } from '../components/base/BaseBadge';
 
 const safeDisplayValue = (value) => {
