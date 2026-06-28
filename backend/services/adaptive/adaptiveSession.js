@@ -1,117 +1,115 @@
 // services/adaptive/adaptiveSession.js
-const { v4: uuidv4 } = require("uuid");
-const AdaptiveSession = require("../../models/AdaptiveSession");
+const { v4: uuidv4 } = require('uuid');
+const AdaptiveSession = require('../../models/AdaptiveSession');
 const {
-  TOTAL_QUESTIONS,
-  SESSION_TIMEOUT_HOURS,
   getRoadmapForTopic,
   pickFirstSubtopic,
   normalizeQuestion,
   isSessionTimedOut,
-} = require("./adaptiveCore");
+  analyzeAnswerQuality,
+  MAX_CONSECUTIVE_DEEP_DIVES,
+  GOOD_ANSWERS_THRESHOLD,
+} = require('./adaptiveCore');
 const {
-  generateFirstQuestion,
   generateNextQuestion,
   generateFinalReport,
-} = require("./adaptiveAI");
+  generateFirstQuestion,
+} = require('./adaptiveAI');
 
-// Lưu session tạm trong RAM (chưa lưu DB)
+// Lưu session tạm trong RAM
 const pendingSessions = new Map();
 
-// Dọn dẹp session quá hạn trong RAM
+// Dọn dẹp session quá hạn
 setInterval(
   () => {
     const now = new Date();
     for (const [id, sess] of pendingSessions.entries()) {
       const lastUpdate = sess.updatedAt || sess.startedAt;
       const hoursInactive = (now - lastUpdate) / (1000 * 60 * 60);
-      if (hoursInactive > SESSION_TIMEOUT_HOURS) {
+      if (hoursInactive > 2) {
         pendingSessions.delete(id);
       }
     }
   },
-  60 * 60 * 1000,
+  60 * 60 * 1000
 );
 
 async function startSession(
   userId,
   topic,
-  difficulty = "medium",
-  interviewStyle = "friendly",
-  mode = "adaptive",
+  maxQuestions = 5,
+  mode = 'adaptive'
 ) {
-  if (!topic || !topic.trim()) throw new Error("Topic is required.");
+  if (!topic || !topic.trim()) throw new Error('Topic is required.');
+
+  // Giới hạn số câu hỏi 5-8
+  const totalQuestions = Math.min(Math.max(maxQuestions, 5), 8);
 
   const { structured, flattened } = getRoadmapForTopic(topic);
   const firstSubtopic = pickFirstSubtopic(structured) || flattened[0] || topic;
-  const remainingFlattened = flattened.includes(firstSubtopic)
-    ? flattened
-    : [firstSubtopic, ...flattened].slice(0, TOTAL_QUESTIONS);
 
-  const firstQuestion = await generateFirstQuestion(
-    topic,
-    difficulty,
-    firstSubtopic,
-  );
+  // ✅ Sử dụng generateFirstQuestion từ adaptiveAI đã import
+  const firstQuestion = await generateFirstQuestion(topic, firstSubtopic);
 
-  const sessionId = uuidv4(); // ID tạm, không phải ObjectId
+  const sessionId = uuidv4();
   const session = {
     _id: sessionId,
     userId,
     topic: topic.trim(),
-    difficulty,
-    interviewStyle,
     mode,
-    status: "active",
+    status: 'active',
+    maxQuestions: totalQuestions,
     conversation: [
       {
-        role: "assistant",
-        type: "question",
+        role: 'assistant',
+        type: 'question',
         content: firstQuestion,
         subtopic: firstSubtopic,
-        questionType: "conceptual",
-        difficulty,
+        questionType: 'conceptual',
         topic: topic.trim(),
         createdAt: new Date(),
       },
     ],
     coveredTopics: [firstSubtopic],
     currentSubtopic: firstSubtopic,
+    lastSubtopic: firstSubtopic,
     roadmapStructured: structured,
-    roadmapFlattened: remainingFlattened,
+    roadmapFlattened: flattened,
     askedQuestions: [normalizeQuestion(firstQuestion)],
-    questionTypeHistory: ["conceptual"],
+    questionTypeHistory: ['conceptual'],
+    consecutiveDeepDives: 0,
+    goodAnswersCount: 0,
     startedAt: new Date(),
     updatedAt: new Date(),
+    topicDeepCount: {}, // thêm mới
   };
 
   pendingSessions.set(sessionId, session);
 
   return {
-    sessionId, // trả về sessionId tạm (UUID) – controller dùng để ghi Activity
+    sessionId,
     firstQuestion,
+    totalQuestions,
     progress: {
       current: 1,
-      total: TOTAL_QUESTIONS,
-      percentage: Math.round((1 / TOTAL_QUESTIONS) * 100),
+      total: totalQuestions,
+      percentage: Math.round((1 / totalQuestions) * 100),
     },
   };
 }
 
 async function processAnswer(sessionId, userId, answer) {
-  if (!answer || !answer.trim()) throw new Error("Answer is required");
+  if (!answer || !answer.trim()) throw new Error('Answer is required');
 
   const session = pendingSessions.get(sessionId);
-  if (!session) throw new Error("Session not found or expired");
-  if (session.status !== "active")
-    throw new Error("Interview already completed");
-  if (session.userId !== userId) throw new Error("Unauthorized");
+  if (!session) throw new Error('Session not found or expired');
+  if (session.status !== 'active')
+    throw new Error('Interview already completed');
+  if (session.userId !== userId) throw new Error('Unauthorized');
 
   if (isSessionTimedOut({ updatedAt: session.updatedAt })) {
     pendingSessions.delete(sessionId);
-    throw new Error(
-      "Session expired due to inactivity. Please start a new interview.",
-    );
+    throw new Error('Session expired due to inactivity.');
   }
 
   // Đảm bảo các mảng tồn tại
@@ -127,47 +125,43 @@ async function processAnswer(sessionId, userId, answer) {
     session.roadmapFlattened = roadmap.flattened;
     session.roadmapStructured = roadmap.structured;
   }
-  if (!session.currentSubtopic)
+  if (!session.currentSubtopic) {
     session.currentSubtopic = session.roadmapFlattened[0] || session.topic;
+  }
+
+  if (session.consecutiveDeepDives === undefined)
+    session.consecutiveDeepDives = 0;
+  if (session.goodAnswersCount === undefined) session.goodAnswersCount = 0;
+  if (!session.topicDeepCount) session.topicDeepCount = {};
 
   // Thêm câu trả lời
   session.conversation.push({
-    role: "user",
-    type: "answer",
+    role: 'user',
+    type: 'answer',
     content: answer.trim(),
     createdAt: new Date(),
   });
   session.updatedAt = new Date();
 
   const answersGiven = session.conversation.filter(
-    (m) => m.role === "user" && m.type === "answer",
+    (m) => m.role === 'user' && m.type === 'answer'
   ).length;
-  const questionsAsked = session.conversation.filter(
-    (m) => m.role === "assistant" && m.type === "question",
-  ).length;
+  const maxQ = session.maxQuestions || 5;
 
-  // Nếu chưa đủ câu hỏi -> sinh câu hỏi tiếp theo (vẫn trong RAM)
-  if (answersGiven < TOTAL_QUESTIONS) {
-    const lastScoredAnswer = [...session.conversation]
-      .reverse()
-      .find(
-        (m) =>
-          m.role === "user" &&
-          m.type === "answer" &&
-          typeof m.score === "number",
-      );
-    const lastScore = lastScoredAnswer ? lastScoredAnswer.score : null;
-
+  // Nếu chưa đủ câu hỏi -> sinh câu hỏi tiếp theo
+  if (answersGiven < maxQ) {
     const {
       question: nextQuestion,
       subtopic: nextSubtopic,
       questionType,
       adaptiveDifficulty,
-    } = await generateNextQuestion(session, lastScore);
+      answerQuality,
+      isNewTopic,
+    } = await generateNextQuestion(session, answer);
 
     session.conversation.push({
-      role: "assistant",
-      type: "question",
+      role: 'assistant',
+      type: 'question',
       content: nextQuestion,
       subtopic: nextSubtopic,
       questionType,
@@ -184,22 +178,23 @@ async function processAnswer(sessionId, userId, answer) {
       nextQuestion,
       currentSubtopic: nextSubtopic,
       adaptiveDifficulty,
+      answerQuality,
+      isNewTopic,
       progress: {
-        current: questionsAsked + 1,
-        total: TOTAL_QUESTIONS,
-        percentage: Math.round(((questionsAsked + 1) / TOTAL_QUESTIONS) * 100),
+        current: answersGiven + 1,
+        total: maxQ,
+        percentage: Math.round(((answersGiven + 1) / maxQ) * 100),
       },
     };
   }
 
-  // Đã đủ câu trả lời -> hoàn thành, lưu vào database
+  // Đã đủ số câu hỏi -> hoàn thành, lưu vào database
   const finalSession = new AdaptiveSession({
     userId: session.userId,
     topic: session.topic,
-    difficulty: session.difficulty,
-    interviewStyle: session.interviewStyle,
     mode: session.mode,
-    status: "completed",
+    status: 'completed',
+    maxQuestions: session.maxQuestions,
     conversation: session.conversation,
     coveredTopics: session.coveredTopics,
     currentSubtopic: session.currentSubtopic,
@@ -207,25 +202,25 @@ async function processAnswer(sessionId, userId, answer) {
     roadmapFlattened: session.roadmapFlattened,
     askedQuestions: session.askedQuestions,
     questionTypeHistory: session.questionTypeHistory,
+    consecutiveDeepDives: session.consecutiveDeepDives,
+    goodAnswersCount: session.goodAnswersCount,
     startedAt: session.startedAt,
     endedAt: new Date(),
+    topicDeepCount: session.topicDeepCount, // lưu thêm
   });
 
   if (session.startedAt) {
     finalSession.durationInSeconds = Math.floor(
-      (finalSession.endedAt - new Date(session.startedAt)) / 1000,
+      (finalSession.endedAt - new Date(session.startedAt)) / 1000
     );
   }
 
   const { report, finalScore } = await generateFinalReport(finalSession);
   finalSession.finalScore = finalScore;
-  // generateFinalReport đã gán finalSession.summary bên trong
   await finalSession.save();
 
-  // Xóa session tạm khỏi RAM
   pendingSessions.delete(sessionId);
 
-  // Trả về sessionId thật (ObjectId) và các thông tin
   return {
     isFinished: true,
     sessionId: finalSession._id,

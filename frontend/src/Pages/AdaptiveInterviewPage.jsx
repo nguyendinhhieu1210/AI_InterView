@@ -17,6 +17,8 @@ import {
   Award,
   CircleUser,
   Zap,
+  Target,
+  BarChart3,
 } from 'lucide-react';
 
 // Import Base Components
@@ -29,14 +31,12 @@ import InterviewReportModal from '../components/InterviewReportModal';
 import { useAuth } from '../contexts/AuthContext';
 import confetti from 'canvas-confetti';
 
-const TOTAL_QUESTIONS = 5;
-
 export default function AdaptiveInterviewPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { topic, difficulty } = location.state || {
+  const { topic, questionCount = 5 } = location.state || {
     topic: 'React',
-    difficulty: 'medium',
+    questionCount: 5,
   };
   const { isAuthenticated, user, updateActivity } = useAuth();
 
@@ -55,7 +55,7 @@ export default function AdaptiveInterviewPage() {
   const [isFinished, setIsFinished] = useState(false);
   const [finalScore, setFinalScore] = useState(null);
   const [error, setError] = useState(null);
-
+  const [totalQuestions] = useState(questionCount || 5);
   const [showReportModal, setShowReportModal] = useState(false);
   const [detailedReport, setDetailedReport] = useState(null);
 
@@ -65,7 +65,7 @@ export default function AdaptiveInterviewPage() {
 
   const displayName = user?.fullName || user?.userName || user?.email || 'User';
   const answeredCount = messages.filter((m) => m.role === 'user').length;
-  const progressPercent = (answeredCount / TOTAL_QUESTIONS) * 100;
+  const progressPercent = (answeredCount / totalQuestions) * 100;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -94,7 +94,10 @@ export default function AdaptiveInterviewPage() {
     setError(null);
     updateActivity();
     try {
-      const res = await api.post('/adaptive/start', { topic, difficulty });
+      const res = await api.post('/adaptive/start', {
+        topic,
+        questionCount: totalQuestions,
+      });
       setSessionId(res.data.sessionId);
       setMessages([
         {
@@ -146,7 +149,7 @@ export default function AdaptiveInterviewPage() {
 
     const currentAnswerCount =
       messages.filter((m) => m.role === 'user').length + 1;
-    const isLastAnswer = currentAnswerCount === TOTAL_QUESTIONS;
+    const isLastAnswer = currentAnswerCount === totalQuestions;
 
     if (isLastAnswer) {
       setIsAnalyzing(true);
@@ -186,7 +189,7 @@ export default function AdaptiveInterviewPage() {
           summary: response.data.summary,
           conversation: response.data.conversation,
           topic: topic,
-          difficulty: difficulty,
+          totalQuestions: totalQuestions,
         });
 
         if (finalScoreValue >= 7) {
@@ -262,18 +265,31 @@ export default function AdaptiveInterviewPage() {
     setDetailedReport(null);
   };
 
-  const getDifficultyVariant = () => {
-    switch (difficulty) {
-      case 'easy':
-        return 'success';
-      case 'medium':
-        return 'warning';
-      case 'hard':
-        return 'error';
+  // Get session type label
+  const getSessionType = () => {
+    switch (totalQuestions) {
+      case 5:
+        return { label: 'Quick Session', icon: '⚡', color: 'text-blue-500' };
+      case 6:
+        return {
+          label: 'Balanced Session',
+          icon: '📊',
+          color: 'text-green-500',
+        };
+      case 7:
+        return { label: 'Deep Session', icon: '🎯', color: 'text-purple-500' };
+      case 8:
+        return {
+          label: 'Comprehensive Session',
+          icon: '🏆',
+          color: 'text-amber-500',
+        };
       default:
-        return 'default';
+        return { label: 'Adaptive Session', icon: '🧠', color: 'text-primary' };
     }
   };
+
+  const sessionType = getSessionType();
 
   // Preparation step
   if (step === 'preparation') {
@@ -289,51 +305,66 @@ export default function AdaptiveInterviewPage() {
             <h2 className="text-3xl font-bold text-center text-text mb-2">
               Adaptive Interview
             </h2>
-            <div className="flex justify-center gap-3 mb-6">
-              <BaseBadge variant="primary" rounded className="shadow-sm">
+
+            {/* Session Info */}
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+              <BaseBadge
+                variant="primary"
+                rounded
+                className="shadow-sm px-4 py-1.5"
+              >
+                <Target className="w-3.5 h-3.5 mr-1.5" />
                 {topic}
               </BaseBadge>
               <BaseBadge
-                variant={getDifficultyVariant()}
+                variant="secondary"
                 rounded
-                className="shadow-sm"
+                className="shadow-sm px-4 py-1.5"
               >
-                {difficulty.toUpperCase()}
+                <span className="mr-1.5">{sessionType.icon}</span>
+                {sessionType.label}
+              </BaseBadge>
+              <BaseBadge
+                variant="default"
+                rounded
+                className="shadow-sm px-4 py-1.5 border-border"
+              >
+                <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
+                {totalQuestions} questions
               </BaseBadge>
             </div>
+
             {!ready ? (
               <>
                 <div className="bg-muted/5 rounded-2xl p-5 mb-8 border border-border">
                   <p className="font-semibold text-text flex items-center gap-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-primary" /> How the
-                    interview works:
+                    <Sparkles className="w-5 h-5 text-primary" /> How it works:
                   </p>
                   <ul className="space-y-2 text-muted text-sm">
                     <li className="flex items-start gap-2">
                       <CheckCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
                       <span>
-                        AI starts with an initial question tailored to your
-                        selected topic and difficulty
+                        AI starts with a tailored question based on your topic
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
                       <span>
-                        You answer naturally — AI analyzes your depth and
-                        adjusts subsequent questions
+                        Your answers are analyzed in real-time for depth and
+                        accuracy
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
                       <span>
-                        The conversation adapts in real-time, diving deeper
-                        where you excel
+                        The AI adapts — diving deeper where you excel, exploring
+                        new areas where you can grow
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
                       <span>
-                        After {TOTAL_QUESTIONS} questions, you'll receive a
+                        After <strong>{totalQuestions}</strong> questions, get a
                         detailed score and analysis
                       </span>
                     </li>
@@ -401,51 +432,51 @@ export default function AdaptiveInterviewPage() {
               <div className="flex justify-between text-xs text-muted mb-1">
                 <span>Progress</span>
                 <span>
-                  {answeredCount}/{TOTAL_QUESTIONS}
+                  {answeredCount}/{totalQuestions}
                 </span>
               </div>
               <div className="w-full bg-muted/30 rounded-full h-2 overflow-hidden">
                 <div
-                  className="bg-primary h-2 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-500"
                   style={{ width: `${progressPercent}%` }}
                 ></div>
               </div>
             </div>
           )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <BaseBadge
               variant="primary"
               rounded
-              className="gap-2 px-3 py-1.5 shadow-sm"
+              className="gap-1.5 px-3 py-1.5 shadow-sm"
             >
-              <Brain className="w-4 h-4 text-primary" />
-              <span className="font-semibold text-primary text-sm">
-                {topic}
-              </span>
-            </BaseBadge>
-            <BaseBadge
-              variant={getDifficultyVariant()}
-              rounded
-              className="px-3 py-1.5 shadow-sm"
-            >
-              {difficulty}
+              <Target className="w-3.5 h-3.5" />
+              <span className="font-semibold text-sm">{topic}</span>
             </BaseBadge>
 
-            <div className="flex items-center gap-2 ml-2">
+            <BaseBadge
+              variant="secondary"
+              rounded
+              className="gap-1.5 px-3 py-1.5 shadow-sm"
+            >
+              <span>{sessionType.icon}</span>
+              <span className="text-sm font-medium">{totalQuestions}</span>
+            </BaseBadge>
+
+            <div className="flex items-center gap-1 ml-1">
               <BaseBadge
                 variant="default"
                 rounded
-                className="hidden sm:flex gap-2 px-3 py-1 border-border shadow-sm"
+                className="hidden sm:flex gap-1.5 px-3 py-1.5 border-border shadow-sm"
               >
-                <CircleUser className="w-4 h-4 text-primary" />
-                <span className="font-medium">{displayName}</span>
+                <CircleUser className="w-3.5 h-3.5 text-primary" />
+                <span className="font-medium text-sm">{displayName}</span>
               </BaseBadge>
               {!isFinished && (
                 <BaseButton
                   variant="ghost"
                   size="sm"
-                  leftIcon={<RotateCw className="w-5 h-5" />}
+                  leftIcon={<RotateCw className="w-4 h-4" />}
                   onClick={resetInterview}
                   className="p-2 text-muted hover:text-text hover:bg-muted/10 rounded-full"
                   title="Reset interview"
@@ -460,12 +491,12 @@ export default function AdaptiveInterviewPage() {
             <div className="flex justify-between text-xs text-muted mb-1">
               <span>Progress</span>
               <span>
-                {answeredCount}/{TOTAL_QUESTIONS}
+                {answeredCount}/{totalQuestions}
               </span>
             </div>
             <div className="w-full bg-muted/30 rounded-full h-1.5">
               <div
-                className="bg-primary h-1.5 rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-primary to-secondary h-1.5 rounded-full transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
@@ -578,7 +609,7 @@ export default function AdaptiveInterviewPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyPress}
-                  placeholder="Type your answer here... Press Enter to send, Shift+Enter for new line"
+                  placeholder="Type your answer here... Press Enter to send"
                   rows={1}
                   className="w-full px-4 py-3 rounded-xl border border-border bg-card text-text placeholder:text-muted focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none overflow-y-auto max-h-32 shadow-sm"
                   disabled={loading || isAnalyzing}

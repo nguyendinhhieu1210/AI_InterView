@@ -19,13 +19,16 @@ import {
   ArrowRight,
   Sparkles,
   CalendarDays,
+  History,
 } from 'lucide-react';
 
 import { BaseButton } from '../components/base/BaseButton';
 import { BaseCard } from '../components/base/BaseCard';
 import { BaseBadge } from '../components/base/BaseBadge';
 import { BaseDropdown, DropdownItem } from '../components/base/BaseDropdown';
+import { BaseModal } from '../components/base/BaseModal';
 import { StartInterviewModal } from '../components/StartInterviewModal';
+import { StartAdaptiveInterviewModal } from '../components/StartAdaptiveInterviewModal';
 import { UploadCV } from '../components/UploadCV';
 import { AIFeedback } from '../components/AIFeedback';
 import PerformanceTrendChart from '../components/PerformanceTrendChart';
@@ -67,6 +70,8 @@ export default function WelcomePage() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAdaptiveModalOpen, setIsAdaptiveModalOpen] = useState(false);
+  const [isCVUploadModalOpen, setIsCVUploadModalOpen] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [stats, setStats] = useState({ totalInterviews: 0, streak: 0 });
   const [todayStats, setTodayStats] = useState({
@@ -77,7 +82,7 @@ export default function WelcomePage() {
     total: 0,
   });
   const [activities, setActivities] = useState([]);
-  const [isCVModalOpen, setIsCVModalOpen] = useState(false);
+  const [isCVInfoModalOpen, setIsCVInfoModalOpen] = useState(false);
   const [cvData, setCvData] = useState(null);
 
   const texts = {
@@ -88,6 +93,7 @@ export default function WelcomePage() {
     quickActions: 'Start Practicing',
     startNewInterview: 'Standard Interview',
     uploadCV: 'CV-Based Interview',
+    adaptiveInterview: 'Adaptive Interview',
     interviewHistory: 'View History',
     logout: 'Sign Out',
     settings: 'Settings',
@@ -231,20 +237,34 @@ export default function WelcomePage() {
   const handleCVUploadSuccess = (uploadedCvData) => {
     if (uploadedCvData && uploadedCvData.fileUrl) {
       setCvData(uploadedCvData);
-      setIsCVModalOpen(true);
+      setIsCVUploadModalOpen(false);
+      setIsCVInfoModalOpen(true);
     }
   };
 
-  const handleCloseCVModal = () => {
-    setIsCVModalOpen(false);
+  const handleCloseCVInfoModal = () => {
+    setIsCVInfoModalOpen(false);
     setCvData(null);
   };
 
   const handleStartCVInterview = (interviewData) => {
     console.log('Start CV interview:', interviewData);
-    setIsCVModalOpen(false);
+    setIsCVInfoModalOpen(false);
     fetchActivities();
     refreshHistory();
+  };
+
+  const handleStartAdaptiveInterview = (data) => {
+    console.log('Start Adaptive Interview:', data);
+    setIsAdaptiveModalOpen(false);
+    navigate('/adaptive-interview', {
+      state: {
+        topic: data.topic,
+        difficulty: data.difficulty,
+        mode: 'adaptive',
+        questionCount: data.questionCount,
+      },
+    });
   };
 
   const displayName = user?.fullName || user?.userName;
@@ -265,23 +285,23 @@ export default function WelcomePage() {
       icon: FileText,
       gradient: 'from-emerald-500 to-teal-600',
       color: 'emerald',
-      isUploadCV: true,
+      onClick: () => setIsCVUploadModalOpen(true),
+    },
+    {
+      label: 'Adaptive Interview',
+      desc: 'AI adjusts in real-time',
+      icon: Brain,
+      gradient: 'from-purple-500 to-pink-600',
+      color: 'purple',
+      onClick: () => setIsAdaptiveModalOpen(true),
     },
     {
       label: 'Coding Challenge',
       desc: 'Live coding session',
       icon: Zap,
-      gradient: 'from-purple-500 to-pink-600',
-      color: 'purple',
+      gradient: 'from-rose-500 to-red-600',
+      color: 'rose',
       onClick: () => navigate('/live-coding'),
-    },
-    {
-      label: 'View History',
-      desc: 'Past sessions & scores',
-      icon: BarChart3,
-      gradient: 'from-slate-500 to-slate-700',
-      color: 'slate',
-      onClick: () => navigate('/history'),
     },
   ];
 
@@ -306,8 +326,8 @@ export default function WelcomePage() {
       label: texts.adaptiveInt,
       value: todayStats.adaptiveInterview,
       icon: Brain,
-      color: 'text-violet-600 dark:text-violet-400',
-      bgColor: 'bg-violet-50 dark:bg-violet-900/30',
+      color: 'text-purple-600 dark:text-purple-400',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/30',
       accent: '#8b5cf6',
     },
     {
@@ -377,9 +397,9 @@ export default function WelcomePage() {
               <BaseButton
                 variant="ghost"
                 size="sm"
-                className="flex items-center gap-2.5 group p-0 hover:bg-transparent"
+                className="flex items-center gap-2.5 group p-0 hover:bg-transparent focus:ring-0 focus:outline-none"
               >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center ring-2 ring-white dark:ring-gray-800 group-hover:ring-primary/40 transition-all shadow-sm">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
                   <span className="text-white font-semibold text-sm">
                     {avatarLetter}
                   </span>
@@ -388,7 +408,6 @@ export default function WelcomePage() {
                   <p className="text-sm font-semibold text-text leading-none">
                     {displayName}
                   </p>
-                  <p className="text-xs text-muted mt-0.5">{user.email}</p>
                 </div>
                 <ChevronDown
                   className={`w-4 h-4 text-muted transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
@@ -402,6 +421,7 @@ export default function WelcomePage() {
                 setDropdownOpen(false);
                 navigate('/profile');
               }}
+              className="dropdown-item"
             >
               {texts.yourProfile}
             </DropdownItem>
@@ -411,6 +431,7 @@ export default function WelcomePage() {
                 setDropdownOpen(false);
                 navigate('/settings');
               }}
+              className="dropdown-item"
             >
               {texts.settings}
             </DropdownItem>
@@ -420,24 +441,26 @@ export default function WelcomePage() {
                 setDropdownOpen(false);
                 navigate('/help');
               }}
+              className="dropdown-item"
             >
               {texts.helpSupport}
             </DropdownItem>
             <DropdownItem
-              icon={<FileText className="w-4 h-4" />}
+              icon={<History className="w-4 h-4" />}
               onClick={() => {
                 setDropdownOpen(false);
                 navigate('/history');
               }}
+              className="dropdown-item"
             >
-              {texts.interviewHistory}
+              History
             </DropdownItem>
             <div className="border-t border-border my-1"></div>
             <DropdownItem
               icon={<LogOut className="w-4 h-4" />}
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="text-error hover:bg-error/10"
+              className="dropdown-item-danger"
             >
               {texts.logout}
             </DropdownItem>
@@ -489,64 +512,32 @@ export default function WelcomePage() {
             </h3>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action, idx) => {
-              if (action.isUploadCV) {
-                return (
-                  <div key={idx} className="relative group">
-                    <div
-                      className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity`}
-                    ></div>
-                    <div
-                      className={`relative flex flex-col items-start gap-3 p-5 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-200 cursor-pointer h-full shadow-sm hover:shadow-md`}
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center shadow-md`}
-                      >
-                        <action.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-text text-sm">
-                          {action.label}
-                        </p>
-                        <p className="text-xs text-muted mt-0.5">
-                          {action.desc}
-                        </p>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                      <div className="absolute inset-0 opacity-0">
-                        <UploadCV onUploadSuccess={handleCVUploadSuccess} />
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <BaseButton
-                  key={idx}
-                  variant="ghost"
-                  size="lg"
-                  fullWidth
-                  onClick={action.onClick}
-                  className="group relative flex flex-col items-start gap-3 p-5 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-200 text-left shadow-sm hover:shadow-md h-auto"
+            {quickActions.map((action, idx) => (
+              <BaseButton
+                key={idx}
+                variant="ghost"
+                size="lg"
+                fullWidth
+                onClick={action.onClick}
+                className="group relative flex flex-col items-start gap-3 p-5 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-200 text-left shadow-sm hover:shadow-md h-auto"
+              >
+                <div
+                  className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-200`}
+                ></div>
+                <div
+                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200`}
                 >
-                  <div
-                    className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity`}
-                  ></div>
-                  <div
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center shadow-md`}
-                  >
-                    <action.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold text-text text-sm">
-                      {action.label}
-                    </p>
-                    <p className="text-xs text-muted mt-0.5">{action.desc}</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                </BaseButton>
-              );
-            })}
+                  <action.icon className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-text text-sm">
+                    {action.label}
+                  </p>
+                  <p className="text-xs text-muted mt-0.5">{action.desc}</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" />
+              </BaseButton>
+            ))}
           </div>
         </section>
 
@@ -656,15 +647,50 @@ export default function WelcomePage() {
         </div>
       </main>
 
-      {/* Modals */}
+      {/* ─── Modals ─── */}
+
+      {/* Standard Interview Modal */}
       <StartInterviewModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
-      {isCVModalOpen && cvData && (
+
+      {/* Adaptive Interview Modal */}
+      <StartAdaptiveInterviewModal
+        isOpen={isAdaptiveModalOpen}
+        onClose={() => setIsAdaptiveModalOpen(false)}
+        onStart={handleStartAdaptiveInterview}
+      />
+
+      {/* CV Upload Modal */}
+      <BaseModal
+        isOpen={isCVUploadModalOpen}
+        onClose={() => setIsCVUploadModalOpen(false)}
+        title={
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-text">Upload Your CV</h3>
+          </div>
+        }
+        size="md"
+        showCloseButton={true}
+      >
+        <div className="py-2">
+          <p className="text-sm text-muted mb-4">
+            Upload your CV in PDF format. We'll analyze it and generate tailored
+            interview questions.
+          </p>
+          <UploadCV onUploadSuccess={handleCVUploadSuccess} />
+        </div>
+      </BaseModal>
+
+      {/* CV Info Modal */}
+      {isCVInfoModalOpen && cvData && (
         <CVInfoModal
           cvData={cvData}
-          onClose={handleCloseCVModal}
+          onClose={handleCloseCVInfoModal}
           onStartInterview={handleStartCVInterview}
           onQuestionsGenerated={(data) =>
             console.log('Questions generated from CV:', data)
@@ -678,6 +704,129 @@ export default function WelcomePage() {
           to   { opacity: 1; transform: translateY(0); }
         }
         .animate-fadeIn { animation: fadeIn 0.35s ease-out; }
+        
+        /* Dropdown container - gọn nhẹ */
+        .dropdown-menu {
+          min-width: 200px !important;
+          padding: 4px !important;
+          border-radius: 10px !important;
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+          background: #ffffff !important;
+          border: 1px solid rgba(0, 0, 0, 0.06) !important;
+        }
+        
+        /* Dropdown items - thon gọn */
+        .dropdown-item {
+          display: flex !important;
+          align-items: center !important;
+          gap: 10px !important;
+          padding: 8px 14px !important;
+          margin: 2px 2px !important;
+          border-radius: 8px !important;
+          font-size: 14px !important;
+          font-weight: 500 !important;
+          color: #374151 !important;
+          transition: all 0.15s ease !important;
+          cursor: pointer !important;
+          width: 100% !important;
+          min-height: 36px !important;
+          white-space: nowrap !important;
+          background: transparent !important;
+        }
+        
+        .dropdown-item:hover {
+          background-color: rgba(99, 102, 241, 0.08) !important;
+          color: #4f46e5 !important;
+          transform: scale(1.02) !important;
+        }
+        
+        .dropdown-item svg {
+          width: 16px !important;
+          height: 16px !important;
+          flex-shrink: 0 !important;
+          opacity: 0.7 !important;
+        }
+        
+        .dropdown-item:hover svg {
+          opacity: 1 !important;
+        }
+        
+        /* Dropdown item danger - Logout */
+        .dropdown-item-danger {
+          display: flex !important;
+          align-items: center !important;
+          gap: 10px !important;
+          padding: 8px 14px !important;
+          margin: 2px 2px !important;
+          border-radius: 8px !important;
+          font-size: 14px !important;
+          font-weight: 500 !important;
+          color: #dc2626 !important;
+          transition: all 0.15s ease !important;
+          cursor: pointer !important;
+          width: 100% !important;
+          min-height: 36px !important;
+          white-space: nowrap !important;
+          background: transparent !important;
+        }
+        
+        .dropdown-item-danger:hover {
+          background-color: rgba(220, 38, 38, 0.08) !important;
+          color: #b91c1c !important;
+          transform: scale(1.02) !important;
+        }
+        
+        .dropdown-item-danger svg {
+          width: 16px !important;
+          height: 16px !important;
+          flex-shrink: 0 !important;
+          opacity: 0.7 !important;
+        }
+        
+        .dropdown-item-danger:hover svg {
+          opacity: 1 !important;
+        }
+        
+        /* Bỏ outline và ring */
+        .dropdown-item:focus,
+        .dropdown-item:focus-visible,
+        .dropdown-item-danger:focus,
+        .dropdown-item-danger:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
+          ring: 0 !important;
+        }
+        
+        .dropdown-trigger:focus,
+        .dropdown-trigger:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
+          ring: 0 !important;
+        }
+        
+        /* Dark mode */
+        .dark .dropdown-menu {
+          background: #1f2937 !important;
+          border-color: rgba(255, 255, 255, 0.06) !important;
+        }
+        
+        .dark .dropdown-item {
+          color: #e5e7eb !important;
+        }
+        
+        .dark .dropdown-item:hover {
+          background-color: rgba(99, 102, 241, 0.15) !important;
+          color: #818cf8 !important;
+        }
+        
+        .dark .dropdown-item-danger {
+          color: #f87171 !important;
+        }
+        
+        .dark .dropdown-item-danger:hover {
+          background-color: rgba(220, 38, 38, 0.15) !important;
+          color: #fca5a5 !important;
+        }
       `}</style>
     </div>
   );

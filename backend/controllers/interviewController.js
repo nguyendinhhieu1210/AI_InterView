@@ -1,125 +1,50 @@
 // backend/controllers/interviewController.js
-const {
-  generateInterviewQuestions,
-  gradeEssay,
-} = require("../services/standardinterview/aiService");
-const InterviewResult = require("../models/InterviewResult");
-const saveActivity = require("../utils/saveActivity");
-const { sendInterviewResultEmail } = require("../services/email/emailService");
-const User = require("../models/User");
+const interviewService = require('../services/logic/interviewService');
 
-// Sinh câu hỏi (giữ nguyên)
+// Sinh câu hỏi
 const generateQuestions = async (req, res) => {
   try {
     const { topic, difficulty } = req.body;
-    if (!topic) return res.status(400).json({ message: "Topic is required" });
-
-    const questions = await generateInterviewQuestions(topic, difficulty);
+    const questions = await interviewService.generateQuestions(
+      topic,
+      difficulty
+    );
     res.json({ success: true, questions });
   } catch (error) {
-    console.error("AI generate error:", error);
-    res.status(500).json({ message: "Failed to generate questions" });
+    console.error('AI generate error:', error);
+    res
+      .status(500)
+      .json({ message: error.message || 'Failed to generate questions' });
   }
 };
 
 // Nộp bài và chấm điểm
 const submitAnswers = async (req, res) => {
   try {
-    // ✅ LẤY userId TỪ req.user (đã được xác thực qua token)
-    const userId = req.user.id; // ⚠️ THAY ĐỔI: từ req.user.id, KHÔNG từ body
+    const userId = req.user.id;
+    const { topic, difficulty, questions, answers } = req.body;
 
-    const { topic, difficulty, questions, answers } = req.body; // ⚠️ BỎ userId khỏi đây
-
-    // Kiểm tra dữ liệu đầu vào
-    if (!userId || !questions) {
-      return res.status(400).json({ message: "Missing data" });
-    }
-
-    // 1. Chấm MCQ (7 câu, mỗi câu 10 điểm)
-    const mcqResults = [];
-    let mcqTotalScore = 0;
-
-    // Kiểm tra nếu có câu hỏi MCQ
-    if (questions.mcq && Array.isArray(questions.mcq)) {
-      questions.mcq.forEach((q, idx) => {
-        const userChoice = answers[`mcq_${idx}`];
-        const isCorrect = userChoice === q.correctAnswer;
-        const score = isCorrect ? 10 : 0;
-        mcqTotalScore += score;
-        mcqResults.push({
-          question: q.question,
-          options: q.options,
-          userAnswer: userChoice,
-          correctAnswer: q.correctAnswer,
-          isCorrect,
-          score,
-          explanation: q.explanation,
-        });
-      });
-    }
-
-    // 2. Chấm tự luận (3 câu, mỗi câu 0-10 điểm)
-    const textResults = [];
-    let textTotalScore = 0;
-
-    if (questions.text && Array.isArray(questions.text)) {
-      for (let idx = 0; idx < questions.text.length; idx++) {
-        const q = questions.text[idx];
-        const userAnswer = answers[`text_${idx}`] || "";
-        const essayResult = await gradeEssay(
-          q.question,
-          userAnswer,
-          q.idealAnswerKeywords,
-        );
-        const score = essayResult.score;
-        textTotalScore += score;
-        textResults.push({
-          question: q.question,
-          idealAnswerKeywords: q.idealAnswerKeywords,
-          sampleAnswer: q.sampleAnswer,
-          userAnswer,
-          score,
-          explanation: essayResult.explanation,
-          feedback: essayResult.feedback,
-        });
-      }
-    }
-
-    const totalScore = mcqTotalScore + textTotalScore;
-
-    // 3. Lưu vào database
-    const interviewRecord = new InterviewResult({
-      userId, // userId từ token, an toàn
+    const results = await interviewService.submitAnswers(
+      userId,
       topic,
       difficulty,
-      mcqResults,
-      textResults,
-      totalScore,
-    });
-    await interviewRecord.save();
-
-    await saveActivity(userId, "interview");
-
-    sendInterviewResultEmail(userId, "standard", {
-      topic,
-      difficulty,
-      totalScore,
-      mcqScore: mcqTotalScore,
-      essayScore: textTotalScore,
-      completedAt: interviewRecord.completedAt,
-    }).catch((err) => console.error("Email error:", err.message));
+      questions,
+      answers
+    );
 
     return res.json({
       success: true,
       results: {
-        totalScore,
-        mcq: mcqResults,
-        text: textResults,
+        totalScore: results.totalScore,
+        mcq: results.mcq,
+        text: results.text,
       },
     });
   } catch (error) {
-    console.error("Submit error:", error);
-    res.status(500).json({ message: "Failed to grade answers" });
+    console.error('Submit error:', error);
+    res
+      .status(500)
+      .json({ message: error.message || 'Failed to grade answers' });
   }
 };
 
@@ -127,55 +52,11 @@ const submitAnswers = async (req, res) => {
 const getHistory = async (req, res) => {
   try {
     const userId = req.user.id;
-    const history = await InterviewResult.find({ userId })
-      .sort({ completedAt: -1 })
-      .lean();
-
-    const formattedHistory = history.map((record) => {
-      // Hỗ trợ cả cấu trúc mới (mcqResults, textResults) và cấu trúc cũ (results.mcq, results.text)
-      let mcqResultsArray = record.mcqResults;
-      let textResultsArray = record.textResults;
-      let mcqQuestionsArray = record.questions?.mcq || [];
-      let textQuestionsArray = record.questions?.text || [];
-
-      // Nếu không có cấu trúc mới, thử lấy từ record.results (cũ)
-      if (!mcqResultsArray && record.results?.mcq) {
-        mcqResultsArray = record.results.mcq;
-      }
-      if (!textResultsArray && record.results?.text) {
-        textResultsArray = record.results.text;
-      }
-
-      const mcqCount = mcqResultsArray?.length || mcqQuestionsArray.length;
-      const essayCount = textResultsArray?.length || textQuestionsArray.length;
-
-      const mcqScore = mcqResultsArray
-        ? mcqResultsArray.reduce((sum, m) => sum + (m.score || 0), 0)
-        : record.results?.mcq?.reduce((sum, m) => sum + (m.score || 0), 0) || 0;
-      const essayScore = textResultsArray
-        ? textResultsArray.reduce((sum, e) => sum + (e.score || 0), 0)
-        : record.results?.text?.reduce((sum, e) => sum + (e.score || 0), 0) ||
-          0;
-
-      return {
-        id: record._id,
-        topic: record.topic,
-        difficulty: record.difficulty,
-        totalScore: record.totalScore,
-        mcqScore,
-        essayScore,
-        mcqCount,
-        essayCount,
-        totalQuestions: mcqCount + essayCount,
-        createdAt: record.completedAt,
-        mcqResults: mcqResultsArray || [],
-        textResults: textResultsArray || [],
-      };
-    });
-    res.json({ success: true, history: formattedHistory });
+    const history = await interviewService.getUserHistory(userId);
+    res.json({ success: true, history });
   } catch (error) {
-    console.error("Get history error:", error);
-    res.status(500).json({ message: "Failed to fetch history" });
+    console.error('Get history error:', error);
+    res.status(500).json({ message: 'Failed to fetch history' });
   }
 };
 
@@ -184,13 +65,14 @@ const deleteHistory = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const result = await InterviewResult.findOneAndDelete({ _id: id, userId });
-    if (!result)
-      return res.status(404).json({ message: "Interview not found" });
-    res.json({ success: true, message: "Deleted successfully" });
+    await interviewService.deleteUserHistory(userId, id);
+    res.json({ success: true, message: 'Deleted successfully' });
   } catch (error) {
-    console.error("Delete history error:", error);
-    res.status(500).json({ message: "Failed to delete interview" });
+    console.error('Delete history error:', error);
+    if (error.message === 'Interview not found') {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+    res.status(500).json({ message: 'Failed to delete interview' });
   }
 };
 
@@ -199,172 +81,56 @@ const getHistoryById = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const record = await InterviewResult.findOne({ _id: id, userId }).lean();
-    if (!record)
+    const interview = await interviewService.getHistoryById(userId, id);
+    res.json({ success: true, interview });
+  } catch (error) {
+    console.error('Get history by id error:', error);
+    if (error.message === 'Interview not found') {
       return res
         .status(404)
-        .json({ success: false, message: "Interview not found" });
-
-    let mcqResultsArray = record.mcqResults;
-    let textResultsArray = record.textResults;
-    if (!mcqResultsArray && record.results?.mcq)
-      mcqResultsArray = record.results.mcq;
-    if (!textResultsArray && record.results?.text)
-      textResultsArray = record.results.text;
-
-    const mcqCount = mcqResultsArray?.length || 0;
-    const essayCount = textResultsArray?.length || 0;
-    const mcqScore = mcqResultsArray
-      ? mcqResultsArray.reduce((sum, m) => sum + (m.score || 0), 0)
-      : record.results?.mcq?.reduce((sum, m) => sum + (m.score || 0), 0) || 0;
-    const essayScore = textResultsArray
-      ? textResultsArray.reduce((sum, e) => sum + (e.score || 0), 0)
-      : record.results?.text?.reduce((sum, e) => sum + (e.score || 0), 0) || 0;
-
-    const formatted = {
-      id: record._id,
-      topic: record.topic,
-      difficulty: record.difficulty,
-      totalScore: record.totalScore,
-      mcqScore,
-      essayScore,
-      mcqCount,
-      essayCount,
-      totalQuestions: mcqCount + essayCount,
-      createdAt: record.completedAt,
-      mcqResults: mcqResultsArray || [],
-      textResults: (textResultsArray || []).map((e) => ({
-        question: e.question,
-        userAnswer: e.userAnswer,
-        score: e.score,
-        feedback: e.feedback,
-        sampleAnswer: e.sampleAnswer, // 👈 thêm
-        idealKeywords: e.idealKeywords, // 👈 thêm
-        gradingExplanation: e.gradingExplanation, // 👈 thêm
-      })),
-    };
-    res.json({ success: true, interview: formatted });
-  } catch (error) {
-    console.error("Get history by id error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+        .json({ success: false, message: 'Interview not found' });
+    }
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-//ADMIN Từ bên dưới đổ xuống là của ADMIN
+// ============ ADMIN CONTROLLERS ============
 
 // Get all interviews (admin)
-// Get all interviews (admin) – hỗ trợ lấy tất cả bản ghi
 const getAllInterviews = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    let limit = req.query.limit;
-    let skip = (page - 1) * (parseInt(limit) || 10);
-    let usePagination = true;
+    const filters = {
+      page: parseInt(req.query.page) || 1,
+      limit: req.query.limit || 10,
+      search: req.query.search,
+      difficulty: req.query.difficulty,
+      topic: req.query.topic,
+      fromDate: req.query.fromDate,
+      toDate: req.query.toDate,
+    };
 
-    // Nếu limit là 'all' hoặc '0' => lấy toàn bộ, không phân trang
-    if (limit === "all" || limit === "0") {
-      usePagination = false;
-      limit = null;
-      skip = null;
-    } else {
-      limit = parseInt(limit) || 10;
-      skip = (page - 1) * limit;
-    }
-
-    const { search, difficulty, topic, fromDate, toDate } = req.query;
-
-    let query = {};
-
-    // Tìm kiếm theo tên / email người dùng hoặc chủ đề
-    if (search) {
-      const users = await User.find({
-        $or: [
-          { fullName: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-          { userName: { $regex: search, $options: "i" } },
-        ],
-      }).select("_id");
-
-      query.$or = [
-        { userId: { $in: users.map((u) => u._id) } },
-        { topic: { $regex: search, $options: "i" } },
-      ];
-    }
-    if (difficulty) query.difficulty = difficulty;
-    if (topic) query.topic = { $regex: topic, $options: "i" };
-    if (fromDate || toDate) {
-      query.completedAt = {};
-      if (fromDate) query.completedAt.$gte = new Date(fromDate);
-      if (toDate) query.completedAt.$lte = new Date(toDate + "T23:59:59");
-    }
-
-    const total = await InterviewResult.countDocuments(query);
-
-    let interviewsQuery = InterviewResult.find(query).sort({ completedAt: -1 });
-    if (usePagination) {
-      interviewsQuery = interviewsQuery.skip(skip).limit(limit);
-    }
-    const interviews = await interviewsQuery.lean();
-
-    // Gắn thông tin user
-    const interviewsWithUser = await Promise.all(
-      interviews.map(async (interview) => {
-        const user = await User.findById(interview.userId).select(
-          "fullName email userName",
-        );
-        return {
-          id: interview._id,
-          userId: interview.userId,
-          userName: user?.fullName || user?.userName || "Unknown",
-          userEmail: user?.email || "Unknown",
-          topic: interview.topic,
-          difficulty: interview.difficulty,
-          totalScore: interview.totalScore,
-          createdAt: interview.completedAt,
-        };
-      }),
-    );
-
+    const result = await interviewService.getAllInterviews(filters);
     res.json({
       success: true,
-      interviews: interviewsWithUser,
-      total,
-      pages: usePagination ? Math.ceil(total / limit) : 1,
-      currentPage: usePagination ? page : 1,
+      interviews: result.interviews,
+      total: result.total,
+      pages: result.pages,
+      currentPage: result.currentPage,
     });
   } catch (error) {
-    console.error("Get all interviews error:", error);
-    res.status(500).json({ message: "Failed to fetch interviews" });
+    console.error('Get all interviews error:', error);
+    res.status(500).json({ message: 'Failed to fetch interviews' });
   }
 };
 
 // Get interview stats
 const getInterviewStats = async (req, res) => {
   try {
-    const total = await InterviewResult.countDocuments();
-    const avgScoreResult = await InterviewResult.aggregate([
-      { $group: { _id: null, avgScore: { $avg: "$totalScore" } } },
-    ]);
-    const uniqueUsers = await InterviewResult.distinct("userId");
-
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const thisWeek = await InterviewResult.countDocuments({
-      completedAt: { $gte: oneWeekAgo },
-    });
-
-    res.json({
-      success: true,
-      stats: {
-        total,
-        avgScore: avgScoreResult[0]?.avgScore || 0,
-        uniqueUsers: uniqueUsers.length,
-        thisWeek,
-      },
-    });
+    const stats = await interviewService.getInterviewStats();
+    res.json({ success: true, stats });
   } catch (error) {
-    console.error("Get stats error:", error);
-    res.status(500).json({ message: "Failed to fetch stats" });
+    console.error('Get stats error:', error);
+    res.status(500).json({ message: 'Failed to fetch stats' });
   }
 };
 
@@ -372,43 +138,14 @@ const getInterviewStats = async (req, res) => {
 const getInterviewByIdForAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const interview = await InterviewResult.findById(id).lean();
-    if (!interview) {
-      return res.status(404).json({ message: "Interview not found" });
-    }
-
-    // Format response
-    let mcqResultsArray = interview.mcqResults;
-    let textResultsArray = interview.textResults;
-    if (!mcqResultsArray && interview.results?.mcq)
-      mcqResultsArray = interview.results.mcq;
-    if (!textResultsArray && interview.results?.text)
-      textResultsArray = interview.results.text;
-
-    const mcqScore = mcqResultsArray
-      ? mcqResultsArray.reduce((sum, m) => sum + (m.score || 0), 0)
-      : 0;
-    const essayScore = textResultsArray
-      ? textResultsArray.reduce((sum, e) => sum + (e.score || 0), 0)
-      : 0;
-
-    res.json({
-      success: true,
-      interview: {
-        id: interview._id,
-        topic: interview.topic,
-        difficulty: interview.difficulty,
-        totalScore: interview.totalScore,
-        mcqScore,
-        essayScore,
-        mcqResults: mcqResultsArray || [],
-        textResults: textResultsArray || [],
-        createdAt: interview.completedAt,
-      },
-    });
+    const interview = await interviewService.getInterviewByIdForAdmin(id);
+    res.json({ success: true, interview });
   } catch (error) {
-    console.error("Get interview by id error:", error);
-    res.status(500).json({ message: "Failed to fetch interview" });
+    console.error('Get interview by id error:', error);
+    if (error.message === 'Interview not found') {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+    res.status(500).json({ message: 'Failed to fetch interview' });
   }
 };
 
@@ -416,14 +153,14 @@ const getInterviewByIdForAdmin = async (req, res) => {
 const deleteInterviewById = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await InterviewResult.findByIdAndDelete(id);
-    if (!result) {
-      return res.status(404).json({ message: "Interview not found" });
-    }
-    res.json({ success: true, message: "Interview deleted successfully" });
+    await interviewService.deleteInterviewById(id);
+    res.json({ success: true, message: 'Interview deleted successfully' });
   } catch (error) {
-    console.error("Delete interview error:", error);
-    res.status(500).json({ message: "Failed to delete interview" });
+    console.error('Delete interview error:', error);
+    if (error.message === 'Interview not found') {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+    res.status(500).json({ message: 'Failed to delete interview' });
   }
 };
 
@@ -433,7 +170,7 @@ module.exports = {
   getHistory,
   deleteHistory,
   getHistoryById,
-  //Admin
+  // Admin
   getAllInterviews,
   getInterviewStats,
   getInterviewByIdForAdmin,
