@@ -1,7 +1,7 @@
 // components/StartInterviewModal.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Brain, Target, Sparkles, Zap, MessageSquare } from 'lucide-react';
+import { Brain, Target, Sparkles, Zap } from 'lucide-react';
 
 // Import Base Components
 import { BaseButton } from './base/BaseButton';
@@ -12,14 +12,12 @@ export const StartInterviewModal = ({ isOpen, onClose, onStart }) => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
-  const [mode, setMode] = useState('classic');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
       setTopic('');
       setDifficulty('medium');
-      setMode('classic');
       setLoading(false);
     }
   }, [isOpen]);
@@ -32,14 +30,10 @@ export const StartInterviewModal = ({ isOpen, onClose, onStart }) => {
 
     if (onStart) {
       // Nếu có callback onStart, gọi nó
-      onStart({ topic, difficulty, mode });
+      onStart({ topic, difficulty });
     } else {
       // Fallback: navigate trực tiếp
-      if (mode === 'classic') {
-        navigate('/interview', { state: { topic, difficulty } });
-      } else {
-        navigate('/adaptive-interview', { state: { topic, difficulty } });
-      }
+      navigate('/interview', { state: { topic, difficulty } });
     }
 
     setLoading(false);
@@ -103,45 +97,6 @@ export const StartInterviewModal = ({ isOpen, onClose, onStart }) => {
           </div>
         </div>
 
-        {/* Interview Mode */}
-        <div>
-          <label className="block text-sm font-semibold text-text mb-2">
-            Interview Mode
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setMode('classic')}
-              className={`p-3 rounded-xl border-2 transition-all ${
-                mode === 'classic'
-                  ? 'border-primary bg-primary/10 shadow-sm'
-                  : 'border-border bg-white dark:bg-gray-800 hover:border-primary/50'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Zap className="w-5 h-5 text-warning" />
-                <span className="font-medium text-text">Classic</span>
-              </div>
-              <p className="text-xs text-muted mt-1">10 fixed questions</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('adaptive')}
-              className={`p-3 rounded-xl border-2 transition-all ${
-                mode === 'adaptive'
-                  ? 'border-primary bg-primary/10 shadow-sm'
-                  : 'border-border bg-white dark:bg-gray-800 hover:border-primary/50'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <MessageSquare className="w-5 h-5 text-success" />
-                <span className="font-medium text-text">Adaptive</span>
-              </div>
-              <p className="text-xs text-muted mt-1">Smart follow-up AI</p>
-            </button>
-          </div>
-        </div>
-
         <BaseButton
           type="submit"
           variant="primary"
@@ -150,9 +105,9 @@ export const StartInterviewModal = ({ isOpen, onClose, onStart }) => {
           loading={loading}
           leftIcon={!loading && <Sparkles className="w-5 h-5" />}
           disabled={loading || !topic.trim()}
-          className="mt-4 py-3 shadow-md hover:shadow-lg"
+          className="mt-2 py-3 shadow-md hover:shadow-lg"
         >
-          {loading ? 'Starting...' : 'Continue'}
+          {loading ? 'Starting...' : 'Start Interview'}
         </BaseButton>
       </form>
     </BaseModal>

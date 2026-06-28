@@ -1,5 +1,5 @@
 // components/CVInfoModal.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -63,6 +63,9 @@ export const CVInfoModal = ({
   const [showCvPreview, setShowCvPreview] = useState(true);
   const [isMobileView, setIsMobileView] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [pdfError, setPdfError] = useState(null);
+  const [pdfData, setPdfData] = useState(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
 
   const MAX_SKILLS = 4;
 
@@ -83,6 +86,58 @@ export const CVInfoModal = ({
       return () => clearTimeout(timer);
     }
   }, [errorMessage]);
+
+  // Hàm chuyển đổi blob URL thành ArrayBuffer
+  const loadPdfFromBlob = useCallback(async (blobUrl) => {
+    if (!blobUrl || !blobUrl.startsWith('blob:')) {
+      return null;
+    }
+
+    try {
+      setLoadingPdf(true);
+      const response = await fetch(blobUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch blob: ${response.status}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      return arrayBuffer;
+    } catch (error) {
+      console.error('Error loading blob PDF:', error);
+      setPdfError(error.message);
+      return null;
+    } finally {
+      setLoadingPdf(false);
+    }
+  }, []);
+
+  // Load PDF data khi cvData thay đổi
+  useEffect(() => {
+    const loadPdf = async () => {
+      // Nếu có fileData từ UploadCV (ArrayBuffer)
+      if (cvData?.fileData) {
+        setPdfData(cvData.fileData);
+        setPdfError(null);
+        setLoadingPdf(false);
+        return;
+      }
+
+      // Nếu là blob URL, chuyển đổi sang ArrayBuffer
+      if (cvData?.fileUrl && cvData.fileUrl.startsWith('blob:')) {
+        const data = await loadPdfFromBlob(cvData.fileUrl);
+        if (data) {
+          setPdfData(data);
+          setPdfError(null);
+        }
+      } else if (cvData?.fileUrl) {
+        // Nếu là URL thường (không phải blob)
+        setPdfData(null);
+        setPdfError(null);
+        setLoadingPdf(false);
+      }
+    };
+
+    loadPdf();
+  }, [cvData?.fileUrl, cvData?.fileData, loadPdfFromBlob]);
 
   useEffect(() => {
     if (cvData?.fullName && cvData?.skills && cvData?.rawText) {
@@ -159,6 +214,7 @@ export const CVInfoModal = ({
   const onLoadSuccess = async (pdf) => {
     setNumPages(pdf.numPages);
     setPageNumber(1);
+    setPdfError(null);
     updateActivity();
 
     if (cvData?.rawText && cvData?.skills && cvData?.fullName) return;
@@ -196,6 +252,12 @@ export const CVInfoModal = ({
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const onLoadError = (error) => {
+    console.error('PDF Load Error:', error);
+    setPdfError(error.message || 'Failed to load PDF');
+    setErrorMessage(`Cannot load PDF: ${error.message || 'Unknown error'}`);
   };
 
   const totalSelected =
@@ -326,6 +388,11 @@ export const CVInfoModal = ({
     </div>
   );
 
+  // Kiểm tra xem có dữ liệu PDF hợp lệ không
+  const hasValidPdf =
+    pdfData !== null ||
+    (cvData?.fileUrl && !cvData.fileUrl.startsWith('blob:'));
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 md:p-4 animate-fadeIn">
       <div className="bg-card rounded-2xl shadow-soft w-full max-w-7xl max-h-[95vh] flex flex-col overflow-hidden transform transition-all duration-300 scale-100 relative border border-border">
@@ -412,28 +479,81 @@ export const CVInfoModal = ({
                     )}
                   </div>
                   <div className="overflow-auto flex justify-center bg-muted/10 rounded-lg min-h-[300px] p-2">
-                    <Document
-                      file={cvData.fileUrl}
-                      onLoadSuccess={onLoadSuccess}
-                      loading={
-                        <div className="p-10">
-                          <Loader2 className="animate-spin text-primary" />
-                        </div>
-                      }
-                      error={
-                        <div className="p-10 text-error">
-                          Failed to load PDF
-                        </div>
-                      }
-                    >
-                      <Page
-                        pageNumber={pageNumber}
-                        width={isMobileView ? 320 : 500}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                        className="shadow-md"
-                      />
-                    </Document>
+                    {loadingPdf ? (
+                      <div className="flex flex-col items-center justify-center p-10">
+                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                        <p className="text-sm text-muted mt-2">
+                          Loading PDF...
+                        </p>
+                      </div>
+                    ) : !hasValidPdf ? (
+                      <div className="flex flex-col items-center justify-center p-10 text-center">
+                        <AlertCircle className="w-12 h-12 text-warning mb-3" />
+                        <p className="text-text font-medium">
+                          Invalid or missing PDF
+                        </p>
+                        <p className="text-sm text-muted mt-1">
+                          Please upload the CV again
+                        </p>
+                      </div>
+                    ) : (
+                      <Document
+                        file={pdfData || cvData.fileUrl}
+                        onLoadSuccess={onLoadSuccess}
+                        onLoadError={onLoadError}
+                        loading={
+                          <div className="flex flex-col items-center justify-center p-10">
+                            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                            <p className="text-sm text-muted mt-2">
+                              Loading PDF...
+                            </p>
+                          </div>
+                        }
+                        error={
+                          <div className="flex flex-col items-center justify-center p-10 text-center">
+                            <AlertCircle className="w-12 h-12 text-error mb-3" />
+                            <p className="text-error font-medium">
+                              Failed to load PDF
+                            </p>
+                            <p className="text-sm text-muted mt-1">
+                              {pdfError ||
+                                'The file may be corrupted or inaccessible'}
+                            </p>
+                            <BaseButton
+                              variant="outline"
+                              size="sm"
+                              className="mt-3"
+                              onClick={() => {
+                                setPdfError(null);
+                                setErrorMessage('');
+                                // Reload lại PDF
+                                if (cvData?.fileData) {
+                                  setPdfData(cvData.fileData);
+                                } else if (
+                                  cvData?.fileUrl?.startsWith('blob:')
+                                ) {
+                                  loadPdfFromBlob(cvData.fileUrl).then(
+                                    (data) => {
+                                      if (data) setPdfData(data);
+                                    }
+                                  );
+                                }
+                              }}
+                            >
+                              Retry
+                            </BaseButton>
+                          </div>
+                        }
+                      >
+                        <Page
+                          pageNumber={pageNumber}
+                          width={isMobileView ? 320 : 500}
+                          renderTextLayer={false}
+                          renderAnnotationLayer={false}
+                          className="shadow-md"
+                        />
+                      </Document>
+                    )}
                   </div>
                   {numPages > 1 && (
                     <div className="flex justify-center gap-4 mt-4 pt-2 border-t border-border">
@@ -570,15 +690,24 @@ export const CVInfoModal = ({
             leftIcon={!generating && <Sparkles className="w-5 h-5" />}
             onClick={handleGenerate}
             disabled={
-              generating || analyzing || totalSelected === 0 || isMaxExceeded
+              generating ||
+              analyzing ||
+              totalSelected === 0 ||
+              isMaxExceeded ||
+              !hasValidPdf ||
+              loadingPdf
             }
             className="py-3 transform hover:scale-[1.02]"
           >
-            {totalSelected === 0
-              ? 'Select at least one skill'
-              : isMaxExceeded
-                ? `Please select up to ${MAX_SKILLS} skills`
-                : `Start Interview (${totalSelected} skill${totalSelected > 1 ? 's' : ''})`}
+            {loadingPdf
+              ? 'Loading PDF...'
+              : !hasValidPdf
+                ? 'Invalid PDF file'
+                : totalSelected === 0
+                  ? 'Select at least one skill'
+                  : isMaxExceeded
+                    ? `Please select up to ${MAX_SKILLS} skills`
+                    : `Start Interview (${totalSelected} skill${totalSelected > 1 ? 's' : ''})`}
           </BaseButton>
           {isMaxExceeded && (
             <p className="text-center text-xs text-error mt-2">

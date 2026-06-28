@@ -1,4 +1,4 @@
-// services/liveCoding/llmProvider.js - FINAL FIXED VERSION (v4)
+// services/liveCoding/llmProvider.js - COMPLETE FIXED VERSION (v7)
 
 const { GroqService } = require('../ai/groqService');
 const { extractJson } = require('../../utils/jsonExtractor');
@@ -95,8 +95,17 @@ const TOPIC_CATEGORIES = {
     'dfs',
     'dijkstra',
     'path',
+    'binary tree',
+    'bst',
   ],
-  LINKED_LIST: ['linked list', 'singly', 'doubly', 'circular', 'node'],
+  LINKED_LIST: [
+    'linked list',
+    'singly',
+    'doubly',
+    'circular',
+    'node',
+    'list node',
+  ],
   DATA_STRUCTURE: [
     'stack',
     'queue',
@@ -145,6 +154,18 @@ function isStringTopic(topic) {
 
 function isClosureTopic(topic) {
   return categorizeTopic(topic) === 'CLOSURE';
+}
+
+function isTreeTopic(topic) {
+  const treeKeywords = ['tree', 'binary tree', 'bst', 'binary search tree'];
+  const topicLower = topic.toLowerCase();
+  return treeKeywords.some((keyword) => topicLower.includes(keyword));
+}
+
+function isLinkedListTopic(topic) {
+  const llKeywords = ['linked list', 'singly', 'doubly', 'circular'];
+  const topicLower = topic.toLowerCase();
+  return llKeywords.some((keyword) => topicLower.includes(keyword));
 }
 
 // ========== LINE PRIORITY ==========
@@ -323,6 +344,50 @@ function generateRandomMatrix(rows, cols, min = -99, max = 99) {
 }
 
 // ========== TREE HELPERS ==========
+
+// Tạo cây nhị phân hợp lệ dưới dạng level-order array
+function generateValidBinaryTree(size, numberRange = { min: -50, max: 50 }) {
+  if (size <= 0) return [];
+
+  const actualNodes = Math.max(3, Math.min(size, 15));
+  const tree = [];
+
+  tree.push(generateRandomNumber(numberRange.min, numberRange.max));
+
+  let nodesAdded = 1;
+  let currentLevelMax = 2;
+  let currentLevelCount = 0;
+
+  while (nodesAdded < actualNodes && tree.length < size) {
+    const isNull = Math.random() < 0.15 && tree.length > 1;
+
+    if (isNull) {
+      tree.push(-1);
+    } else {
+      tree.push(generateRandomNumber(numberRange.min, numberRange.max));
+      nodesAdded++;
+    }
+
+    currentLevelCount++;
+
+    if (currentLevelCount >= currentLevelMax) {
+      currentLevelMax *= 2;
+      currentLevelCount = 0;
+    }
+  }
+
+  const nonNullCount = tree.filter((v) => v !== -1).length;
+  if (nonNullCount < 3) {
+    for (let i = 1; i < tree.length && nonNullCount < 5; i++) {
+      if (tree[i] === -1) {
+        tree[i] = generateRandomNumber(numberRange.min, numberRange.max);
+      }
+    }
+  }
+
+  return tree;
+}
+
 function computeMaxRootToLeafPathSum(arr) {
   if (!arr || arr.length === 0) return 0;
   const nodes = arr.map((val) =>
@@ -349,6 +414,176 @@ function computeMaxRootToLeafPathSum(arr) {
   }
   dfs(root, 0);
   return maxSum === -Infinity ? 0 : maxSum;
+}
+
+function multiplyTreeValues(treeArray, multiplier) {
+  if (!treeArray || treeArray.length === 0) return [];
+  return treeArray.map((val) => (val === -1 ? -1 : val * multiplier));
+}
+
+function sumTreeValues(treeArray) {
+  if (!treeArray || treeArray.length === 0) return 0;
+  return treeArray.reduce((sum, val) => sum + (val === -1 ? 0 : val), 0);
+}
+
+function countTreeNodes(treeArray) {
+  if (!treeArray || treeArray.length === 0) return 0;
+  return treeArray.filter((val) => val !== -1).length;
+}
+
+function getTreeDepth(treeArray) {
+  if (!treeArray || treeArray.length === 0) return 0;
+  let depth = 0;
+  let levelSize = 1;
+  let index = 0;
+  while (index < treeArray.length) {
+    depth++;
+    let nextLevelSize = 0;
+    for (let i = 0; i < levelSize && index < treeArray.length; i++) {
+      if (treeArray[index] !== -1) {
+        nextLevelSize += 2;
+      }
+      index++;
+    }
+    levelSize = nextLevelSize;
+  }
+  return depth;
+}
+
+// ========== LINKED LIST HELPERS ==========
+
+function arrayToLinkedList(arr) {
+  if (!arr || arr.length === 0) return null;
+
+  class ListNode {
+    constructor(val) {
+      this.val = val;
+      this.next = null;
+    }
+  }
+
+  const head = new ListNode(arr[0]);
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = new ListNode(arr[i]);
+    current = current.next;
+  }
+  return head;
+}
+
+function linkedListToArray(head) {
+  const result = [];
+  let current = head;
+  while (current) {
+    result.push(current.val);
+    current = current.next;
+  }
+  return result;
+}
+
+function countNodes(head) {
+  let count = 0;
+  let current = head;
+  while (current) {
+    count++;
+    current = current.next;
+  }
+  return count;
+}
+
+function getNodeAt(head, index) {
+  let current = head;
+  let count = 0;
+  while (current) {
+    if (count === index) return current;
+    count++;
+    current = current.next;
+  }
+  return null;
+}
+
+function appendNode(head, val) {
+  const newNode = { val, next: null };
+  if (!head) return newNode;
+  let current = head;
+  while (current.next) {
+    current = current.next;
+  }
+  current.next = newNode;
+  return head;
+}
+
+function deleteNodeAt(head, index) {
+  if (!head) return null;
+  if (index === 0) return head.next;
+
+  let current = head;
+  let count = 0;
+  while (current.next) {
+    if (count === index - 1) {
+      current.next = current.next.next;
+      return head;
+    }
+    count++;
+    current = current.next;
+  }
+  return head;
+}
+
+function reverseLinkedList(head) {
+  let prev = null;
+  let current = head;
+  while (current) {
+    const next = current.next;
+    current.next = prev;
+    prev = current;
+    current = next;
+  }
+  return prev;
+}
+
+function findMax(head) {
+  if (!head) return null;
+  let max = head.val;
+  let current = head.next;
+  while (current) {
+    if (current.val > max) max = current.val;
+    current = current.next;
+  }
+  return max;
+}
+
+function findMin(head) {
+  if (!head) return null;
+  let min = head.val;
+  let current = head.next;
+  while (current) {
+    if (current.val < min) min = current.val;
+    current = current.next;
+  }
+  return min;
+}
+
+function sumLinkedList(head) {
+  let sum = 0;
+  let current = head;
+  while (current) {
+    sum += current.val;
+    current = current.next;
+  }
+  return sum;
+}
+
+function sumPositiveNegative(head) {
+  let positiveSum = 0;
+  let negativeSum = 0;
+  let current = head;
+  while (current) {
+    if (current.val > 0) positiveSum += current.val;
+    else if (current.val < 0) negativeSum += current.val;
+    current = current.next;
+  }
+  return [positiveSum, negativeSum];
 }
 
 // ========== OOP DATA GENERATORS ==========
@@ -494,6 +729,8 @@ const DIFFICULTY_CONFIG = {
     stringLength: { min: 5, max: 8 },
     objectKeys: { min: 2, max: 3 },
     matrixSize: { rows: 2, cols: 3 },
+    treeSize: { min: 5, max: 7 },
+    linkedListSize: { min: 5, max: 7 },
     numberRange: { min: -20, max: 20 },
     description: 'Simple, small dataset',
     oopComplexity: 'basic',
@@ -503,6 +740,8 @@ const DIFFICULTY_CONFIG = {
     stringLength: { min: 8, max: 15 },
     objectKeys: { min: 3, max: 5 },
     matrixSize: { rows: 3, cols: 4 },
+    treeSize: { min: 7, max: 10 },
+    linkedListSize: { min: 8, max: 12 },
     numberRange: { min: -50, max: 50 },
     description: 'Moderate dataset with edge cases',
     oopComplexity: 'moderate',
@@ -512,6 +751,8 @@ const DIFFICULTY_CONFIG = {
     stringLength: { min: 15, max: 25 },
     objectKeys: { min: 5, max: 8 },
     matrixSize: { rows: 4, cols: 5 },
+    treeSize: { min: 10, max: 15 },
+    linkedListSize: { min: 12, max: 18 },
     numberRange: { min: -99, max: 99 },
     description: 'Large dataset with complex cases',
     oopComplexity: 'advanced',
@@ -526,7 +767,7 @@ function getDifficultyConfig(difficulty) {
 }
 
 // ===================================================
-// computeArrayOutput - CHỈ XỬ LÝ CÁC BÀI TOÁN CƠ BẢN
+// computeArrayOutput
 // ===================================================
 
 function computeArrayOutput(topicLower, arr) {
@@ -689,12 +930,10 @@ function validateAndFixExampleOutput(
   try {
     const topicLower = topic.toLowerCase();
 
-    // Parse input
     let input;
     try {
       input = JSON.parse(exampleInput);
     } catch (e) {
-      // Nếu input là string (ví dụ: "hello")
       if (exampleInput.startsWith('"') && exampleInput.endsWith('"')) {
         input = exampleInput.slice(1, -1);
       } else {
@@ -702,12 +941,10 @@ function validateAndFixExampleOutput(
       }
     }
 
-    // Parse output
     let output;
     try {
       output = JSON.parse(exampleOutput);
     } catch (e) {
-      // Nếu output là string
       if (exampleOutput.startsWith('"') && exampleOutput.endsWith('"')) {
         output = exampleOutput.slice(1, -1);
       } else if (exampleOutput === 'true' || exampleOutput === 'false') {
@@ -726,9 +963,7 @@ function validateAndFixExampleOutput(
       topicLower.includes('closure')
     ) {
       if (Array.isArray(input) && input.length > 0) {
-        // Nếu output là array và cùng độ dài
         if (Array.isArray(output) && output.length === input.length) {
-          // Tìm multiplier
           let multiplier = null;
           let allMatch = true;
           let hasNonZero = false;
@@ -746,9 +981,7 @@ function validateAndFixExampleOutput(
             }
           }
 
-          // Nếu tất cả đều match và multiplier hợp lệ
           if (allMatch && multiplier !== null && hasNonZero) {
-            // Kiểm tra multiplier có phải số nguyên hợp lý không (2, 3, 5, ...)
             if (Number.isInteger(multiplier) && Math.abs(multiplier) >= 1) {
               console.log(
                 `[VALIDATE] Valid multiplier detected: ${multiplier}`
@@ -762,7 +995,6 @@ function validateAndFixExampleOutput(
             }
           }
 
-          // Nếu không phải multiplier đúng, tự tính lại với multiplier mặc định
           console.log(`[VALIDATE] Invalid multiplier pattern, fixing...`);
           const defaultMultiplier = 2;
           const fixedOutput = input.map((x) => x * defaultMultiplier);
@@ -777,7 +1009,6 @@ function validateAndFixExampleOutput(
           };
         }
 
-        // Nếu output là number (multiplier đơn)
         if (typeof output === 'number' && input.length === 1) {
           const multiplier = output / input[0];
           if (Number.isInteger(multiplier)) {
@@ -828,7 +1059,7 @@ function validateAndFixExampleOutput(
   }
 }
 
-// ========== GENERATE RANDOM DATA FOR TOPIC ==========
+// ========== GENERATE RANDOM DATA FOR TOPIC (FIXED) ==========
 function generateRandomDataForTopic(topic, difficulty, language) {
   const config = getDifficultyConfig(difficulty);
   const topicLower = topic.toLowerCase();
@@ -843,19 +1074,156 @@ function generateRandomDataForTopic(topic, difficulty, language) {
   console.log(`Category: ${category}`);
   console.log(`Difficulty: ${difficulty}`);
 
+  // ===== LINKED LIST =====
+  if (category === 'LINKED_LIST' || isLinkedListTopic(topic)) {
+    const size = config.linkedListSize || { min: 8, max: 12 };
+    const listSize =
+      Math.floor(Math.random() * (size.max - size.min + 1)) + size.min;
+
+    const arr = generateRandomArray(
+      listSize,
+      config.numberRange.min,
+      config.numberRange.max
+    );
+
+    exampleInput = JSON.stringify(arr);
+    expectedType = 'array';
+    dataDescription = `Array to be converted to linked list (${listSize} elements)`;
+
+    if (topicLower.includes('positive') && topicLower.includes('negative')) {
+      const positiveSum = arr.filter((x) => x > 0).reduce((a, b) => a + b, 0);
+      const negativeSum = arr.filter((x) => x < 0).reduce((a, b) => a + b, 0);
+      exampleOutput = JSON.stringify([positiveSum, negativeSum]);
+      expectedType = 'array';
+      dataDescription = `Linked List: sum of positive and negative numbers`;
+      console.log(
+        `✅ Linked List positive/negative sums: [${positiveSum}, ${negativeSum}]`
+      );
+      console.log(
+        `   Positive numbers: ${arr.filter((x) => x > 0).join(', ')}`
+      );
+      console.log(
+        `   Negative numbers: ${arr.filter((x) => x < 0).join(', ')}`
+      );
+    } else if (topicLower.includes('sum') || topicLower.includes('total')) {
+      const sum = arr.reduce((a, b) => a + b, 0);
+      exampleOutput = String(sum);
+      expectedType = 'number';
+      console.log(`✅ Linked List sum: ${sum}`);
+    } else if (topicLower.includes('average') || topicLower.includes('mean')) {
+      const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+      exampleOutput = String(Math.round(avg * 100) / 100);
+      expectedType = 'number';
+      console.log(`✅ Linked List average: ${exampleOutput}`);
+    } else if (topicLower.includes('max') || topicLower.includes('maximum')) {
+      const max = Math.max(...arr);
+      exampleOutput = String(max);
+      expectedType = 'number';
+      console.log(`✅ Linked List max: ${max}`);
+    } else if (topicLower.includes('min') || topicLower.includes('minimum')) {
+      const min = Math.min(...arr);
+      exampleOutput = String(min);
+      expectedType = 'number';
+      console.log(`✅ Linked List min: ${min}`);
+    } else if (topicLower.includes('reverse')) {
+      const reversed = [...arr].reverse();
+      exampleOutput = JSON.stringify(reversed);
+      expectedType = 'array';
+      console.log(`✅ Linked List reverse: ${exampleOutput}`);
+    } else if (topicLower.includes('count') || topicLower.includes('size')) {
+      exampleOutput = String(arr.length);
+      expectedType = 'number';
+      console.log(`✅ Linked List count: ${arr.length}`);
+    } else if (topicLower.includes('remove') || topicLower.includes('delete')) {
+      const removeIndex = Math.floor(Math.random() * arr.length);
+      const result = arr.filter((_, i) => i !== removeIndex);
+      exampleInput = JSON.stringify(arr);
+      exampleOutput = JSON.stringify(result);
+      expectedType = 'array';
+      dataDescription = `Remove element at index ${removeIndex} from linked list`;
+      console.log(`✅ Linked List remove: ${exampleOutput}`);
+    } else if (topicLower.includes('insert') || topicLower.includes('add')) {
+      const insertIndex = Math.floor(Math.random() * (arr.length + 1));
+      const insertValue = generateRandomNumber(
+        config.numberRange.min,
+        config.numberRange.max
+      );
+      const result = [...arr];
+      result.splice(insertIndex, 0, insertValue);
+      exampleInput = JSON.stringify(arr);
+      exampleOutput = JSON.stringify(result);
+      expectedType = 'array';
+      dataDescription = `Insert ${insertValue} at index ${insertIndex}`;
+      console.log(`✅ Linked List insert: ${exampleOutput}`);
+    } else {
+      exampleOutput = `// AI will compute linked list operation`;
+      console.log(`✅ Linked List generated (AI will compute operation)`);
+    }
+
+    console.log(
+      `Generated linked list data: input=${exampleInput}, output=${exampleOutput}`
+    );
+  }
+  // ===== TREE / GRAPH =====
+  else if (category === 'GRAPH' || isTreeTopic(topic)) {
+    const size = config.treeSize || { min: 7, max: 10 };
+    const treeSize =
+      Math.floor(Math.random() * (size.max - size.min + 1)) + size.min;
+
+    const treeArray = generateValidBinaryTree(treeSize, config.numberRange);
+
+    exampleInput = JSON.stringify(treeArray);
+    expectedType = 'array';
+    dataDescription = `Binary Tree (level-order, ${treeArray.length} nodes)`;
+
+    if (topicLower.includes('multiply') || topicLower.includes('multiplier')) {
+      const multiplier = 2;
+      const outputArray = treeArray.map((val) =>
+        val === -1 ? -1 : val * multiplier
+      );
+      exampleOutput = JSON.stringify(outputArray);
+      console.log(
+        `✅ Tree multiplication with multiplier ${multiplier}: ${exampleOutput}`
+      );
+    } else if (topicLower.includes('sum') || topicLower.includes('total')) {
+      const sum = sumTreeValues(treeArray);
+      exampleOutput = String(sum);
+      expectedType = 'number';
+      console.log(`✅ Tree sum: ${sum}`);
+    } else if (topicLower.includes('count') || topicLower.includes('size')) {
+      const count = countTreeNodes(treeArray);
+      exampleOutput = String(count);
+      expectedType = 'number';
+      console.log(`✅ Tree node count: ${count}`);
+    } else if (topicLower.includes('depth') || topicLower.includes('height')) {
+      const depth = getTreeDepth(treeArray);
+      exampleOutput = String(depth);
+      expectedType = 'number';
+      console.log(`✅ Tree depth: ${depth}`);
+    } else if (topicLower.includes('path') && topicLower.includes('sum')) {
+      const maxPathSum = computeMaxRootToLeafPathSum(treeArray);
+      exampleOutput = String(maxPathSum);
+      expectedType = 'number';
+      console.log(`✅ Tree max path sum: ${maxPathSum}`);
+    } else {
+      exampleOutput = `// AI will compute tree operation result`;
+      console.log(`✅ Tree generated (AI will compute operation)`);
+    }
+
+    console.log(`Generated tree input: ${exampleInput}`);
+  }
   // ===== CLOSURE / MULTIPLIER =====
-  if (
+  else if (
     category === 'CLOSURE' ||
     topicLower.includes('multipl') ||
     topicLower.includes('multiply')
   ) {
-    const size = Math.floor(Math.random() * 3) + 5; // 5-7 elements
+    const size = Math.floor(Math.random() * 3) + 5;
     const arr = generateRandomArray(size, -20, 20);
-    // Đảm bảo có cả số âm và dương
     if (!arr.some((x) => x < 0)) arr[0] = -generateRandomNumber(1, 10);
     if (!arr.some((x) => x > 0)) arr[1] = generateRandomNumber(1, 10);
 
-    const multiplier = 2; // Dùng multiplier cố định cho closure
+    const multiplier = 2;
     const multiplied = arr.map((x) => x * multiplier);
 
     exampleInput = JSON.stringify(arr);
@@ -867,14 +1235,18 @@ function generateRandomDataForTopic(topic, difficulty, language) {
       `Generated closure data: input=${exampleInput}, output=${exampleOutput}`
     );
     console.log(`Multiplier: ${multiplier}`);
-  } else if (category === 'OOP') {
+  }
+  // ===== OOP =====
+  else if (category === 'OOP') {
     const oopData = generateOOPExample(topic, language, difficulty);
     exampleInput = oopData.exampleInput;
     expectedType = 'object';
     dataDescription = `OOP example: ${oopData.className} class instance`;
     exampleOutput = `// ${oopData.className}.${oopData.methods[0]}() will return appropriate result`;
     console.log(`Generated OOP data for class: ${oopData.className}`);
-  } else if (category === 'ARRAY') {
+  }
+  // ===== ARRAY =====
+  else if (category === 'ARRAY') {
     const size =
       Math.floor(
         Math.random() * (config.arraySize.max - config.arraySize.min + 1)
@@ -898,27 +1270,9 @@ function generateRandomDataForTopic(topic, difficulty, language) {
     }
     console.log(`Generated array: ${exampleInput}`);
     console.log(`Computed output: ${exampleOutput}`);
-  } else if (category === 'GRAPH') {
-    const size =
-      difficulty === 'advanced' ? 9 : difficulty === 'intermediate' ? 7 : 5;
-    const arr = generateRandomArray(size, -20, 40);
-    exampleInput = JSON.stringify(arr);
-    expectedType = 'number';
-    dataDescription = `Binary Tree (level-order, ${size} nodes)`;
-    if (
-      topicLower.includes('path') &&
-      (topicLower.includes('sum') ||
-        topicLower.includes('maximum') ||
-        topicLower.includes('max'))
-    ) {
-      const correctSum = computeMaxRootToLeafPathSum(arr);
-      exampleOutput = String(correctSum);
-      console.log(`✅ Tree Max Root-to-Leaf Path Sum: ${correctSum}`);
-    } else {
-      exampleOutput = `// AI will compute tree result`;
-    }
-    console.log(`Generated tree input: ${exampleInput}`);
-  } else if (category === 'STRING') {
+  }
+  // ===== STRING =====
+  else if (category === 'STRING') {
     const length =
       Math.floor(
         Math.random() * (config.stringLength.max - config.stringLength.min + 1)
@@ -963,7 +1317,9 @@ function generateRandomDataForTopic(topic, difficulty, language) {
       exampleOutput = `// AI will compute based on string operation`;
     }
     console.log(`Generated string: ${exampleInput}`);
-  } else if (category === 'MATH') {
+  }
+  // ===== MATH =====
+  else if (category === 'MATH') {
     const num = generateRandomNumber(1, difficulty === 'advanced' ? 15 : 10);
     exampleInput = String(num);
     expectedType = 'number';
@@ -1010,7 +1366,9 @@ function generateRandomDataForTopic(topic, difficulty, language) {
       exampleOutput = `// AI will compute math result`;
     }
     console.log(`Generated math input: ${exampleInput}`);
-  } else if (category === 'MATRIX') {
+  }
+  // ===== MATRIX =====
+  else if (category === 'MATRIX') {
     const rows = config.matrixSize.rows + (difficulty === 'advanced' ? 2 : 0);
     const cols = config.matrixSize.cols + (difficulty === 'advanced' ? 2 : 0);
     const matrix = generateRandomMatrix(
@@ -1024,7 +1382,9 @@ function generateRandomDataForTopic(topic, difficulty, language) {
     dataDescription = `${rows}x${cols} matrix`;
     exampleOutput = `// AI will compute matrix operation result`;
     console.log(`Generated ${rows}x${cols} matrix`);
-  } else if (category === 'DATA_STRUCTURE') {
+  }
+  // ===== DATA STRUCTURE =====
+  else if (category === 'DATA_STRUCTURE') {
     if (topicLower.includes('stack')) {
       const stack = generateRandomArray(5, 1, 100);
       exampleInput = `Stack: ${JSON.stringify(stack)}`;
@@ -1047,7 +1407,9 @@ function generateRandomDataForTopic(topic, difficulty, language) {
     }
     exampleOutput = `// AI will compute based on ${topic} operation`;
     console.log(`Generated data structure input: ${exampleInput}`);
-  } else {
+  }
+  // ===== GENERAL =====
+  else {
     const size = Math.min(5, config.arraySize.min);
     const arr = generateRandomArray(size, -20, 20);
     exampleInput = JSON.stringify(arr);
@@ -1167,6 +1529,30 @@ function fallbackResponse(prompt) {
 function getTopicSpecificRequirements(topic, difficulty, category) {
   const topicLower = topic.toLowerCase();
 
+  // ===== LINKED LIST =====
+  if (category === 'LINKED_LIST' || isLinkedListTopic(topic)) {
+    return `- Work with singly linked list
+- Operations: traverse, insert, delete, search, reverse, find max/min, sum, average
+- ${difficulty === 'advanced' ? 'Complex operations: detect cycle, merge two lists, find middle, remove duplicates' : difficulty === 'intermediate' ? 'Medium operations: reverse, find max/min, sum, insert/delete, sum positive/negative' : 'Basic operations: traverse, count, sum, find max/min'}
+- Input: array of integers to create linked list from
+- Output: depends on operation (sum, max, reversed list, etc.)
+- Handle edge cases: empty list, single element, duplicate values
+- ${difficulty === 'advanced' ? 'Optimize for time complexity O(n) or better' : 'Use standard linked list operations'}
+- Return appropriate data type based on operation requested
+- **IMPORTANT**: The question MUST involve actual linked list operations, not just array operations`;
+  }
+
+  // ===== TREE / GRAPH =====
+  if (category === 'GRAPH' || isTreeTopic(topic)) {
+    return `- Work with binary tree represented as level-order array (-1 = null)
+- ${difficulty === 'advanced' ? 'Complex tree operations like path sum, traversal, depth calculation' : difficulty === 'intermediate' ? 'Medium tree operations like multiplication, sum, counting' : 'Basic tree operations'}
+- Input is a binary tree level-order array
+- -1 represents null nodes
+- Preserve tree structure in output
+- Handle edge cases: empty tree, single node, unbalanced tree
+- ${difficulty === 'advanced' ? 'Optimize for large trees (15+ nodes)' : 'Work with moderate tree sizes (7-10 nodes)'}`;
+  }
+
   // ===== CLOSURE / MULTIPLIER =====
   if (
     category === 'CLOSURE' ||
@@ -1198,11 +1584,6 @@ function getTopicSpecificRequirements(topic, difficulty, category) {
 - ${difficulty === 'advanced' ? 'Handle large datasets with duplicates and edge cases' : 'Handle basic edge cases'}
 - **CRITICAL**: Verify array operations are correct`;
   }
-  if (category === 'GRAPH') {
-    return `- Work with trees/graphs
-- ${difficulty === 'advanced' ? 'Complex tree operations like path sum, traversal' : 'Basic tree operations'}
-- Input is a binary tree represented as level-order array (-1 = null)`;
-  }
   if (category === 'STRING') {
     return `- Work with strings
 - ${difficulty === 'advanced' ? 'Handle complex string operations with edge cases' : 'Basic string manipulation'}`;
@@ -1220,11 +1601,95 @@ function getTopicSpecificRequirements(topic, difficulty, category) {
 - Use appropriate data types for the problem`;
 }
 
-// ========== computeFallbackOutput ==========
+// ========== computeFallbackOutput (FIXED) ==========
 function computeFallbackOutput(topic, input, difficulty) {
   try {
     const topicLower = topic.toLowerCase();
     const category = categorizeTopic(topic);
+
+    // ===== LINKED LIST =====
+    if (category === 'LINKED_LIST' || isLinkedListTopic(topic)) {
+      try {
+        let arr;
+        if (typeof input === 'string') {
+          arr = JSON.parse(input);
+        } else {
+          arr = input;
+        }
+
+        if (Array.isArray(arr)) {
+          if (
+            topicLower.includes('positive') &&
+            topicLower.includes('negative')
+          ) {
+            const positiveSum = arr
+              .filter((x) => x > 0)
+              .reduce((a, b) => a + b, 0);
+            const negativeSum = arr
+              .filter((x) => x < 0)
+              .reduce((a, b) => a + b, 0);
+            const result = JSON.stringify([positiveSum, negativeSum]);
+            console.log(
+              `[FALLBACK] Linked List positive/negative sums: ${result}`
+            );
+            return result;
+          }
+
+          if (topicLower.includes('sum') || topicLower.includes('total')) {
+            return String(arr.reduce((a, b) => a + b, 0));
+          }
+          if (topicLower.includes('average') || topicLower.includes('mean')) {
+            const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+            return String(Math.round(avg * 100) / 100);
+          }
+          if (topicLower.includes('max') || topicLower.includes('maximum')) {
+            return String(Math.max(...arr));
+          }
+          if (topicLower.includes('min') || topicLower.includes('minimum')) {
+            return String(Math.min(...arr));
+          }
+          if (topicLower.includes('reverse')) {
+            return JSON.stringify([...arr].reverse());
+          }
+          if (topicLower.includes('count') || topicLower.includes('size')) {
+            return String(arr.length);
+          }
+        }
+      } catch (e) {
+        console.error('[FALLBACK] Error parsing linked list input:', e);
+      }
+    }
+
+    // ===== TREE =====
+    if (category === 'GRAPH' || isTreeTopic(topic)) {
+      try {
+        const treeArray = JSON.parse(input);
+        if (Array.isArray(treeArray)) {
+          if (
+            topicLower.includes('multiply') ||
+            topicLower.includes('multiplier')
+          ) {
+            const multiplier = 2;
+            const result = treeArray.map((val) =>
+              val === -1 ? -1 : val * multiplier
+            );
+            return JSON.stringify(result);
+          }
+          if (topicLower.includes('sum') || topicLower.includes('total')) {
+            return String(sumTreeValues(treeArray));
+          }
+          if (topicLower.includes('count') || topicLower.includes('size')) {
+            return String(countTreeNodes(treeArray));
+          }
+          if (topicLower.includes('depth') || topicLower.includes('height')) {
+            return String(getTreeDepth(treeArray));
+          }
+          if (topicLower.includes('path') && topicLower.includes('sum')) {
+            return String(computeMaxRootToLeafPathSum(treeArray));
+          }
+        }
+      } catch (e) {}
+    }
 
     if (
       category === 'CLOSURE' ||
@@ -1255,13 +1720,6 @@ function computeFallbackOutput(topic, input, difficulty) {
     if (Array.isArray(parsedInput)) {
       const result = computeArrayOutput(topicLower, parsedInput);
       if (result !== null) return result.value;
-      if (
-        category === 'GRAPH' &&
-        topicLower.includes('path') &&
-        topicLower.includes('sum')
-      ) {
-        return String(computeMaxRootToLeafPathSum(parsedInput));
-      }
     }
     if (typeof parsedInput === 'string') {
       if (topicLower.includes('reverse'))
@@ -1295,7 +1753,7 @@ function getOOPFallbackOutput(topic) {
   return 'Class instance created successfully';
 }
 
-// ========== VALIDATE AND FIX QUESTION ==========
+// ========== VALIDATE AND FIX QUESTION (FIXED) ==========
 function validateAndFixQuestion(
   parsed,
   topic,
@@ -1355,6 +1813,93 @@ function validateAndFixQuestion(
     );
   }
 
+  // ===== LINKED LIST SPECIFIC VALIDATION (FIXED) =====
+  if (category === 'LINKED_LIST' || isLinkedListTopic(topic)) {
+    // Đảm bảo câu hỏi đề cập đến linked list
+    if (!fixed.problemStatement.toLowerCase().includes('linked list')) {
+      fixed.problemStatement = `Given an array of integers, create a linked list and ${fixed.problemStatement.toLowerCase()}`;
+    }
+
+    // Kiểm tra và sửa output cho sum positive/negative
+    if (topicLower.includes('positive') && topicLower.includes('negative')) {
+      try {
+        let inputArr;
+        if (typeof fixed.exampleInput === 'string') {
+          inputArr = JSON.parse(fixed.exampleInput);
+        } else {
+          inputArr = fixed.exampleInput;
+        }
+
+        if (Array.isArray(inputArr)) {
+          const positiveSum = inputArr
+            .filter((x) => x > 0)
+            .reduce((a, b) => a + b, 0);
+          const negativeSum = inputArr
+            .filter((x) => x < 0)
+            .reduce((a, b) => a + b, 0);
+          const correctOutput = JSON.stringify([positiveSum, negativeSum]);
+
+          // Kiểm tra output hiện tại
+          let currentOutput;
+          try {
+            if (typeof fixed.exampleOutput === 'string') {
+              currentOutput = JSON.parse(fixed.exampleOutput);
+            } else {
+              currentOutput = fixed.exampleOutput;
+            }
+          } catch (e) {
+            currentOutput = fixed.exampleOutput;
+          }
+
+          // Nếu output sai, sửa lại
+          if (Array.isArray(currentOutput) && currentOutput.length === 2) {
+            if (
+              currentOutput[0] !== positiveSum ||
+              currentOutput[1] !== negativeSum
+            ) {
+              console.log(
+                `[FIX] Correcting linked list output from ${fixed.exampleOutput} to ${correctOutput}`
+              );
+              console.log(`   Expected: [${positiveSum}, ${negativeSum}]`);
+              console.log(`   Got: [${currentOutput[0]}, ${currentOutput[1]}]`);
+              fixed.exampleOutput = correctOutput;
+            }
+          } else {
+            // Nếu output không phải array, set lại
+            console.log(`[FIX] Setting linked list output to ${correctOutput}`);
+            fixed.exampleOutput = correctOutput;
+          }
+        }
+      } catch (e) {
+        console.warn(
+          '[VALIDATE] Could not validate linked list output:',
+          e.message
+        );
+      }
+    }
+  }
+
+  // ===== TREE SPECIFIC VALIDATION =====
+  if (category === 'GRAPH' || isTreeTopic(topic)) {
+    try {
+      const inputArray = JSON.parse(fixed.exampleInput);
+      if (Array.isArray(inputArray)) {
+        const hasNull = inputArray.some((val) => val === -1);
+        if (!hasNull && inputArray.length > 1) {
+          const newArray = [];
+          for (let i = 0; i < inputArray.length; i++) {
+            if (i > 0 && i < inputArray.length - 1 && Math.random() < 0.15) {
+              newArray.push(-1);
+            } else {
+              newArray.push(inputArray[i]);
+            }
+          }
+          fixed.exampleInput = JSON.stringify(newArray);
+        }
+      }
+    } catch (e) {}
+  }
+
   // ===== VALIDATE EXAMPLE OUTPUT =====
   const validation = validateAndFixExampleOutput(
     fixed.exampleInput,
@@ -1385,7 +1930,6 @@ function validateAndFixQuestion(
         Array.isArray(output) &&
         input.length === output.length
       ) {
-        // Kiểm tra xem output có phải là input * constant không
         let multiplier = null;
         let allMatch = true;
         let hasNonZero = false;
@@ -1409,7 +1953,6 @@ function validateAndFixQuestion(
           multiplier === null ||
           !Number.isInteger(multiplier)
         ) {
-          // Tự động sửa với multiplier = 2
           const defaultMultiplier = 2;
           const fixedOutput = input.map((x) => x * defaultMultiplier);
           console.log(
@@ -1417,7 +1960,6 @@ function validateAndFixQuestion(
           );
           fixed.exampleOutput = JSON.stringify(fixedOutput);
 
-          // Thêm ghi chú vào problem statement
           if (
             fixed.problemStatement &&
             !fixed.problemStatement.includes('multiplier')
@@ -1598,6 +2140,18 @@ function getFallbackProblemStatement(topic, language, difficulty) {
 function getFallbackSignature(language, topic, category) {
   const cleanTopic = topic.toLowerCase().replace(/\s+/g, '_');
 
+  if (category === 'LINKED_LIST' || isLinkedListTopic(topic)) {
+    const signatures = {
+      javascript: `function ${cleanTopic}(arr) {\n  // Create linked list from array\n  // Perform linked list operation\n}`,
+      python: `def ${cleanTopic}(arr):\n    # Create linked list from array\n    # Perform linked list operation\n    pass`,
+      java: `public static int[] ${cleanTopic}(int[] arr) {\n    // Create linked list from array\n    // Perform linked list operation\n    return new int[0];\n}`,
+      csharp: `public static int[] ${cleanTopic}(int[] arr) {\n    // Create linked list from array\n    // Perform linked list operation\n    return new int[0];\n}`,
+      cpp: `vector<int> ${cleanTopic}(vector<int>& arr) {\n    // Create linked list from array\n    // Perform linked list operation\n    return vector<int>();\n}`,
+      go: `func ${cleanTopic}(arr []int) []int {\n    // Create linked list from array\n    // Perform linked list operation\n    return []int{}\n}`,
+    };
+    return signatures[language] || `// Define ${topic} function`;
+  }
+
   if (category === 'CLOSURE') {
     if (language === 'javascript') {
       return `function createMultiplier(multiplier) {\n  // Return a function that multiplies its argument by multiplier\n}`;
@@ -1630,6 +2184,14 @@ function getFallbackSignature(language, topic, category) {
 function getFallbackExampleInput(language, topic, category) {
   const topicLower = topic.toLowerCase();
 
+  if (category === 'LINKED_LIST' || isLinkedListTopic(topic)) {
+    return '[-16, -12, -34, -29, 24, -28, 43, 33]';
+  }
+
+  if (category === 'GRAPH' || isTreeTopic(topic)) {
+    return '[4, 31, 23, 7, 26, 25, 40]';
+  }
+
   if (
     category === 'CLOSURE' ||
     topicLower.includes('multipl') ||
@@ -1640,7 +2202,6 @@ function getFallbackExampleInput(language, topic, category) {
 
   if (category === 'OOP')
     return generateOOPExample(topic, language, 'intermediate').exampleInput;
-  if (category === 'GRAPH') return '[1, 2, 3, 4, 5, 6, 7]';
   if (topicLower.includes('array') || topicLower === 'arrays')
     return '[1, 2, 3, 4, 5]';
   if (topicLower.includes('string') || topicLower === 'strings')
@@ -1659,6 +2220,50 @@ function getFallbackExampleInput(language, topic, category) {
 function getFallbackExampleOutput(topic, category) {
   const topicLower = topic.toLowerCase();
 
+  if (category === 'LINKED_LIST' || isLinkedListTopic(topic)) {
+    if (topicLower.includes('positive') && topicLower.includes('negative')) {
+      return '[100, -119]';
+    }
+    if (topicLower.includes('sum') || topicLower.includes('total')) {
+      return '15';
+    }
+    if (topicLower.includes('average') || topicLower.includes('mean')) {
+      return '7.5';
+    }
+    if (topicLower.includes('max') || topicLower.includes('maximum')) {
+      return '35';
+    }
+    if (topicLower.includes('min') || topicLower.includes('minimum')) {
+      return '-36';
+    }
+    if (topicLower.includes('reverse')) {
+      return '[21, -36, -25, -35, 35, 8, -32, -8, 5]';
+    }
+    if (topicLower.includes('count') || topicLower.includes('size')) {
+      return '9';
+    }
+    return '// Linked list operation result';
+  }
+
+  if (category === 'GRAPH' || isTreeTopic(topic)) {
+    if (topicLower.includes('multiply') || topicLower.includes('multiplier')) {
+      return '[8, 62, 46, 14, 52, 50, 80]';
+    }
+    if (topicLower.includes('sum') || topicLower.includes('total')) {
+      return '156';
+    }
+    if (topicLower.includes('count') || topicLower.includes('size')) {
+      return '7';
+    }
+    if (topicLower.includes('depth') || topicLower.includes('height')) {
+      return '3';
+    }
+    if (topicLower.includes('path') && topicLower.includes('sum')) {
+      return '20';
+    }
+    return '// Tree operation result';
+  }
+
   if (
     category === 'CLOSURE' ||
     topicLower.includes('multipl') ||
@@ -1668,12 +2273,6 @@ function getFallbackExampleOutput(topic, category) {
   }
 
   if (category === 'OOP') return getOOPFallbackOutput(topic);
-  if (
-    category === 'GRAPH' &&
-    topicLower.includes('path') &&
-    topicLower.includes('sum')
-  )
-    return '20';
   if (topicLower.includes('sum') || topicLower.includes('total')) return '15';
   if (topicLower.includes('max')) return '10';
   if (topicLower.includes('min')) return '1';
@@ -1695,7 +2294,7 @@ function getFallbackTestCriteria(topic, difficulty) {
   }
 }
 
-// ========== GENERATE CODE QUESTION (FIXED) ==========
+// ========== GENERATE CODE QUESTION ==========
 async function generateCodeQuestion(language, domain, topic, difficulty) {
   const { style } = getTopicStyle(topic, language, difficulty);
   const topicGuidance = getTopicGuidance(topic, language, difficulty);
@@ -1720,12 +2319,24 @@ IMPORTANT:
 `;
   }
 
-  // Thêm hướng dẫn cụ thể cho closure/multiplier
   let specificInstructions = getTopicSpecificRequirements(
     topic,
     difficulty,
     category
   );
+
+  if (category === 'LINKED_LIST' || isLinkedListTopic(topic)) {
+    specificInstructions += `
+
+**LINKED LIST SPECIFIC INSTRUCTIONS**:
+- Create a singly linked list from the input array
+- Perform the requested operation on the linked list
+- For sum positive/negative: traverse the linked list and sum positive and negative values separately
+- Return appropriate data type (array, number, or modified linked list)
+- Handle edge cases: empty list, single node, all positive/negative numbers
+- **CRITICAL**: The solution must use linked list operations, not just array operations
+- Demonstrate understanding of linked list traversal and manipulation`;
+  }
 
   if (
     category === 'CLOSURE' ||
@@ -1747,7 +2358,28 @@ IMPORTANT:
 - DO NOT use multiplier = -2 (would give wrong signs)`;
   }
 
-  let prompt = `You are an expert JavaScript coding interviewer.
+  if (category === 'GRAPH' || isTreeTopic(topic)) {
+    specificInstructions += `
+
+**TREE SPECIFIC INSTRUCTIONS**:
+- Input is a binary tree represented as level-order array
+- -1 represents null nodes
+- Example: [4, 31, 23, 7, 26, 25, 40] represents:
+        4
+       / \\
+      31  23
+     / \\  / \\
+    7  26 25 40
+- ${topicLower.includes('multiply') ? 'Multiply each node value by multiplier (2), preserve -1' : ''}
+- ${topicLower.includes('sum') ? 'Sum all node values (ignore -1)' : ''}
+- ${topicLower.includes('count') ? 'Count non-null nodes' : ''}
+- ${topicLower.includes('depth') ? 'Calculate tree depth/height' : ''}
+- ${topicLower.includes('path') ? 'Find path sum from root to leaf' : ''}
+- Preserve tree structure in output if modifying values
+- Handle unbalanced trees and edge cases correctly`;
+  }
+
+  let prompt = `You are an expert ${language} coding interviewer.
 Create ONE coding question with these EXACT requirements:
 
 Language: ${language}
@@ -1761,6 +2393,8 @@ RULES:
 3. Difficulty ${difficulty} means:
    ${difficulty === 'beginner' ? '- simple, <15 lines, basic constructs' : difficulty === 'intermediate' ? '- 15–30 lines, standard patterns' : '- 30–50 lines, optimized, mention complexity'}
 4. Choose the appropriate input type:
+   - Linked List → array of numbers (converted to linked list)
+   - Tree/Graph → level-order array with -1 for null
    - Closure/Multiplier → array of numbers
    - OOP → object/class instance
    - String → string
@@ -1768,7 +2402,7 @@ RULES:
 5. ${difficulty === 'advanced' ? 'Use LARGER datasets (12-18 elements)' : difficulty === 'intermediate' ? 'Use moderate datasets (8-12 elements)' : 'Use small datasets (5-7 elements)'}
 6. Use numbers in range ${config.numberRange.min} to ${config.numberRange.max}
 7. **CRITICAL**: exampleOutput MUST be mathematically correct!
-8. **DOUBLE CHECK YOUR MATH**: Each output element = input element * multiplier
+8. **DOUBLE CHECK YOUR MATH**: Each output element = input element * multiplier (if applicable)
 
 ${topicGuidance}
 
@@ -1789,7 +2423,9 @@ RANDOM DATA (MUST USE THESE EXACT VALUES):
 IMPORTANT: 
 - Use the exact exampleInput above
 - Compute the CORRECT exampleOutput
-- For closure: if input = [1,2,3] and multiplier = 2, output = [2,4,6]
+- ${category === 'LINKED_LIST' || isLinkedListTopic(topic) ? 'For linked list: create linked list from array and perform operation' : ''}
+- ${category === 'GRAPH' || isTreeTopic(topic) ? 'For tree: output should reflect the tree operation requested' : ''}
+- ${category === 'CLOSURE' || topicLower.includes('multipl') ? 'For multiplier: if input = [1,2,3] and multiplier = 2, output = [2,4,6]' : ''}
 - VERIFY your math is correct!
 - Do NOT change the exampleInput
 
@@ -1814,12 +2450,10 @@ Return ONLY valid JSON:
   const parsed = extractJson(result);
 
   if (parsed && typeof parsed === 'object') {
-    // Fix các trường hợp thiếu
     if (!parsed.exampleInput || parsed.exampleInput === '// Example input') {
       parsed.exampleInput = randomData.exampleInput;
     }
 
-    // Compute output nếu AI không tính đúng
     if (
       randomData.exampleOutput &&
       typeof randomData.exampleOutput === 'string' &&
@@ -1842,7 +2476,6 @@ Return ONLY valid JSON:
       }
     }
 
-    // Validate và fix
     const fixed = validateAndFixQuestion(
       parsed,
       topic,
@@ -1857,7 +2490,7 @@ Return ONLY valid JSON:
   return extractJson(fallbackResponse('coding problem'));
 }
 
-// ========== GENERATE EXPLANATION QUESTION (FIXED) ==========
+// ========== GENERATE EXPLANATION QUESTION ==========
 async function generateExplanationQuestion(
   language,
   userCode,
@@ -1929,7 +2562,7 @@ Return JSON: {"type": "explain", "question": "...", "lineNumber": ${selectedLine
   };
 }
 
-// ========== GENERATE NEXT EXPLANATION QUESTION (FIXED) ==========
+// ========== GENERATE NEXT EXPLANATION QUESTION ==========
 async function generateNextExplanationQuestion(
   language,
   userCode,
@@ -2203,12 +2836,15 @@ module.exports = {
   generateRandomString,
   generateRandomObject,
   generateRandomMatrix,
+  generateValidBinaryTree,
   DIFFICULTY_CONFIG,
   categorizeTopic,
   isOOPTopic,
   isArrayTopic,
   isStringTopic,
   isClosureTopic,
+  isTreeTopic,
+  isLinkedListTopic,
   generateOOPExample,
   computeMaxRootToLeafPathSum,
   computeArrayOutput,
@@ -2218,4 +2854,19 @@ module.exports = {
   computeSecondMaxAndMin,
   computeSecondMax,
   computeSecondMin,
+  multiplyTreeValues,
+  sumTreeValues,
+  countTreeNodes,
+  getTreeDepth,
+  arrayToLinkedList,
+  linkedListToArray,
+  countNodes,
+  getNodeAt,
+  appendNode,
+  deleteNodeAt,
+  reverseLinkedList,
+  findMax,
+  findMin,
+  sumLinkedList,
+  sumPositiveNegative,
 };

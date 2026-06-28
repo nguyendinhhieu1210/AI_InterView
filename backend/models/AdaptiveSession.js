@@ -5,18 +5,18 @@ const messageSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ['assistant', 'user'],
-      required: true
+      required: true,
     },
 
     content: {
       type: String,
-      required: true
+      required: true,
     },
 
     type: {
       type: String,
       enum: ['question', 'answer', 'system'],
-      default: 'question'
+      default: 'question',
     },
 
     subtopic: String,
@@ -25,17 +25,17 @@ const messageSchema = new mongoose.Schema(
       type: Number,
       min: 0,
       max: 10,
-      default: null
+      default: null,
     },
 
     strengths: [String],
 
     weaknesses: [String],
 
-    missingConcepts: [String]
+    missingConcepts: [String],
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
@@ -44,24 +44,18 @@ const adaptiveSessionSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true
+      required: true,
     },
 
     topic: {
       type: String,
-      required: true
-    },
-
-    difficulty: {
-      type: String,
-      enum: ['easy', 'medium', 'hard'],
-      default: 'medium'
+      required: true,
     },
 
     status: {
       type: String,
       enum: ['active', 'completed', 'abandoned'],
-      default: 'active'
+      default: 'active',
     },
 
     conversation: [messageSchema],
@@ -70,28 +64,31 @@ const adaptiveSessionSchema = new mongoose.Schema(
       type: Number,
       min: 0,
       max: 10,
-      default: null
+      default: null,
     },
 
     summary: {
       type: mongoose.Schema.Types.Mixed,
-      default: {}
+      default: {},
     },
 
     detailedReport: {
-      type: mongoose.Schema.Types.Mixed
+      type: mongoose.Schema.Types.Mixed,
     },
 
     startedAt: {
       type: Date,
-      default: Date.now
+      default: Date.now,
     },
 
     endedAt: Date,
 
-    maxFollowUps: {
+    // ✅ Mặc định 5, min 5, max 8
+    maxQuestions: {
       type: Number,
-      default: 8
+      default: 5,
+      min: 5,
+      max: 8,
     },
 
     coveredTopics: [String],
@@ -100,12 +97,12 @@ const adaptiveSessionSchema = new mongoose.Schema(
 
     subtopicDepth: {
       type: Number,
-      default: 0
+      default: 0,
     },
 
     lastAnswerSharp: {
       type: Boolean,
-      default: false
+      default: false,
     },
 
     lastAnswerSubtopic: String,
@@ -116,14 +113,11 @@ const adaptiveSessionSchema = new mongoose.Schema(
 
     roadmapStructured: mongoose.Schema.Types.Mixed,
 
-    roadmapFlattened: [String]
+    roadmapFlattened: [String],
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
-module.exports = mongoose.model(
-  'AdaptiveSession',
-  adaptiveSessionSchema
-);
+module.exports = mongoose.model('AdaptiveSession', adaptiveSessionSchema);
