@@ -6,7 +6,7 @@
   --bg-color: #f8fafc;
   --text-color: #0f172a;
   /* đậm hơn một chút */
-  
+
   /* bỏ alpha, rõ hơn nhiều */
 
   --primary: #3b82f6;
@@ -30,22 +30,28 @@
    DARK THEME
 ========================= */
 html.dark {
-  --bg-color: #0f172a;
-  --text-color: #e5e7eb;
+  /* Background */
+  --bg-color: #09090b; /* nền chính */
+  --card-bg: #18181b; /* nền card */
 
+  /* Text */
+  --text-color: #f4f4f5; /* chữ chính */
+  --muted-text: #a1a1aa; /* chữ phụ */
+
+  /* Border */
+  --border-color: #27272a;
+
+  /* Accent */
   --primary: #60a5fa;
-  --secondary: #818cf8;
+  --secondary: #8b5cf6;
 
-  --card-bg: #1e293b;
-  --border-color: #334155;
-
-  --muted-text: #94a3b8;
-
-  --success: #34d399;
+  /* Status */
+  --success: #4ade80;
   --warning: #fbbf24;
-  --error: #fb7185;
+  --error: #f87171;
 
-  --shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
+  /* Shadow */
+  --shadow: 0 10px 35px rgba(0, 0, 0, 0.65);
 
   --transition: all 0.3s ease;
 }
@@ -61,7 +67,8 @@ body {
 }
 
 * {
-  transition: background-color 0.3s ease,
+  transition:
+    background-color 0.3s ease,
     color 0.3s ease,
     border-color 0.3s ease;
 }
