@@ -206,6 +206,7 @@ async function scoreQAPairs(qaPairs, topic) {
 
   for (let i = 0; i < qaPairs.length; i += BATCH_SIZE) {
     const batch = qaPairs.slice(i, i + BATCH_SIZE);
+
     const qaText = batch
       .map((qa) => {
         const qualityNote =
@@ -233,14 +234,7 @@ Return a JSON array (${batch.length} items):
     "correctConcepts": ["list of concepts the candidate correctly mentioned"],
     "missingConcepts": ["list of concepts the candidate missed that are CRITICAL to the question"],
     "feedback": "Detailed feedback: (1) What was correct/good about the answer (2) What was missing or could be improved (3) Any off-topic or incorrect information (4) Specific suggestions for improvement",
-    "idealAnswer": "<250-350 words, comprehensive and detailed explanation. Must include:
-      - Direct answer to the question (2-3 sentences)
-      - Explanation of core concepts, principles, and how they work (4-5 sentences)
-      - Practical insights, trade-offs, use cases, and why it matters (3-4 sentences)
-      - Comparison with related concepts if applicable (2-3 sentences)
-      - Common pitfalls, best practices, or edge cases (2-3 sentences)
-      - Conclusion summarizing key takeaways (1-2 sentences)
-      Code examples are OPTIONAL and should only be included if the question explicitly asks for an implementation or if the concept is best illustrated with a short snippet. Prefer in-depth textual explanation over code.>",
+    "idealAnswer": "<250-350 words, comprehensive and detailed explanation. Must include: direct answer (2-3 sentences), core concepts and how they work (4-5 sentences), practical insights and trade-offs (3-4 sentences), comparison with related concepts if applicable (2-3 sentences), common pitfalls and best practices (2-3 sentences), conclusion (1-2 sentences). Code examples OPTIONAL - only when the question explicitly asks for implementation.>",
     "idealAnswerCode": "<code snippet with comments, 5-15 lines, or null>",
     "idealAnswerCodeLanguage": "<language or null>"
   }
@@ -252,11 +246,11 @@ SCORING GUIDELINES (BE FAIR, NOT OVERLY HARSH):
 - 7-8: Good answer, covers most points, minor gaps
 - 9-10: Excellent, comprehensive, with clear examples and depth
 
-All text, including feedback, idealAnswer, and any description, must be in English.
+All text must be in English. Return ONLY the JSON array.`;
 
-Return ONLY the JSON array`;
+    // FIX ②: batchResult khai báo bên trong loop, không bị giữ giá trị cũ giữa các batch
+    let rawItems = null;
 
-    let batchResult = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const response = await callAI(
@@ -264,25 +258,16 @@ Return ONLY the JSON array`;
             {
               role: 'system',
               content: `You are a senior technical interviewer with 10+ years of experience.
-
-Your job is to evaluate candidate answers fairly and constructively.
+Evaluate candidate answers fairly and constructively.
 
 SCORING PRINCIPLES:
 - Score based on the QUESTION ASKED, not general knowledge.
-- Be fair: give credit for correct parts, identify missing points but don't over-penalize.
-- A score of 7-8 means a solid answer that covers most aspects.
-- Only give 9-10 for exceptional answers with depth and examples.
+- Give credit for correct parts; identify missing points but don't over-penalize.
+- 7-8: solid answer covering most aspects. 9-10: exceptional depth with examples.
 - Provide specific, actionable feedback.
+- missingConcepts: key concepts essential to the question that the candidate missed.
 
-missingConcepts should include key concepts the candidate missed that are essential to this question.
-
-IDEAL ANSWER GUIDELINES:
-- Provide a rich, detailed explanation of the concept. Aim for 250-350 words.
-- Focus on explaining the 'why' and 'how', not just 'what'.
-- Include trade-offs, best practices, and common pitfalls.
-- Use code only when absolutely necessary to clarify the concept.
-
-**All responses, including feedback, idealAnswer, and any text, must be in English.**
+IDEAL ANSWER: Rich 250-350 word explanation. Focus on 'why' and 'how'. Include trade-offs, best practices, pitfalls. Code only when necessary.
 
 Return ONLY valid JSON.`,
             },
@@ -290,44 +275,44 @@ Return ONLY valid JSON.`,
           ],
           'score_qa'
         );
+
         const text = response
           .replace(/```json\s*/gi, '')
           .replace(/```\s*/gi, '')
           .trim();
+
         const arrStart = text.indexOf('[');
         const arrEnd = text.lastIndexOf(']');
         if (arrStart === -1 || arrEnd === -1)
           throw new Error('No JSON array found');
-        batchResult = JSON.parse(text.slice(arrStart, arrEnd + 1));
-        break;
+
+        const parsed = JSON.parse(text.slice(arrStart, arrEnd + 1));
+        if (!Array.isArray(parsed))
+          throw new Error('Parsed result is not an array');
+
+        rawItems = parsed;
+        break; // thành công, thoát retry loop
       } catch (err) {
         console.warn(
-          `[scoreQAPairs] Batch attempt ${attempt + 1} failed: ${err.message}`
+          `[scoreQAPairs] Batch ${i / BATCH_SIZE + 1} attempt ${attempt + 1} failed: ${err.message}`
         );
+        // FIX ②: không cần reset vì rawItems vẫn là null nếu chưa có kết quả
       }
     }
 
-    if (batchResult && Array.isArray(batchResult)) {
-      for (const item of batchResult) {
-        const qa = batch.find((q) => q.questionNumber === item.questionNumber);
-        if (qa) {
-          const quality = qa.answerQuality.quality;
-          const maxScore = SCORING.MAX_SCORE_BY_QUALITY[quality] || 8;
-          if (item.score > maxScore) {
-            item.score = maxScore;
-            item.feedback = `[Score capped at ${maxScore}/10 for ${quality} quality] ${item.feedback}`;
-          }
-          if (qa.answerQuality.tooShort && item.score > 3) {
-            item.score = 3;
-            item.feedback = `[Very short answer] ${item.feedback}`;
-            item.verdict = 'Poor';
-          }
-          item.score = Math.max(0, Math.min(10, Math.round(item.score)));
-        }
-      }
-      allScored.push(...batchResult);
-    } else {
-      for (const qa of batch) {
+    // Xử lý từng item trong batch một cách độc lập
+    for (let j = 0; j < batch.length; j++) {
+      const qa = batch[j];
+
+      // FIX ③: fallback bằng index nếu AI trả questionNumber sai
+      const aiItem = rawItems
+        ? (rawItems.find((r) => r.questionNumber === qa.questionNumber) ??
+          rawItems[j] ??
+          null)
+        : null;
+
+      if (!aiItem || typeof aiItem.score !== 'number') {
+        // FIX ④: item nào fail thì fallback riêng, không ảnh hưởng item khác
         const baseScore =
           qa.answerQuality.quality === 'poor'
             ? 1
@@ -347,17 +332,46 @@ Return ONLY valid JSON.`,
             'Missing key concepts and depth',
           ],
           feedback:
-            'This answer is insufficient. It either does not directly address the question, is too brief, or lacks key concepts. Please provide a more thorough and specific response.',
+            'This answer is insufficient. It either does not directly address the question, is too brief, or lacks key concepts.',
           idealAnswer: getFallbackIdealAnswer(qa.subtopic, topic),
           idealAnswerCode: null,
           idealAnswerCodeLanguage: null,
         });
+        continue;
       }
+
+      // FIX ①⑤: áp dụng cap theo đúng thứ tự priority, round sau cùng
+      const quality = qa.answerQuality.quality;
+      const maxScore = SCORING.MAX_SCORE_BY_QUALITY[quality] ?? 8;
+      let { score, feedback = '', verdict = 'Poor' } = aiItem;
+
+      // Priority 1: tooShort luôn thắng
+      if (qa.answerQuality.tooShort && score > 3) {
+        score = 3;
+        feedback = `[Very short answer] ${feedback}`;
+        verdict = 'Poor';
+      }
+      // Priority 2: quality cap (chỉ khi chưa bị tooShort cap về thấp hơn)
+      else if (score > maxScore) {
+        score = maxScore;
+        feedback = `[Score capped at ${maxScore}/10 for ${quality} quality] ${feedback}`;
+      }
+
+      // Priority 3: clamp rồi mới round
+      score = Math.round(Math.max(0, Math.min(10, score)));
+
+      allScored.push({
+        ...aiItem,
+        questionNumber: qa.questionNumber, // đảm bảo đúng số gốc, không dùng AI's number
+        score,
+        verdict,
+        feedback,
+      });
     }
   }
+
   return allScored;
 }
-
 // Generate next question
 async function generateNextQuestion(session, answer) {
   const roadmapFlat =

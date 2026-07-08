@@ -1,50 +1,52 @@
-import { Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import { AuthProvider } from "./contexts/AuthContext";
-import { InterviewProvider } from "./contexts/InterviewContext";
-import { HistoryProvider } from "./contexts/HistoryContext";
-import ProtectedRoute from "./components/ProtectedRoute";
-import { Toaster } from "react-hot-toast";
+import { Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { InterviewProvider } from './contexts/InterviewContext';
+import { HistoryProvider } from './contexts/HistoryContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import { Toaster } from 'react-hot-toast';
 
 // Auth pages
-import Register from "./Pages/Register";
-import Login from "./Pages/Login";
-import ForgotPassword from "./Pages/ForgotPassword";
-import ResetPassword from "./Pages/ResetPassword";
-import VerifyOTP from "./Pages/VerifyOTP";
+import Register from './Pages/Register';
+import Login from './Pages/Login';
+import ForgotPassword from './Pages/ForgotPassword';
+import ResetPassword from './Pages/ResetPassword';
+import VerifyOTP from './Pages/VerifyOTP';
 
 // User pages
-import WelcomePage from "./Pages/WellcomePage";
-import ProfilePage from "./Pages/ProfilePage";
-import SettingsPage from "./Pages/SettingsPage";
-import HelpSupportPage from "./Pages/HelpSupportPage";
-import InterviewPage from "./Pages/InterviewPage";
-import HistoryPage from "./Pages/HistoryPage";
-import InterviewDetailPage from "./Pages/InterviewDetailPage";
-import InterviewCVPage from "./Pages/InterviewCVPage";
-import { CVInfoModal } from "./components/CVInfoModal";
-import CVHistoryDetailPage from "./Pages/CVHistoryDetailPage";
-import AdaptiveInterviewPage from "./Pages/AdaptiveInterviewPage";
-import AdaptiveHistoryPage from "./Pages/AdaptiveHistoryPage";
-import InterviewHistoryPage from "./Pages/InterviewHistoryPage";
-import CVHistoryPage from "./Pages/CVHistoryPage";
-import AdaptiveSessionDetailPage from "./Pages/AdaptiveSessionDetailPage";
-import LiveCodingPage from "./Pages/LiveCodingPage";
-import CodingHistoryPage from "./Pages/CodingHistoryPage";
-import CodingHistoryDetailPage from "./Pages/CodingHistoryDetailPage";
+import WelcomePage from './Pages/WellcomePage';
+import ProfilePage from './Pages/ProfilePage';
+import SettingsPage from './Pages/SettingsPage';
+import HelpSupportPage from './Pages/HelpSupportPage';
+import InterviewPage from './Pages/InterviewPage';
+import HistoryPage from './Pages/HistoryPage';
+import InterviewDetailPage from './Pages/InterviewDetailPage';
+import InterviewCVPage from './Pages/InterviewCVPage';
+import { CVInfoModal } from './components/CVInfoModal';
+import CVHistoryDetailPage from './Pages/CVHistoryDetailPage';
+import AdaptiveInterviewPage from './Pages/AdaptiveInterviewPage';
+import AdaptiveHistoryPage from './Pages/AdaptiveHistoryPage';
+import InterviewHistoryPage from './Pages/InterviewHistoryPage';
+import CVHistoryPage from './Pages/CVHistoryPage';
+import AdaptiveSessionDetailPage from './Pages/AdaptiveSessionDetailPage';
+import LiveCodingPage from './Pages/LiveCodingPage';
+import CodingHistoryPage from './Pages/CodingHistoryPage';
+import CodingHistoryDetailPage from './Pages/CodingHistoryDetailPage';
 
 // Admin pages
-import AdminLayout from "./layouts/AdminLayout";
-import AdminRoute from "./components/admin/AdminRoute";
-import Dashboard from "./Pages/admin/Dashboard";
-import UsersList from "./Pages/admin/UsersList";
-import UserDetail from "./Pages/admin/UserDetail";
-import Interviews from "./Pages/admin/Interviews";
-import Settings from "./Pages/admin/Settings";
-import CVHistory from "./Pages/admin/CVHistory";
-import CodingSessions from "./Pages/admin/CodingSessions";
-import AdaptiveSessions from "./Pages/admin/AdaptiveSessions";
-import SystemLogs from "./Pages/admin/SystemLogs";
+import AdminLayout from './layouts/AdminLayout';
+import AdminRoute from './components/admin/AdminRoute';
+import Dashboard from './Pages/admin/Dashboard';
+import UsersList from './Pages/admin/UsersList';
+import UserDetail from './Pages/admin/UserDetail';
+import Interviews from './Pages/admin/Interviews';
+import Settings from './Pages/admin/Settings';
+import CVHistory from './Pages/admin/CVHistory';
+import CodingSessions from './Pages/admin/CodingSessions';
+import AdaptiveSessions from './Pages/admin/AdaptiveSessions';
+import SystemLogs from './Pages/admin/SystemLogs';
+import QuestionManagement from './Pages/admin/QuestionManagement';
+import ExamSetManagement from './Pages/admin/ExamSetManagement';
 
 // ─── Wrapper: Auth routes (cố định light, không bị ảnh hưởng theme user) ───
 function AuthWrapper({ children }) {
@@ -142,6 +144,8 @@ function App() {
           <Route path="adaptive-sessions" element={<AdaptiveSessions />} />
           <Route path="logs" element={<SystemLogs />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="/admin/questions" element={<QuestionManagement />} />
+          <Route path="/admin/exam-sets" element={<ExamSetManagement />} />
         </Route>
 
         {/* ───── 3. USER ROUTES (đăng nhập mới vào, theme theo từng user) ───── */}

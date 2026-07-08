@@ -1,6 +1,6 @@
-// src/components/admin/AdminSidebar.jsx
-import { NavLink } from "react-router-dom";
-import { useState, useEffect } from "react";
+// src/components/admin/AdminSidebar.jsx - Thêm menu Exam Sets
+import { NavLink } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -15,37 +15,49 @@ import {
   History,
   Menu,
   X,
-} from "lucide-react";
+  BookOpen,
+  Layers, // ✅ Thêm icon cho Exam Sets
+} from 'lucide-react';
 
 const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   const menuItems = [
-    { name: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/admin" },
-    { name: "Users", icon: <Users size={20} />, path: "/admin/users" },
+    { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/admin' },
+    { name: 'Users', icon: <Users size={20} />, path: '/admin/users' },
     {
-      name: "Interviews",
+      name: 'Interviews',
       icon: <Briefcase size={20} />,
-      path: "/admin/interviews",
+      path: '/admin/interviews',
     },
     {
-      name: "CV Interviews",
+      name: 'CV Interviews',
       icon: <FileText size={20} />,
-      path: "/admin/cv-history",
+      path: '/admin/cv-history',
     },
     {
-      name: "Coding Interviews",
+      name: 'Coding Interviews',
       icon: <Code size={20} />,
-      path: "/admin/coding-sessions",
+      path: '/admin/coding-sessions',
     },
     {
-      name: "Adaptive Interviews",
+      name: 'Adaptive Interviews',
       icon: <Brain size={20} />,
-      path: "/admin/adaptive-sessions",
+      path: '/admin/adaptive-sessions',
     },
-    { name: "System Logs", icon: <History size={20} />, path: "/admin/logs" },
-    { name: "Settings", icon: <Settings size={20} />, path: "/admin/settings" },
+    {
+      name: 'Question Bank',
+      icon: <BookOpen size={20} />,
+      path: '/admin/questions',
+    },
+    {
+      name: 'Exam Sets', // ✅ Thêm menu Exam Sets
+      icon: <Layers size={20} />,
+      path: '/admin/exam-sets',
+    },
+    { name: 'System Logs', icon: <History size={20} />, path: '/admin/logs' },
+    { name: 'Settings', icon: <Settings size={20} />, path: '/admin/settings' },
   ];
 
   useEffect(() => {
@@ -56,18 +68,18 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
       }
     };
     checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   useEffect(() => {
     if (mobileOpen) {
-      document.body.style.overflow = "hidden";
+      document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = 'unset';
     }
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = 'unset';
     };
   }, [mobileOpen]);
 
@@ -85,12 +97,12 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
   const DesktopSidebar = () => (
     <aside
       className={`hidden md:flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 relative ${
-        collapsed ? "w-20" : "w-64"
+        collapsed ? 'w-20' : 'w-64'
       }`}
     >
-      {/* Logo - Giống header */}
+      {/* Logo */}
       <div
-        className={`flex items-center ${collapsed ? "justify-center px-2" : "px-6"} h-16 border-b border-gray-200 dark:border-gray-700`}
+        className={`flex items-center ${collapsed ? 'justify-center px-2' : 'px-6'} h-16 border-b border-gray-200 dark:border-gray-700`}
       >
         {!collapsed ? (
           <div className="flex items-center gap-2">
@@ -114,15 +126,15 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
           <NavLink
             key={item.path}
             to={item.path}
-            end={item.path === "/admin"}
+            end={item.path === '/admin'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive
-                  ? "bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-md"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              } ${collapsed ? "justify-center" : ""}`
+                  ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-md'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              } ${collapsed ? 'justify-center' : ''}`
             }
-            title={collapsed ? item.name : ""}
+            title={collapsed ? item.name : ''}
           >
             <div className="transition-transform group-hover:scale-110">
               {item.icon}
@@ -139,9 +151,9 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
         <button
           onClick={onLogout}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200 group w-full ${
-            collapsed ? "justify-center" : ""
+            collapsed ? 'justify-center' : ''
           }`}
-          title={collapsed ? "Logout" : ""}
+          title={collapsed ? 'Logout' : ''}
         >
           <div className="transition-transform group-hover:scale-110">
             <LogOut size={20} />
@@ -163,7 +175,7 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
   // Mobile Sidebar
   const MobileSidebar = () => (
     <>
-      {/* Mobile Menu Button - Giống header */}
+      {/* Mobile Menu Button */}
       <button
         onClick={handleMobileToggle}
         className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
@@ -184,10 +196,10 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
         className={`
           md:hidden fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-800 
           shadow-2xl z-50 transition-transform duration-300 ease-in-out
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* Mobile Header - Giống header desktop */}
+        {/* Mobile Header */}
         <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg flex items-center justify-center shadow-md">
@@ -211,13 +223,13 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
             <NavLink
               key={item.path}
               to={item.path}
-              end={item.path === "/admin"}
+              end={item.path === '/admin'}
               onClick={handleLinkClick}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                   isActive
-                    ? "bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-md"
-                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-md'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`
               }
             >
