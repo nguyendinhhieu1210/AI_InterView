@@ -20,6 +20,9 @@ const adminTokenRoutes = require('./routes/admin/tokenRoutes');
 const questionRoutes = require('./routes/admin/questionRoutes');
 const examSetRoutes = require('./routes/admin/examSetRoutes');
 
+// ✅ Import user exam set routes
+const userExamSetRoutes = require('./routes/userexamSetRoutes');
+
 const app = express();
 
 // ================= CORS =================
@@ -60,11 +63,15 @@ app.use('/api/weakness', weaknessRoutes);
 app.use('/api/activity', require('./routes/activityRoutes'));
 app.use('/api/adaptive', adaptiveRoutes);
 app.use('/api/live-coding', liveCodingRoutes);
-app.use('/api/admin/tokens', adminTokenRoutes);
 
-// ✅ Question Routes - dùng /api
-app.use('/api', questionRoutes);
-app.use('/api', examSetRoutes);
+// ✅ User Routes - KHÔNG có middleware admin
+app.use('/api/user', userExamSetRoutes);
+
+// ✅ Admin Routes - Có middleware admin trong route
+// Đổi thành /api/admin để tránh xung đột với user routes
+app.use('/api/admin', questionRoutes);
+app.use('/api/admin', examSetRoutes);
+app.use('/api/admin/tokens', adminTokenRoutes);
 
 // ================= HEALTH =================
 app.get('/health', (req, res) => {

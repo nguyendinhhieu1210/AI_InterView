@@ -14,7 +14,6 @@ import {
   ChevronDown,
   ChevronUp,
   BookOpen,
-  Layers,
   AlertCircle,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -248,13 +247,6 @@ export default function QuestionManagement() {
             >
               <Upload className="w-4 h-4" />
               Import Excel
-            </button>
-            <button
-              onClick={() => setShowExamSetModal(true)}
-              className="px-4 py-2 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors flex items-center gap-2"
-            >
-              <Layers className="w-4 h-4" />
-              Create Exam Set
             </button>
             <button
               onClick={() => {

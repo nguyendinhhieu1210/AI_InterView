@@ -78,7 +78,7 @@ export default function ExamSetManagement() {
   // ✅ fetchProgrammingLanguages không phụ thuộc state nào -> deps rỗng
   const fetchProgrammingLanguages = useCallback(async () => {
     try {
-      const response = await api.get('/programming-languages');
+      const response = await api.get('/admin/programming-languages');
       setProgrammingLanguages(response.data.data || []);
     } catch (error) {
       console.error('Failed to fetch programming languages:', error);

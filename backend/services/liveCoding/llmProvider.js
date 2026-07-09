@@ -1,4 +1,4 @@
-// services/liveCoding/llmProvider.js - COMPLETE FIXED VERSION (v7)
+// services/liveCoding/llmProvider.js - COMPLETE FIXED VERSION (v9)
 
 const { GroqService } = require('../ai/groqService');
 const { extractJson } = require('../../utils/jsonExtractor');
@@ -767,12 +767,28 @@ function getDifficultyConfig(difficulty) {
 }
 
 // ===================================================
-// computeArrayOutput
+// computeArrayOutput & helpers
 // ===================================================
+
+function computeArrayWithIndex(arr) {
+  return arr.map((val, idx) => val + idx);
+}
 
 function computeArrayOutput(topicLower, arr) {
   const sortedAsc = () => [...arr].sort((a, b) => a - b);
   const sumOf = (a) => a.reduce((s, x) => s + x, 0);
+
+  // ===== INDEX SUM =====
+  if (
+    topicLower.includes('index') &&
+    (topicLower.includes('add') ||
+      topicLower.includes('sum') ||
+      topicLower.includes('plus') ||
+      topicLower.includes('element'))
+  ) {
+    const result = computeArrayWithIndex(arr);
+    return { value: JSON.stringify(result), type: 'array' };
+  }
 
   if (topicLower.includes('sort')) {
     return { value: JSON.stringify(sortedAsc()), type: 'array' };
@@ -782,10 +798,20 @@ function computeArrayOutput(topicLower, arr) {
     return { value: JSON.stringify([...arr].reverse()), type: 'array' };
   }
 
+  // ===== RANGE (max - min) =====
   if (
     topicLower.includes('diff') ||
-    (topicLower.includes('range') && !topicLower.includes('arrange'))
+    topicLower.includes('range') ||
+    topicLower.includes('difference') ||
+    topicLower.includes('hiệu') ||
+    topicLower.includes('chênh lệch')
   ) {
+    if (arr.length === 0) {
+      return { value: '-1', type: 'number' };
+    }
+    if (arr.length === 1) {
+      return { value: '0', type: 'number' };
+    }
     return {
       value: String(Math.max(...arr) - Math.min(...arr)),
       type: 'number',
@@ -848,7 +874,8 @@ function computeArrayOutput(topicLower, arr) {
   if (topicLower.includes('count') || topicLower.includes('length'))
     return { value: String(arr.length), type: 'number' };
 
-  return null;
+  // ===== FALLBACK: trả về tổng nếu không khớp điều kiện nào =====
+  return { value: String(sumOf(arr)), type: 'number' };
 }
 
 // ===== HELPERS CHO CÁC BÀI TOÁN PHỨC TẠP =====
@@ -920,6 +947,57 @@ function computeSecondMin(arr) {
   return unique[1];
 }
 
+// ========== INFER OPERATION FROM PROBLEM ==========
+function inferOperationFromProblem(problemStatement) {
+  const lower = problemStatement.toLowerCase();
+  if (
+    lower.includes('index') &&
+    (lower.includes('add') ||
+      lower.includes('sum') ||
+      lower.includes('plus') ||
+      lower.includes('element'))
+  ) {
+    return 'INDEX_SUM';
+  }
+  if (lower.includes('sort') || lower.includes('sorted')) {
+    return 'SORT';
+  }
+  if (lower.includes('reverse')) {
+    return 'REVERSE';
+  }
+  if (
+    lower.includes('max') ||
+    lower.includes('maximum') ||
+    lower.includes('largest')
+  ) {
+    return 'MAX';
+  }
+  if (
+    lower.includes('min') ||
+    lower.includes('minimum') ||
+    lower.includes('smallest')
+  ) {
+    return 'MIN';
+  }
+  if (lower.includes('average') || lower.includes('mean')) {
+    return 'AVERAGE';
+  }
+  if (lower.includes('sum') || lower.includes('total')) {
+    return 'SUM';
+  }
+  // ===== RANGE (diff) =====
+  if (
+    lower.includes('diff') ||
+    lower.includes('range') ||
+    lower.includes('difference') ||
+    lower.includes('hiệu') ||
+    lower.includes('chênh lệch')
+  ) {
+    return 'RANGE';
+  }
+  return null;
+}
+
 // ========== VALIDATE EXAMPLE OUTPUT ==========
 function validateAndFixExampleOutput(
   exampleInput,
@@ -953,6 +1031,43 @@ function validateAndFixExampleOutput(
         output = parseFloat(exampleOutput);
       } else {
         output = exampleOutput;
+      }
+    }
+
+    // ===== INDEX SUM VALIDATION =====
+    if (
+      topicLower.includes('index') &&
+      (topicLower.includes('add') ||
+        topicLower.includes('sum') ||
+        topicLower.includes('plus') ||
+        topicLower.includes('element'))
+    ) {
+      if (Array.isArray(input) && input.every((x) => typeof x === 'number')) {
+        const correct = input.map((val, idx) => val + idx);
+        let outputArr;
+        try {
+          outputArr = JSON.parse(exampleOutput);
+        } catch {
+          outputArr = output;
+        }
+        if (Array.isArray(outputArr) && outputArr.length === input.length) {
+          if (outputArr.some((v, i) => v !== correct[i])) {
+            console.log(
+              `[VALIDATE] Fixing index-sum output: expected ${JSON.stringify(correct)}, got ${JSON.stringify(outputArr)}`
+            );
+            return {
+              isValid: false,
+              fixedOutput: JSON.stringify(correct),
+              message: 'Fixed index sum',
+            };
+          }
+        } else {
+          return {
+            isValid: false,
+            fixedOutput: JSON.stringify(correct),
+            message: 'Fixed index sum',
+          };
+        }
       }
     }
 
@@ -1258,16 +1373,11 @@ function generateRandomDataForTopic(topic, difficulty, language) {
     );
     expectedType = 'array';
     const computed = computeArrayOutput(topicLower, arr);
-    if (computed !== null) {
-      exampleInput = JSON.stringify(arr);
-      exampleOutput = computed.value;
-      expectedType = computed.type;
-      dataDescription = `Array with ${arr.length} elements`;
-    } else {
-      exampleInput = JSON.stringify(arr);
-      exampleOutput = `// AI will compute based on array operation`;
-      dataDescription = `Array with ${size} elements`;
-    }
+    // computed luôn khác null vì đã có fallback
+    exampleInput = JSON.stringify(arr);
+    exampleOutput = computed.value;
+    expectedType = computed.type;
+    dataDescription = `Array with ${arr.length} elements`;
     console.log(`Generated array: ${exampleInput}`);
     console.log(`Computed output: ${exampleOutput}`);
   }
@@ -1601,7 +1711,7 @@ function getTopicSpecificRequirements(topic, difficulty, category) {
 - Use appropriate data types for the problem`;
 }
 
-// ========== computeFallbackOutput (FIXED) ==========
+// ========== computeFallbackOutput ==========
 function computeFallbackOutput(topic, input, difficulty) {
   try {
     const topicLower = topic.toLowerCase();
@@ -1718,8 +1828,9 @@ function computeFallbackOutput(topic, input, difficulty) {
     }
 
     if (Array.isArray(parsedInput)) {
+      // Sử dụng computeArrayOutput đã có fallback
       const result = computeArrayOutput(topicLower, parsedInput);
-      if (result !== null) return result.value;
+      return result.value;
     }
     if (typeof parsedInput === 'string') {
       if (topicLower.includes('reverse'))
@@ -1811,6 +1922,89 @@ function validateAndFixQuestion(
       fixed.exampleInput,
       difficulty
     );
+  }
+
+  // ===== INFER OPERATION FROM PROBLEM AND RECOMPUTE OUTPUT =====
+  const operation = inferOperationFromProblem(fixed.problemStatement);
+  if (operation) {
+    let inputArr;
+    try {
+      inputArr = JSON.parse(fixed.exampleInput);
+    } catch (e) {}
+    if (Array.isArray(inputArr) && inputArr.length > 0) {
+      let correctOutput = null;
+      switch (operation) {
+        case 'INDEX_SUM': {
+          const result = computeArrayWithIndex(inputArr);
+          correctOutput = JSON.stringify(result);
+          fixed.expectedType = 'array';
+          break;
+        }
+        case 'SORT': {
+          const sorted = [...inputArr].sort((a, b) => a - b);
+          correctOutput = JSON.stringify(sorted);
+          fixed.expectedType = 'array';
+          break;
+        }
+        case 'REVERSE': {
+          const reversed = [...inputArr].reverse();
+          correctOutput = JSON.stringify(reversed);
+          fixed.expectedType = 'array';
+          break;
+        }
+        case 'MAX': {
+          correctOutput = String(Math.max(...inputArr));
+          fixed.expectedType = 'number';
+          break;
+        }
+        case 'MIN': {
+          correctOutput = String(Math.min(...inputArr));
+          fixed.expectedType = 'number';
+          break;
+        }
+        case 'AVERAGE': {
+          const avg = inputArr.reduce((a, b) => a + b, 0) / inputArr.length;
+          correctOutput = String(Math.round(avg * 100) / 100);
+          fixed.expectedType = 'number';
+          break;
+        }
+        case 'RANGE': {
+          if (inputArr.length === 0) {
+            correctOutput = '-1';
+          } else if (inputArr.length === 1) {
+            correctOutput = '0';
+          } else {
+            const max = Math.max(...inputArr);
+            const min = Math.min(...inputArr);
+            correctOutput = String(max - min);
+          }
+          fixed.expectedType = 'number';
+          break;
+        }
+        case 'SUM':
+        default: {
+          const sum = inputArr.reduce((a, b) => a + b, 0);
+          correctOutput = String(sum);
+          fixed.expectedType = 'number';
+          break;
+        }
+      }
+      if (correctOutput !== null) {
+        console.log(
+          `[FIX] Computed correct output for operation ${operation}: ${correctOutput}`
+        );
+        fixed.exampleOutput = correctOutput;
+      }
+    } else if (
+      operation === 'RANGE' &&
+      inputArr !== undefined &&
+      Array.isArray(inputArr) &&
+      inputArr.length === 0
+    ) {
+      // Mảng rỗng
+      fixed.exampleOutput = '-1';
+      fixed.expectedType = 'number';
+    }
   }
 
   // ===== LINKED LIST SPECIFIC VALIDATION (FIXED) =====

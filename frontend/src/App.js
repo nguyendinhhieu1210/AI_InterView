@@ -32,6 +32,8 @@ import AdaptiveSessionDetailPage from './Pages/AdaptiveSessionDetailPage';
 import LiveCodingPage from './Pages/LiveCodingPage';
 import CodingHistoryPage from './Pages/CodingHistoryPage';
 import CodingHistoryDetailPage from './Pages/CodingHistoryDetailPage';
+import UserExamSetsPage from './Pages/UserExamSetsPage';
+import UserExamDetailPage from './Pages/UserExamDetailPage';
 
 // Admin pages
 import AdminLayout from './layouts/AdminLayout';
@@ -197,6 +199,8 @@ function App() {
                     path="/coding-history/:sessionId"
                     element={<CodingHistoryDetailPage />}
                   />
+                  <Route path="/exam-sets" element={<UserExamSetsPage />} />
+                  <Route path="/exam/:id" element={<UserExamDetailPage />} />
                 </Routes>
               </UserProviders>
             </ProtectedRoute>
