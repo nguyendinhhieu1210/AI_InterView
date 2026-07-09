@@ -280,6 +280,9 @@ exports.deleteQuestion = async (req, res) => {
 };
 
 // 5. Import Excel
+// backend/src/controllers/questionController.js
+
+// 5. Import Excel
 exports.importQuestionsFromExcel = async (req, res) => {
   try {
     if (!req.file) {
@@ -292,8 +295,14 @@ exports.importQuestionsFromExcel = async (req, res) => {
     const workbook = xlsx.readFile(req.file.path);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet);
 
+    // ✅ Đọc với defval và raw để xử lý tốt hơn
+    const data = xlsx.utils.sheet_to_json(worksheet, {
+      defval: '',
+      raw: false,
+    });
+
+    // Xóa file sau khi đọc
     fs.unlinkSync(req.file.path);
 
     if (data.length === 0) {
@@ -303,69 +312,121 @@ exports.importQuestionsFromExcel = async (req, res) => {
       });
     }
 
+    // ✅ Log để debug
+    console.log('📋 Excel headers:', Object.keys(data[0]));
+    console.log('📊 Total rows:', data.length);
+
     const questions = [];
     const errors = [];
 
     data.forEach((row, index) => {
       try {
-        if (
-          !row.Question ||
-          !row['Option A'] ||
-          !row['Option B'] ||
-          !row['Option C'] ||
-          !row['Option D'] ||
-          !row['Correct Answer'] ||
-          !row.Explanation ||
-          !row['Programming Language']
-        ) {
+        // ✅ Helper function để lấy value và trim
+        const getValue = (value) => String(value ?? '').trim();
+
+        // ✅ Lấy tất cả values với getValue
+        const question = getValue(row.Question);
+        const optionA = getValue(row['Option A']);
+        const optionB = getValue(row['Option B']);
+        const optionC = getValue(row['Option C']);
+        const optionD = getValue(row['Option D']);
+        const correctAnswer = getValue(row['Correct Answer']).toUpperCase();
+        const explanation = getValue(row.Explanation);
+        const programmingLanguage = getValue(row['Programming Language']);
+        const difficulty = getValue(row.Difficulty) || 'Medium';
+        const tagsRaw = getValue(row.Tags);
+        const featuredRaw = getValue(row.Featured);
+
+        // ✅ Kiểm tra từng field và báo lỗi chi tiết
+        const missing = [];
+        if (!question) missing.push('Question');
+        if (!optionA) missing.push('Option A');
+        if (!optionB) missing.push('Option B');
+        if (!optionC) missing.push('Option C');
+        if (!optionD) missing.push('Option D');
+        if (!correctAnswer) missing.push('Correct Answer');
+        if (!explanation) missing.push('Explanation');
+        if (!programmingLanguage) missing.push('Programming Language');
+
+        if (missing.length > 0) {
           errors.push({
             row: index + 2,
-            error: 'Missing required fields',
+            error: `Missing: ${missing.join(', ')}`,
+            data: row,
           });
           return;
         }
 
-        const correctAnswer = row['Correct Answer'].toUpperCase().trim();
+        // ✅ Kiểm tra correctAnswer có hợp lệ không
         if (!['A', 'B', 'C', 'D'].includes(correctAnswer)) {
           errors.push({
             row: index + 2,
-            error: 'Correct Answer must be A, B, C, or D',
+            error: `Correct Answer must be A, B, C, or D (got: ${correctAnswer})`,
+            data: row,
           });
           return;
         }
 
+        // ✅ Tạo tags
+        let tags = [];
+        if (tagsRaw) {
+          tags = tagsRaw
+            .split(',')
+            .map((t) => t.trim())
+            .filter((t) => t);
+        }
+
+        // ✅ Xử lý isFeatured
+        const isFeatured = ['YES', 'TRUE'].includes(featuredRaw.toUpperCase());
+
         questions.push({
-          question: row.Question.trim(),
+          question,
           options: {
-            A: row['Option A'].trim(),
-            B: row['Option B'].trim(),
-            C: row['Option C'].trim(),
-            D: row['Option D'].trim(),
+            A: optionA,
+            B: optionB,
+            C: optionC,
+            D: optionD,
           },
-          correctAnswer: correctAnswer,
-          explanation: row.Explanation.trim(),
-          programmingLanguage: row['Programming Language'].trim(),
-          difficulty: row.Difficulty || 'Medium',
-          tags: row.Tags ? row.Tags.split(',').map((t) => t.trim()) : [],
-          isFeatured: row.Featured === 'Yes' || row.Featured === 'TRUE',
+          correctAnswer,
+          explanation,
+          programmingLanguage,
+          difficulty,
+          tags,
+          isFeatured,
           createdBy: req.user.id,
         });
       } catch (error) {
         errors.push({
           row: index + 2,
           error: error.message,
+          data: row,
         });
       }
     });
 
+    // ✅ Log kết quả
+    console.log(`✅ Valid questions: ${questions.length}`);
+    console.log(`❌ Errors: ${errors.length}`);
+
+    // ✅ Nếu có lỗi, trả về chi tiết
     if (errors.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Some rows have errors',
+        message: `Some rows have errors (${errors.length} errors)`,
         errors: errors,
+        totalRows: data.length,
+        validRows: questions.length,
       });
     }
 
+    if (questions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid questions to import',
+      });
+    }
+
+    // ✅ Import vào database
     const result = await Question.insertMany(questions);
     const languages = await Question.getAllProgrammingLanguages();
 

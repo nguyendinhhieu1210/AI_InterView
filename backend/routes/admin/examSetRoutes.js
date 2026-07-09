@@ -1,3 +1,4 @@
+// backend/src/routes/admin/examSetRoutes.js
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
@@ -10,24 +11,24 @@ router.use(auth);
 router.use(admin);
 
 // 1. Lấy danh sách exam sets
-router.get('/admin/exam-sets', examSetController.getExamSets);
+router.get('/exam-sets', examSetController.getExamSets);
 
 // 2. Lấy chi tiết exam set
-router.get('/admin/exam-sets/:id', examSetController.getExamSetById);
+router.get('/exam-sets/:id', examSetController.getExamSetById);
 
-// ⭐ NEW: Group exam sets by programming language
+// 3. Group exam sets by programming language
 router.get(
-  '/admin/exam-sets/grouped-by-language',
+  '/exam-sets/grouped-by-language',
   examSetController.getExamSetsGroupedByLanguage
 );
 
-// 3. Tạo exam set mới - Đổi từ topic → programmingLanguage
+// 4. Tạo exam set mới
 router.post(
-  '/admin/exam-sets',
+  '/exam-sets',
   [
     body('programmingLanguage')
       .notEmpty()
-      .withMessage('Programming language is required'), // Đổi
+      .withMessage('Programming language is required'),
     body('numberOfQuestions')
       .optional()
       .isInt({ min: 1, max: 100 })
@@ -36,21 +37,21 @@ router.post(
   examSetController.createExamSet
 );
 
-// 4. Cập nhật exam set
-router.put('/admin/exam-sets/:id', examSetController.updateExamSet);
+// 5. Cập nhật exam set
+router.put('/exam-sets/:id', examSetController.updateExamSet);
 
-// 5. Xóa exam set
-router.delete('/admin/exam-sets/:id', examSetController.deleteExamSet);
+// 6. Xóa exam set
+router.delete('/exam-sets/:id', examSetController.deleteExamSet);
 
-// 6. Thêm câu hỏi vào exam set
+// 7. Thêm câu hỏi vào exam set
 router.post(
-  '/admin/exam-sets/:id/questions',
+  '/exam-sets/:id/questions',
   examSetController.addQuestionsToExamSet
 );
 
-// 7. Xóa câu hỏi khỏi exam set
+// 8. Xóa câu hỏi khỏi exam set
 router.delete(
-  '/admin/exam-sets/:id/questions/:questionId',
+  '/exam-sets/:id/questions/:questionId',
   examSetController.removeQuestionFromExamSet
 );
 

@@ -30,7 +30,7 @@ const upload = multer({
 // ============ PUBLIC ROUTES ============
 // ========================================
 
-// ⭐ Đổi từ /topics → /programming-languages
+// ⭐ Lấy danh sách programming languages (public)
 router.get(
   '/programming-languages',
   questionController.getProgrammingLanguages
@@ -45,11 +45,11 @@ router.use(auth);
 router.use(admin);
 
 // 1. Lấy danh sách câu hỏi (có filter)
-router.get('/admin/questions', questionController.getQuestions);
+router.get('/questions', questionController.getQuestions);
 
 // 2. Tạo câu hỏi mới
 router.post(
-  '/admin/questions',
+  '/questions',
   [
     body('question').notEmpty().withMessage('Question is required'),
     body('options.A').notEmpty().withMessage('Option A is required'),
@@ -60,7 +60,6 @@ router.post(
       .isIn(['A', 'B', 'C', 'D'])
       .withMessage('Correct answer must be A, B, C, or D'),
     body('explanation').notEmpty().withMessage('Explanation is required'),
-    // ⭐ Đổi từ topic → programmingLanguage
     body('programmingLanguage')
       .notEmpty()
       .withMessage('Programming language is required'),
@@ -70,7 +69,7 @@ router.post(
 
 // 3. Cập nhật câu hỏi
 router.put(
-  '/admin/questions/:id',
+  '/questions/:id',
   [
     body('correctAnswer')
       .optional()
@@ -81,26 +80,22 @@ router.put(
 );
 
 // 4. Xóa câu hỏi (hard delete - chỉ khi inactive)
-router.delete('/admin/questions/:id', questionController.deleteQuestion);
+router.delete('/questions/:id', questionController.deleteQuestion);
 
 // 5. Import Excel
 router.post(
-  '/admin/questions/import',
+  '/questions/import',
   upload.single('file'),
   questionController.importQuestionsFromExcel
 );
 
 // 6. Export Excel
-router.get(
-  '/admin/questions/export',
-  questionController.exportQuestionsToExcel
-);
+router.get('/questions/export', questionController.exportQuestionsToExcel);
 
-// 7. Tạo bộ đề
+// 7. Tạo bộ đề (từ câu hỏi)
 router.post(
-  '/admin/exam-set/create',
+  '/exam-set/create',
   [
-    // ⭐ Đổi từ topic → programmingLanguage
     body('programmingLanguage')
       .notEmpty()
       .withMessage('Programming language is required'),
@@ -111,41 +106,5 @@ router.post(
   ],
   questionController.createExamSet
 );
-
-// ========================================
-// ============ USER ROUTES ============
-// ========================================
-
-// Tất cả user routes đều cần xác thực
-router.use(auth);
-
-// 8. Lấy câu hỏi practice
-// ⭐ Query param: programmingLanguage thay vì topic
-router.get('/practice', questionController.getPracticeQuestions);
-
-// 9. Submit 1 câu hỏi
-router.post(
-  '/practice/submit',
-  [
-    body('questionId').notEmpty().withMessage('Question ID is required'),
-    body('answer').notEmpty().withMessage('Answer is required'),
-  ],
-  questionController.submitAnswer
-);
-
-// 10. Submit cả bài thi
-router.post('/exam/submit', questionController.submitExam);
-
-// 11. Lấy thống kê của user
-router.get('/stats', questionController.getUserStats);
-
-// 12. Lấy câu hỏi cần ôn tập
-router.get('/review', questionController.getReviewQuestions);
-
-// 13. Lấy câu hỏi yêu thích
-router.get('/favorites', questionController.getFavoriteQuestions);
-
-// 14. Đánh dấu câu hỏi yêu thích
-router.patch('/favorites/:questionId', questionController.toggleFavorite);
 
 module.exports = router;

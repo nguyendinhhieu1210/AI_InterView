@@ -9,7 +9,13 @@
 - Luyện tập phỏng vấn theo CV (CV-based interview)
 - Luyện tập phỏng vấn thích ứng (Adaptive Interview) – câu hỏi tự động điều chỉnh theo trình độ
 - Thực hành Live Coding với AI đánh giá code và hỏi giải thích
+- Làm bài thi từ ngân hàng câu hỏi MCQ (Exam Sets) do admin tạo sẵn
 - Xem lịch sử phỏng vấn, phân tích điểm yếu, và biểu đồ tiến độ
+
+Hệ thống có hai nhóm người dùng chính:
+
+- **Registered User**: Sử dụng tất cả tính năng luyện tập
+- **Admin**: Quản trị hệ thống, quản lý người dùng, câu hỏi, bộ đề, giám sát token AI
 
 ---
 
@@ -30,14 +36,19 @@
 │  │  OTP/Reset) │  │  LiveCode)   │  │                       │   │
 │  └─────────────┘  └──────────────┘  └───────────────────────┘   │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │ Admin Panel (Users, Interviews, CV, Adaptive, LiveCode)  │   │
+│  │ Exam Sets (User: làm bài thi MCQ từ bộ đề admin tạo)    │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ Admin Panel (Users, Interviews, CV, Adaptive, LiveCode,  │   │
+│  │  Question Bank, Exam Sets, Token Usage, System Logs)     │   │
 │  └──────────────────────────────────────────────────────────┘   │
 │                                                                   │
 │  Contexts: Auth | Theme | Interview | History                     │
-│  Services: api.js | analyze-cv.js | generate-questions.js         │
-│            interviewAPI.js                                        │
+│  Services: api.js | analyze-cv.js                                 │
+│  Base Components: BaseButton | BaseCard | BaseBadge | BaseInput  │
+│                   BaseModal | BaseDropdown                        │
 └──────────────────────────┬──────────────────────────────────────┘
-                           │  axios (baseURL: http://localhost:5000/api)
+                           │  axios (baseURL: REACT_APP_API_URL)
 ┌──────────────────────────▼──────────────────────────────────────┐
 │                BACKEND (Node.js + Express 5)                     │
 │                                                                   │
@@ -46,36 +57,51 @@
 │  │  Routes  │ │  Routes  │ │  Routes  │ │     Routes         │  │
 │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────────┬───────────┘  │
 │       │            │            │                  │              │
-│       └────────────┼────────────┼──────────────────┘              │
-│               ┌────▼────────────▼────┐                            │
-│               │     Admin Routes     │                            │
-│               └─────────┬────────────┘                            │
-│                         │                                         │
-│  ┌────▼─────────────▼────────────▼──────────────────▼─────────┐  │
-│  │              Controllers Layer                               │  │
-│  └────────────────────────┬────────────────────────────────────┘  │
+│  ┌────┴────────────┼────────────┼──────────────────┘              │
+│  │    ┌────────────▼────────────▼────┐                            │
+│  │    │     User Exam Set Routes     │                            │
+│  │    └──────────────────────────────┘                            │
+│  │    ┌──────────────────────────────┐                            │
+│  │    │  Admin Routes                │                            │
+│  │    │  (Questions, ExamSets,       │                            │
+│  │    │   Token, Users, Sessions)    │                            │
+│  │    └─────────┬────────────────────┘                            │
+│  │              │                                                 │
+│  ┌────▼─────────▼────────────────────────────────────────────┐   │
+│  │              Controllers Layer                               │   │
+│  └────────────────────────┬──────────────────────────────────┘   │
 │                            │                                      │
-│  ┌─────────────────────────▼───────────────────────────────────┐  │
-│  │              Services Layer (Business Logic)                  │  │
-│  │  aiService | adaptiveInterviewService | weaknessService      │  │
-│  │  cv/ (analyzeSkills, extractPdf, skillUtils, textUtils)      │  │
-│  │  interview/ (generateQuestions, gradingService)               │  │
-│  │  liveCoding/ (llmProvider, codeEvaluationService,            │  │
-│  │              sessionStore, sessionService)                    │  │
-│  └─────────────────────────┬───────────────────────────────────┘  │
+│  ┌─────────────────────────▼─────────────────────────────────┐   │
+│  │              Services Layer (Business Logic)                │   │
+│  │  standardinterview/aiService.js                             │   │
+│  │  adaptive/ (adaptiveAI, adaptiveCore, adaptiveSession)      │   │
+│  │  cv/ (analyzeSkills, extractPdf, skillUtils, textUtils)     │   │
+│  │  interview/ (generateQuestions, gradingService)              │   │
+│  │  liveCoding/ (llmProvider, codeEvaluation, sessionStore)    │   │
+│  │  logic/ (adaptiveServices, cvServices, interviewService,    │   │
+│  │          liveCodingServices)                                 │   │
+│  │  email/ (emailService, templates/)                          │   │
+│  │  weaknessService.js                                         │   │
+│  └─────────────────────────┬─────────────────────────────────┘   │
 │                            │                                      │
-│  ┌─────────────────────────▼───────────────────────────────────┐  │
-│  │              AI Engine                                        │  │
-│  │  Groq SDK (LLaMA) | Google Generative AI (Gemini)            │  │
-│  └─────────────────────────────────────────────────────────────┘  │
+│  ┌─────────────────────────▼─────────────────────────────────┐   │
+│  │              AI Engine                                      │   │
+│  │  Groq SDK (LLaMA) | Google Generative AI (Gemini)          │   │
+│  │  @google/genai | LangChain (Groq)                           │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│  Middleware: auth.js (JWT verify) | admin.js (role check)        │
+│  Utils: aiLogger | jsonExtractor | normalizeQuestions |           │
+│         pdfReader | saveActivity                                  │
 └──────────────────────────┬──────────────────────────────────────┘
                            │  Mongoose ODM
 ┌──────────────────────────▼──────────────────────────────────────┐
 │                      MongoDB Database                            │
 │                                                                   │
 │  Collections: users | interviewresults | adaptivesessions        │
-│               interviewsessions (CV) | livecodingsessions        │
+│               cvinterviewsessions | livecodingsessions           │
 │               activities | assessments                           │
+│               questions | examsets | userprogresses               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -83,16 +109,17 @@
 
 ## 3. Các Module Chính
 
-| Module                  | Mô Tả                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------ |
-| **Authentication**      | Đăng ký, đăng nhập, xác thực email bằng OTP, reset mật khẩu, Remember Me             |
-| **Standard Interview**  | Phỏng vấn theo chủ đề chọn sẵn (7 MCQ + 3 tự luận), AI chấm điểm, tổng 100 điểm      |
-| **CV Interview**        | Upload CV (PDF/DOCX) → AI phân tích kỹ năng → sinh câu hỏi dựa trên CV               |
-| **Adaptive Interview**  | Phỏng vấn thích ứng: AI điều chỉnh độ khó theo hiệu suất, tối đa 5 câu hỏi follow-up |
-| **Live Coding**         | Luyện tập code → AI đánh giá → 3 câu hỏi giải thích → đánh giá tổng hợp              |
-| **History & Analytics** | Xem lịch sử phỏng vấn (4 loại), biểu đồ xu hướng, phân tích điểm yếu                 |
-| **Profile & Settings**  | Quản lý hồ sơ cá nhân, theme sáng/tối, đổi mật khẩu                                  |
-| **Admin Panel**         | Quản lý người dùng, xem toàn bộ lịch sử phỏng vấn MCQ, CV, Adaptive và Live Coding   |
+| Module                  | Mô Tả                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| **Authentication**      | Đăng ký, đăng nhập, xác thực email bằng OTP, reset mật khẩu, Refresh Token    |
+| **Standard Interview**  | Phỏng vấn theo chủ đề chọn sẵn (MCQ + tự luận), AI chấm điểm, tổng 100 điểm   |
+| **CV Interview**        | Upload CV (PDF) → AI phân tích kỹ năng → sinh câu hỏi dựa trên CV             |
+| **Adaptive Interview**  | Phỏng vấn thích ứng: AI điều chỉnh độ khó theo hiệu suất, roadmap học tập     |
+| **Live Coding**         | Luyện tập code → AI đánh giá → 3 câu hỏi giải thích → đánh giá tổng hợp       |
+| **Exam Sets**           | User làm bài thi MCQ từ bộ đề admin tạo sẵn, chấm điểm tự động                |
+| **History & Analytics** | Xem lịch sử phỏng vấn (4 loại + coding), biểu đồ xu hướng, phân tích điểm yếu |
+| **Profile & Settings**  | Quản lý hồ sơ cá nhân, theme sáng/tối, đổi mật khẩu, đa ngôn ngữ              |
+| **Admin Panel**         | Quản lý users, xem lịch sử toàn hệ thống, Question Bank, Exam Sets, Token AI  |
 
 ---
 
@@ -112,31 +139,41 @@
 | lucide-react / react-icons | Icon library                       |
 | axios                      | HTTP client                        |
 | canvas-confetti            | Hiệu ứng chúc mừng                 |
+| @headlessui/react          | Headless UI components             |
+| @fontsource/inter          | Font Inter                         |
+| clsx / tailwind-merge      | Utility CSS class merging          |
+| date-fns                   | Xử lý ngày tháng                   |
+| i18next + react-i18next    | Đa ngôn ngữ (VI/EN)                |
 
 ### Backend
 
-| Thư Viện                             | Mục Đích                       |
-| ------------------------------------ | ------------------------------ |
-| Express 5                            | Web framework                  |
-| Mongoose 9                           | MongoDB ODM                    |
-| JWT (jsonwebtoken)                   | Xác thực token                 |
-| bcryptjs                             | Mã hóa mật khẩu                |
-| Multer                               | Upload file                    |
-| pdf-parse                            | Đọc file PDF                   |
-| mammoth                              | Đọc file DOCX                  |
-| Nodemailer                           | Gửi email OTP                  |
-| Groq SDK                             | Gọi AI Groq (LLaMA)            |
-| @google/generative-ai, @google/genai | Gọi AI Google Gemini           |
-| node-cache                           | Cache dữ liệu                  |
-| dotenv                               | Quản lý biến môi trường        |
-| uuid (v4)                            | Tạo session ID cho Live Coding |
+| Thư Viện                             | Mục Đích                          |
+| ------------------------------------ | --------------------------------- |
+| Express 5                            | Web framework                     |
+| Mongoose 9                           | MongoDB ODM                       |
+| JWT (jsonwebtoken)                   | Xác thực token (Access + Refresh) |
+| bcryptjs / bcrypt                    | Mã hóa mật khẩu                   |
+| Multer                               | Upload file (PDF, Excel)          |
+| pdf-parse / pdfjs-dist               | Đọc file PDF                      |
+| mammoth                              | Đọc file DOCX                     |
+| xlsx                                 | Import/Export Excel               |
+| Nodemailer / Resend                  | Gửi email OTP                     |
+| Groq SDK                             | Gọi AI Groq (LLaMA)               |
+| @google/generative-ai, @google/genai | Gọi AI Google Gemini              |
+| @langchain/groq, langchain           | LangChain integration             |
+| OpenAI SDK                           | OpenAI API integration            |
+| node-cache                           | Cache dữ liệu                     |
+| dotenv                               | Quản lý biến môi trường           |
+| uuid (v4)                            | Tạo session ID cho Live Coding    |
+| winston + daily-rotate-file          | Logging & token usage tracking    |
+| express-validator                    | Validate request body             |
 
 ---
 
 ## 5. Môi Trường Chạy
 
-| Service           | Port  | Ghi chú                                  |
-| ----------------- | ----- | ---------------------------------------- |
-| Frontend (React)  | 3000  | `npm start` trong `/frontend`            |
-| Backend (Express) | 5000  | `npx nodemon server.js` trong `/backend` |
-| MongoDB           | 27017 | Local hoặc MongoDB Atlas                 |
+| Service           | Port  | Ghi chú                        |
+| ----------------- | ----- | ------------------------------ |
+| Frontend (React)  | 3000  | `npm start` trong `/frontend`  |
+| Backend (Express) | 5000  | `npm run dev` trong `/backend` |
+| MongoDB           | 27017 | Local hoặc MongoDB Atlas       |

@@ -20,6 +20,7 @@ import {
   Sparkles,
   CalendarDays,
   History,
+  Layers, // ✅ Thêm icon Layers
 } from 'lucide-react';
 
 import { BaseButton } from '../components/base/BaseButton';
@@ -94,6 +95,8 @@ export default function WelcomePage() {
     startNewInterview: 'Standard Interview',
     uploadCV: 'CV-Based Interview',
     adaptiveInterview: 'Adaptive Interview',
+    examSets: 'Exam Sets',
+    examSetsDesc: 'Practice with curated exam sets',
     interviewHistory: 'View History',
     logout: 'Sign Out',
     settings: 'Settings',
@@ -270,6 +273,7 @@ export default function WelcomePage() {
   const displayName = user?.fullName || user?.userName;
   const avatarLetter = displayName?.charAt(0).toUpperCase() || 'U';
 
+  // ✅ Thêm Exam Sets vào quick actions
   const quickActions = [
     {
       label: 'Standard Interview',
@@ -302,6 +306,15 @@ export default function WelcomePage() {
       gradient: 'from-rose-500 to-red-600',
       color: 'rose',
       onClick: () => navigate('/live-coding'),
+    },
+    // ✅ Thêm Exam Sets action
+    {
+      label: texts.examSets,
+      desc: texts.examSetsDesc,
+      icon: Layers,
+      gradient: 'from-indigo-500 to-purple-600',
+      color: 'indigo',
+      onClick: () => navigate('/exam-sets'),
     },
   ];
 
@@ -510,8 +523,15 @@ export default function WelcomePage() {
             <h3 className="text-base font-semibold text-text">
               {texts.quickActions}
             </h3>
+            <BaseBadge
+              variant="primary"
+              rounded
+              className="ml-2 px-2.5 py-0.5 text-xs"
+            >
+              {quickActions.length} options
+            </BaseBadge>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {quickActions.map((action, idx) => (
               <BaseButton
                 key={idx}
