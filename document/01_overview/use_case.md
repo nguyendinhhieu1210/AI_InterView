@@ -215,15 +215,15 @@ UC04 (bước 1)           UC01–UC19
 
 ### 🛡️ UC20–UC26 – Admin Module
 
-| UC   | Mô Tả                                                                        |
-| ---- | ---------------------------------------------------------------------------- |
-| UC20 | Dashboard: thống kê users, bài phỏng vấn gần đây, tổng quan hệ thống         |
-| UC21 | Quản lý Users: danh sách, chi tiết, phân quyền, reset password, xóa          |
-| UC22 | Quản lý lịch sử phỏng vấn: Standard, CV, Adaptive, Live Coding (xem/xóa)     |
-| UC23 | Quản lý Question Bank: tạo, sửa, xóa câu hỏi MCQ (theo programming language) |
-| UC24 | Import câu hỏi từ Excel (.xlsx) / Export ra Excel                            |
-| UC25 | Quản lý Exam Sets: tạo bộ đề, thêm/xóa câu hỏi vào bộ đề, kích hoạt/vô hiệu  |
-| UC26 | Giám sát Token AI: xem token hôm nay, lịch sử token theo ngày/feature        |
+| UC   | Mô Tả                                                                                         |
+| ---- | --------------------------------------------------------------------------------------------- |
+| UC20 | Dashboard: thống kê users, bài phỏng vấn gần đây, tổng quan hệ thống                          |
+| UC21 | Quản lý Users: danh sách, chi tiết, phân quyền, reset password, xóa                           |
+| UC22 | Quản lý lịch sử phỏng vấn: Standard, CV, Adaptive, Live Coding (xem/xóa)                      |
+| UC23 | Quản lý Question Bank: tạo, sửa, kích hoạt/vô hiệu, xóa câu hỏi MCQ theo programming language |
+| UC24 | Import câu hỏi từ Excel (.xlsx) / Export ra Excel, đồng bộ dữ liệu vào Question Bank          |
+| UC25 | Quản lý Exam Sets: tạo bộ đề từ câu hỏi có sẵn, thêm/xóa câu hỏi vào bộ đề, kích hoạt/vô hiệu |
+| UC26 | Giám sát Token AI: xem token hôm nay, lịch sử token theo ngày/feature                         |
 
 ---
 

@@ -37,15 +37,15 @@ document/
 
 ## 🚀 Giới Thiệu Nhanh
 
-| Hạng mục       | Công nghệ                                                  |
-| -------------- | ---------------------------------------------------------- |
-| Frontend       | React 19, TailwindCSS 3, Framer Motion, Chart.js, Recharts |
-| Backend        | Node.js, Express 5, MongoDB (Mongoose 9)                   |
-| AI Engine      | Groq SDK (LLaMA), Google Generative AI (Gemini)            |
-| Authentication | JWT (Access + Refresh Token), bcryptjs, OTP qua email      |
-| File Upload    | Multer, pdf-parse, mammoth                                 |
-| Code Editor    | Monaco Editor (@monaco-editor/react)                       |
-| Admin          | Quản lý Users, Questions, Exam Sets, Sessions, Token Usage |
+| Hạng mục       | Công nghệ                                                      |
+| -------------- | -------------------------------------------------------------- |
+| Frontend       | React 19, TailwindCSS 3, Framer Motion, Chart.js, Recharts     |
+| Backend        | Node.js, Express 5, MongoDB (Mongoose 9)                       |
+| AI Engine      | Groq SDK (LLaMA), Google Generative AI (Gemini)                |
+| Authentication | JWT (Access + Refresh Token), bcryptjs, OTP qua email          |
+| File Upload    | Multer, pdf-parse, mammoth                                     |
+| Code Editor    | Monaco Editor (@monaco-editor/react)                           |
+| Admin          | Quản lý Users, Question Bank, Exam Sets, Sessions, Token Usage |
 
 ---
 

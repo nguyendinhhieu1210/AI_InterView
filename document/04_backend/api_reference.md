@@ -1197,6 +1197,76 @@ Xóa phiên Live Coding khỏi hệ thống.
 
 ---
 
+### 10.6 Quản lý Question Bank
+
+#### GET `/api/admin/questions`
+
+Lấy danh sách câu hỏi MCQ có hỗ trợ filter, search, pagination và thống kê tổng quan.
+
+- **Query:** `page`, `limit`, `programmingLanguage`, `difficulty`, `tags`, `search`, `isActive`, `isFeatured`
+
+#### POST `/api/admin/questions`
+
+Tạo câu hỏi mới cho Question Bank.
+
+- **Body:** `question`, `options` (`A/B/C/D`), `correctAnswer`, `explanation`, `programmingLanguage`, `difficulty`, `tags`, `isFeatured`
+
+#### PUT `/api/admin/questions/:id`
+
+Cập nhật câu hỏi (trạng thái active/featured, nội dung đáp án, giải thích, tags).
+
+#### DELETE `/api/admin/questions/:id`
+
+Xóa câu hỏi khỏi hệ thống. Chỉ cho phép xóa khi câu hỏi đã bị vô hiệu hóa và không còn nằm trong bộ đề active.
+
+#### POST `/api/admin/questions/import`
+
+Import danh sách câu hỏi từ file Excel (.xlsx/.xls).
+
+#### GET `/api/admin/questions/export`
+
+Export toàn bộ câu hỏi hiện có ra file Excel.
+
+#### GET `/api/admin/programming-languages`
+
+Lấy danh sách ngôn ngữ lập trình đang có câu hỏi trong hệ thống.
+
+---
+
+### 10.7 Quản lý Exam Sets
+
+#### GET `/api/admin/exam-sets`
+
+Lấy danh sách các bộ đề thi, hỗ trợ filter theo ngôn ngữ và search theo tên.
+
+#### GET `/api/admin/exam-sets/:id`
+
+Lấy chi tiết một bộ đề thi cùng danh sách câu hỏi bên trong.
+
+#### POST `/api/admin/exam-sets`
+
+Tạo bộ đề thi mới từ các câu hỏi active có sẵn trong Question Bank.
+
+- **Body:** `name`, `programmingLanguage`, `description`, `numberOfQuestions`
+
+#### PUT `/api/admin/exam-sets/:id`
+
+Cập nhật thông tin bộ đề, bao gồm tên, mô tả và trạng thái active/inactive.
+
+#### DELETE `/api/admin/exam-sets/:id`
+
+Xóa vĩnh viễn một bộ đề thi.
+
+#### POST `/api/admin/exam-sets/:id/questions`
+
+Thêm câu hỏi vào bộ đề thi.
+
+#### DELETE `/api/admin/exam-sets/:id/questions/:questionId`
+
+Xóa câu hỏi khỏi bộ đề thi.
+
+---
+
 ## 11. HTTP Status Codes
 
 | Code | Ý Nghĩa                                          |
