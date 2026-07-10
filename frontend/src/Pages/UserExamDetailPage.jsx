@@ -128,7 +128,7 @@ export default function UserExamDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="min-h-screen bg-bg flex items-center justify-center px-4">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-muted mt-4 font-medium">Loading exam...</p>
@@ -139,7 +139,7 @@ export default function UserExamDetailPage() {
 
   if (!examSet) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="min-h-screen bg-bg flex items-center justify-center px-4">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-muted mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-text">Exam not found</h3>
@@ -160,13 +160,13 @@ export default function UserExamDetailPage() {
     <div className="min-h-screen bg-bg">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-xl border-b border-border sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-3 flex justify-between items-center gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <BaseButton
               variant="ghost"
               size="sm"
               onClick={() => navigate('/exam-sets')}
-              className="flex items-center gap-2 p-0 hover:bg-transparent group"
+              className="flex items-center gap-2 p-0 hover:bg-transparent group flex-shrink-0"
             >
               <ArrowLeft className="w-5 h-5 text-text group-hover:text-primary transition-colors" />
               <span className="hidden sm:inline text-text group-hover:text-primary transition-colors font-medium">
@@ -178,10 +178,12 @@ export default function UserExamDetailPage() {
               <h1 className="text-sm sm:text-base font-semibold text-text truncate">
                 {examSet.name}
               </h1>
-              <p className="text-xs text-muted flex items-center gap-2">
-                <span>{examSet.programmingLanguage}</span>
-                <span className="w-1 h-1 rounded-full bg-muted"></span>
-                <span>{examSet.totalQuestions} questions</span>
+              <p className="text-xs text-muted flex items-center gap-2 truncate">
+                <span className="truncate">{examSet.programmingLanguage}</span>
+                <span className="w-1 h-1 rounded-full bg-muted flex-shrink-0"></span>
+                <span className="flex-shrink-0">
+                  {examSet.totalQuestions} questions
+                </span>
               </p>
             </div>
           </div>
@@ -190,7 +192,7 @@ export default function UserExamDetailPage() {
             variant="ghost"
             size="sm"
             onClick={() => navigate('/welcome')}
-            className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-xl transition-all duration-200 text-primary text-sm"
+            className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-xl transition-all duration-200 text-primary text-sm flex-shrink-0"
           >
             <Home className="w-4 h-4" />
             <span className="hidden sm:inline">Dashboard</span>
@@ -199,12 +201,12 @@ export default function UserExamDetailPage() {
       </header>
 
       {/* Main */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Exam Info Card */}
-        <BaseCard className="p-5 sm:p-6">
+        <BaseCard className="p-4 sm:p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl sm:text-2xl font-bold text-text truncate">
+              <h2 className="text-lg sm:text-2xl font-bold text-text truncate">
                 {examSet.name}
               </h2>
               {examSet.description && (
@@ -232,12 +234,12 @@ export default function UserExamDetailPage() {
             </div>
 
             {!submitted && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <BaseButton
                   variant="ghost"
                   size="sm"
                   onClick={handleReset}
-                  className="px-3 py-2 text-sm text-muted hover:text-danger transition-colors"
+                  className="px-3 py-2 text-sm text-muted hover:text-error transition-colors"
                   title="Reset all answers"
                 >
                   <RotateCcw className="w-4 h-4" />
@@ -249,7 +251,7 @@ export default function UserExamDetailPage() {
                   disabled={
                     submitting || getAnsweredCount() < examSet.totalQuestions
                   }
-                  className="px-5 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2"
+                  className="flex-1 md:flex-none px-4 sm:px-5 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   {submitting ? (
                     <>
@@ -270,9 +272,9 @@ export default function UserExamDetailPage() {
           {/* Progress Bar */}
           {!submitted && (
             <div className="mt-4 pt-4 border-t border-border">
-              <div className="flex justify-between text-sm mb-1.5">
+              <div className="flex justify-between text-sm mb-1.5 gap-2">
                 <span className="text-muted font-medium">Progress</span>
-                <span className="text-text font-medium">
+                <span className="text-text font-medium text-right">
                   {getAnsweredCount()} / {examSet.totalQuestions} answered
                   <span className="text-muted font-normal ml-1">
                     ({Math.round(getProgressPercentage())}%)
@@ -291,33 +293,33 @@ export default function UserExamDetailPage() {
 
         {/* Result Card */}
         {submitted && result && (
-          <BaseCard className="p-5 sm:p-6 border-2 border-success/20 bg-success/5">
+          <BaseCard className="p-4 sm:p-6 border-2 border-success/20 bg-success/5">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-text flex items-center gap-2">
-                  <Award className="w-5 h-5 text-primary" />
+                  <Award className="w-5 h-5 text-primary flex-shrink-0" />
                   Results
                 </h3>
                 <p className="text-sm text-muted">{result.message}</p>
               </div>
-              <div className="flex items-center gap-4 sm:gap-6">
+              <div className="grid grid-cols-3 gap-3 sm:flex sm:items-center sm:gap-6">
                 <div className="text-center">
-                  <p className="text-2xl sm:text-3xl font-bold text-primary">
+                  <p className="text-xl sm:text-3xl font-bold text-primary">
                     {result.score}%
                   </p>
-                  <p className="text-xs text-muted">Score</p>
+                  <p className="text-[11px] sm:text-xs text-muted">Score</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl sm:text-3xl font-bold text-success">
+                  <p className="text-xl sm:text-3xl font-bold text-success">
                     {result.correctCount}/{result.totalQuestions}
                   </p>
-                  <p className="text-xs text-muted">Correct</p>
+                  <p className="text-[11px] sm:text-xs text-muted">Correct</p>
                 </div>
-                <div className="text-center">
+                <div className="text-center flex flex-col items-center justify-center">
                   <BaseBadge
-                    variant={result.isPassed ? 'success' : 'danger'}
+                    variant={result.isPassed ? 'success' : 'error'}
                     rounded
-                    className="px-4 py-1.5 text-sm font-semibold"
+                    className="px-2.5 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold whitespace-nowrap"
                   >
                     {result.isPassed ? '✅ Passed' : '❌ Failed'}
                   </BaseBadge>
@@ -328,10 +330,10 @@ export default function UserExamDetailPage() {
         )}
 
         {/* Questions List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h3 className="text-base font-semibold text-text flex items-center gap-2">
-              <HelpCircle className="w-5 h-5 text-primary" />
+              <HelpCircle className="w-5 h-5 text-primary flex-shrink-0" />
               Questions
               {submitted && (
                 <span className="text-sm text-muted font-normal">
@@ -360,23 +362,23 @@ export default function UserExamDetailPage() {
             return (
               <BaseCard
                 key={question._id}
-                className={`p-5 transition-all duration-300 ${
+                className={`p-4 sm:p-5 transition-all duration-300 ${
                   isCorrect
                     ? 'border-2 border-success bg-success/5'
                     : isWrong
-                      ? 'border-2 border-danger bg-danger/5'
+                      ? 'border-2 border-error bg-error/5'
                       : 'hover:border-primary/20'
                 }`}
               >
                 {/* Question Header */}
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-2.5 sm:gap-3">
                   <div className="flex-shrink-0 mt-0.5">
                     <span
                       className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold ${
                         isCorrect
                           ? 'bg-success text-white'
                           : isWrong
-                            ? 'bg-danger text-white'
+                            ? 'bg-error text-white'
                             : 'bg-primary/10 text-primary'
                       }`}
                     >
@@ -385,7 +387,7 @@ export default function UserExamDetailPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <p className="text-text font-medium leading-relaxed">
+                      <p className="text-text font-medium leading-relaxed break-words">
                         {question.question}
                       </p>
                       <span
@@ -396,9 +398,9 @@ export default function UserExamDetailPage() {
                     </div>
 
                     {/* Status Badge */}
-                    <div className="mt-1.5 flex items-center gap-2">
+                    <div className="mt-1.5 flex items-center flex-wrap gap-2">
                       {isWrong && (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-danger px-3 py-1 rounded-full">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-error px-3 py-1 rounded-full">
                           <XCircle className="w-3.5 h-3.5" />
                           Incorrect
                         </span>
@@ -411,7 +413,7 @@ export default function UserExamDetailPage() {
                       )}
                       {/* ✅ Hiển thị đáp án user đã chọn - NỔI BẬT */}
                       {isWrong && userAnswer && (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-danger bg-danger/10 px-3 py-1 rounded-full border border-danger/30">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-error bg-error/10 px-3 py-1 rounded-full border border-error/30">
                           <span>Your answer:</span>
                           <span className="font-bold">{userAnswer}</span>
                         </span>
@@ -452,11 +454,11 @@ export default function UserExamDetailPage() {
                           } else if (isWrongAnswer) {
                             // ✅ ĐÁP ÁN USER CHỌN SAI - NỔI BẬT MÀU ĐỎ
                             optionClass =
-                              'border-2 border-danger bg-danger/10 ring-2 ring-danger/30';
+                              'border-2 border-error bg-error/10 ring-2 ring-error/30';
                             statusIcon = (
-                              <XCircle className="w-4 h-4 text-danger flex-shrink-0" />
+                              <XCircle className="w-4 h-4 text-error flex-shrink-0" />
                             );
-                            textColor = 'text-danger font-semibold';
+                            textColor = 'text-error font-semibold';
                           } else {
                             optionClass = 'border border-border opacity-50';
                             textColor = 'text-muted';
@@ -491,7 +493,9 @@ export default function UserExamDetailPage() {
                             >
                               {key}.
                             </span>
-                            <span className={`text-sm flex-1 ${textColor}`}>
+                            <span
+                              className={`text-sm flex-1 min-w-0 break-words ${textColor}`}
+                            >
                               {optionText}
                             </span>
                             {statusIcon}
@@ -502,16 +506,16 @@ export default function UserExamDetailPage() {
 
                     {/* ✅ Hiển thị rõ đáp án user đã chọn (dạng text) */}
                     {isWrong && userAnswer && (
-                      <div className="mt-3 p-3 bg-danger/10 rounded-lg border border-danger/30">
-                        <div className="flex items-center gap-2 text-sm">
-                          <XCircle className="w-4 h-4 text-danger" />
-                          <span className="text-danger font-medium">
+                      <div className="mt-3 p-3 bg-error/10 rounded-lg border border-error/30">
+                        <div className="flex items-center flex-wrap gap-2 text-sm">
+                          <XCircle className="w-4 h-4 text-error flex-shrink-0" />
+                          <span className="text-error font-medium">
                             You selected:
                           </span>
-                          <span className="text-danger font-bold bg-danger/20 px-2 py-0.5 rounded">
+                          <span className="text-error font-bold bg-error/20 px-2 py-0.5 rounded">
                             {userAnswer}
                           </span>
-                          <span className="text-danger/70">
+                          <span className="text-error/70">
                             - This is incorrect
                           </span>
                         </div>
@@ -520,8 +524,8 @@ export default function UserExamDetailPage() {
 
                     {isCorrect && userAnswer && (
                       <div className="mt-3 p-3 bg-success/10 rounded-lg border border-success/30">
-                        <div className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="w-4 h-4 text-success" />
+                        <div className="flex items-center flex-wrap gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
                           <span className="text-success font-medium">
                             You selected:
                           </span>
@@ -554,21 +558,21 @@ export default function UserExamDetailPage() {
                         </button>
                         {isExpanded && (
                           <div
-                            className={`mt-2 p-4 rounded-xl border ${
+                            className={`mt-2 p-3 sm:p-4 rounded-xl border ${
                               isCorrect
                                 ? 'bg-success/5 border-success/20'
-                                : 'bg-danger/5 border-danger/20'
+                                : 'bg-error/5 border-error/20'
                             }`}
                           >
-                            <div className="flex items-start gap-2">
-                              <span className="text-sm font-medium text-text">
+                            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+                              <span className="text-sm font-medium text-text flex-shrink-0">
                                 💡 Explanation:
                               </span>
-                              <p className="text-sm text-muted flex-1">
+                              <p className="text-sm text-muted flex-1 break-words">
                                 {questionResult.explanation}
                               </p>
                             </div>
-                            <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center flex-wrap gap-2 mt-2">
                               <span className="text-sm font-medium text-text">
                                 ✅ Correct Answer:
                               </span>
@@ -593,8 +597,8 @@ export default function UserExamDetailPage() {
 
         {/* Bottom Submit Button */}
         {!submitted && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border">
-            <div className="text-sm text-muted">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 pt-4 border-t border-border">
+            <div className="text-sm text-muted text-center sm:text-left">
               <span className="font-medium">{getAnsweredCount()}</span> of{' '}
               <span className="font-medium">{examSet.totalQuestions}</span>{' '}
               questions answered
@@ -611,7 +615,7 @@ export default function UserExamDetailPage() {
               disabled={
                 submitting || getAnsweredCount() < examSet.totalQuestions
               }
-              className="px-8 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 min-w-[160px] justify-center"
+              className="px-8 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 w-full sm:w-auto sm:min-w-[160px] justify-center"
             >
               {submitting ? (
                 <>

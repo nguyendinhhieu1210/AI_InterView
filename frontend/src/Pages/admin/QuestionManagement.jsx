@@ -181,25 +181,37 @@ export default function QuestionManagement() {
     }
   };
 
+  // ✅ Updated: Màu sắc cho difficulty - chỉ áp dụng cho text
   const getDifficultyColor = (difficulty) => {
     const colors = {
-      Easy: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      Medium:
-        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      Hard: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-      Expert: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+      Easy: 'text-green-600 dark:text-green-400',
+      Medium: 'text-yellow-600 dark:text-yellow-400',
+      Hard: 'text-orange-600 dark:text-orange-400',
+      Expert: 'text-red-600 dark:text-red-400',
     };
     return colors[difficulty] || colors.Medium;
   };
 
-  const getDifficultyIcon = (difficulty) => {
-    const icons = {
-      Easy: '🟢',
-      Medium: '🟡',
-      Hard: '🟠',
-      Expert: '🔴',
+  // ✅ Updated: Background cho difficulty pill
+  const getDifficultyBg = (difficulty) => {
+    const colors = {
+      Easy: 'bg-green-50 dark:bg-green-900/20',
+      Medium: 'bg-yellow-50 dark:bg-yellow-900/20',
+      Hard: 'bg-orange-50 dark:bg-orange-900/20',
+      Expert: 'bg-red-50 dark:bg-red-900/20',
     };
-    return icons[difficulty] || '🟡';
+    return colors[difficulty] || colors.Medium;
+  };
+
+  // ✅ Updated: Border cho difficulty pill
+  const getDifficultyBorder = (difficulty) => {
+    const colors = {
+      Easy: 'border-green-200 dark:border-green-800',
+      Medium: 'border-yellow-200 dark:border-yellow-800',
+      Hard: 'border-orange-200 dark:border-orange-800',
+      Expert: 'border-red-200 dark:border-red-800',
+    };
+    return colors[difficulty] || colors.Medium;
   };
 
   const formatDate = (date) => {
@@ -350,10 +362,30 @@ export default function QuestionManagement() {
                 className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:text-white"
               >
                 <option value="">All Levels</option>
-                <option value="Easy">🟢 Easy</option>
-                <option value="Medium">🟡 Medium</option>
-                <option value="Hard">🟠 Hard</option>
-                <option value="Expert">🔴 Expert</option>
+                <option
+                  value="Easy"
+                  className="text-green-600 dark:text-green-400"
+                >
+                  Easy
+                </option>
+                <option
+                  value="Medium"
+                  className="text-yellow-600 dark:text-yellow-400"
+                >
+                  Medium
+                </option>
+                <option
+                  value="Hard"
+                  className="text-orange-600 dark:text-orange-400"
+                >
+                  Hard
+                </option>
+                <option
+                  value="Expert"
+                  className="text-red-600 dark:text-red-400"
+                >
+                  Expert
+                </option>
               </select>
             </div>
 
@@ -472,10 +504,10 @@ export default function QuestionManagement() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
+                      {/* ✅ Updated: Difficulty pill with text color only, no emoji */}
                       <span
-                        className={`px-2.5 py-1 text-xs rounded-lg ${getDifficultyColor(question.difficulty)}`}
+                        className={`px-2.5 py-1 text-xs font-medium rounded-lg border ${getDifficultyBg(question.difficulty)} ${getDifficultyBorder(question.difficulty)} ${getDifficultyColor(question.difficulty)}`}
                       >
-                        {getDifficultyIcon(question.difficulty)}{' '}
                         {question.difficulty}
                       </span>
                     </td>
