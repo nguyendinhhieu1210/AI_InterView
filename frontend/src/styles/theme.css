@@ -29,21 +29,22 @@
 /* =========================
    DARK THEME
 ========================= */
+
 html.dark {
   /* Background */
-  --bg-color: #09090b; /* nền chính */
-  --card-bg: #18181b; /* nền card */
+  --bg-color: #111827; /* Slate 900 */
+  --card-bg: #1f2937; /* Slate 800 */
 
   /* Text */
-  --text-color: #f4f4f5; /* chữ chính */
-  --muted-text: #a1a1aa; /* chữ phụ */
+  --text-color: #f9fafb;
+  --muted-text: #cbd5e1;
 
   /* Border */
-  --border-color: #27272a;
+  --border-color: #374151;
 
   /* Accent */
   --primary: #60a5fa;
-  --secondary: #8b5cf6;
+  --secondary: #818cf8;
 
   /* Status */
   --success: #4ade80;
@@ -51,11 +52,10 @@ html.dark {
   --error: #f87171;
 
   /* Shadow */
-  --shadow: 0 10px 35px rgba(0, 0, 0, 0.65);
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 
   --transition: all 0.3s ease;
 }
-
 /* =========================
    GLOBAL BASE STYLE
 ========================= */

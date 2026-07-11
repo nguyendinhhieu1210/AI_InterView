@@ -16,7 +16,7 @@ import {
   Menu,
   X,
   BookOpen,
-  Layers, // ✅ Thêm icon cho Exam Sets
+  Layers,
 } from 'lucide-react';
 
 const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
@@ -24,40 +24,40 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
   const [isMobile, setIsMobile] = useState(false);
 
   const menuItems = [
-    { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/admin' },
-    { name: 'Users', icon: <Users size={20} />, path: '/admin/users' },
+    { name: 'Dashboard', icon: <LayoutDashboard size={18} />, path: '/admin' },
+    { name: 'Users', icon: <Users size={18} />, path: '/admin/users' },
     {
       name: 'Interviews',
-      icon: <Briefcase size={20} />,
+      icon: <Briefcase size={18} />,
       path: '/admin/interviews',
     },
     {
       name: 'CV Interviews',
-      icon: <FileText size={20} />,
+      icon: <FileText size={18} />,
       path: '/admin/cv-history',
     },
     {
       name: 'Coding Interviews',
-      icon: <Code size={20} />,
+      icon: <Code size={18} />,
       path: '/admin/coding-sessions',
     },
     {
       name: 'Adaptive Interviews',
-      icon: <Brain size={20} />,
+      icon: <Brain size={18} />,
       path: '/admin/adaptive-sessions',
     },
     {
       name: 'Question Bank',
-      icon: <BookOpen size={20} />,
+      icon: <BookOpen size={18} />,
       path: '/admin/questions',
     },
     {
-      name: 'Exam Sets', // ✅ Thêm menu Exam Sets
-      icon: <Layers size={20} />,
+      name: 'Exam Sets',
+      icon: <Layers size={18} />,
       path: '/admin/exam-sets',
     },
-    { name: 'System Logs', icon: <History size={20} />, path: '/admin/logs' },
-    { name: 'Settings', icon: <Settings size={20} />, path: '/admin/settings' },
+    { name: 'System Logs', icon: <History size={18} />, path: '/admin/logs' },
+    { name: 'Settings', icon: <Settings size={18} />, path: '/admin/settings' },
   ];
 
   useEffect(() => {
@@ -96,68 +96,70 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
   // Desktop Sidebar
   const DesktopSidebar = () => (
     <aside
-      className={`hidden md:flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 relative ${
-        collapsed ? 'w-20' : 'w-64'
+      className={`hidden md:flex flex-col bg-white dark:bg-gray-800/95 border-r border-gray-200/60 dark:border-gray-700/60 transition-all duration-300 relative ${
+        collapsed ? 'w-16' : 'w-56'
       }`}
     >
       {/* Logo */}
       <div
-        className={`flex items-center ${collapsed ? 'justify-center px-2' : 'px-6'} h-16 border-b border-gray-200 dark:border-gray-700`}
+        className={`flex items-center ${collapsed ? 'justify-center px-1' : 'px-5'} h-14 border-b border-gray-200/60 dark:border-gray-700/60`}
       >
         {!collapsed ? (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg flex items-center justify-center shadow-md">
-              <span className="text-white font-semibold text-sm">AI</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg flex items-center justify-center shadow-sm">
+              <span className="text-white font-bold text-xs">AI</span>
             </div>
-            <h1 className="font-semibold text-lg tracking-tight bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
+            <h1 className="font-semibold text-base tracking-tight bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
               AI Interview
             </h1>
           </div>
         ) : (
-          <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg flex items-center justify-center transition-transform hover:scale-105 shadow-md">
-            <span className="text-white font-semibold text-sm">AI</span>
+          <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg flex items-center justify-center transition-transform hover:scale-105 shadow-sm">
+            <span className="text-white font-bold text-xs">AI</span>
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-8rem)]">
+      <nav className="flex-1 px-2.5 py-3 space-y-0.5 overflow-y-auto max-h-[calc(100vh-7rem)]">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             end={item.path === '/admin'}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+              `flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group ${
                 isActive
-                  ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-gradient-to-r from-indigo-500/90 to-blue-500/90 text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/50'
               } ${collapsed ? 'justify-center' : ''}`
             }
             title={collapsed ? item.name : ''}
           >
-            <div className="transition-transform group-hover:scale-110">
+            <span className={`${collapsed ? '' : 'flex-shrink-0'}`}>
               {item.icon}
-            </div>
+            </span>
             {!collapsed && (
-              <span className="font-medium text-sm">{item.name}</span>
+              <span className="font-medium text-sm tracking-wide">
+                {item.name}
+              </span>
             )}
           </NavLink>
         ))}
       </nav>
 
       {/* Footer & Logout */}
-      <div className="p-3 border-t border-gray-200 dark:border-gray-700 mt-auto">
+      <div className="px-2.5 py-2.5 border-t border-gray-200/60 dark:border-gray-700/60 mt-auto">
         <button
           onClick={onLogout}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200 group w-full ${
+          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50/80 dark:hover:bg-red-950/30 transition-all duration-200 group w-full ${
             collapsed ? 'justify-center' : ''
           }`}
           title={collapsed ? 'Logout' : ''}
         >
-          <div className="transition-transform group-hover:scale-110">
-            <LogOut size={20} />
-          </div>
+          <span className="flex-shrink-0">
+            <LogOut size={18} />
+          </span>
           {!collapsed && <span className="font-medium text-sm">Logout</span>}
         </button>
       </div>
@@ -165,9 +167,9 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
       {/* Collapse Toggle */}
       <button
         onClick={onToggle}
-        className="absolute -right-3 top-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-1.5 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-110 z-10"
+        className="absolute -right-2.5 top-20 bg-white dark:bg-gray-800 border border-gray-200/60 dark:border-gray-700/60 rounded-full p-1 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110 z-10"
       >
-        {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
       </button>
     </aside>
   );
@@ -178,15 +180,15 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
       {/* Mobile Menu Button */}
       <button
         onClick={handleMobileToggle}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg border border-gray-200/60 dark:border-gray-700/60 hover:bg-gray-100/90 dark:hover:bg-gray-700/90 transition"
       >
-        <Menu size={20} className="text-gray-600 dark:text-gray-300" />
+        <Menu size={18} className="text-gray-600 dark:text-gray-300" />
       </button>
 
       {/* Mobile Overlay */}
       {mobileOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
+          className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300"
           onClick={handleMobileToggle}
         />
       )}
@@ -194,31 +196,31 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
       {/* Mobile Sidebar Panel */}
       <div
         className={`
-          md:hidden fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-800 
+          md:hidden fixed top-0 left-0 h-full w-64 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
           shadow-2xl z-50 transition-transform duration-300 ease-in-out
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         {/* Mobile Header */}
-        <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg flex items-center justify-center shadow-md">
-              <span className="text-white font-semibold text-sm">AI</span>
+        <div className="flex items-center justify-between px-4 h-14 border-b border-gray-200/60 dark:border-gray-700/60">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg flex items-center justify-center shadow-sm">
+              <span className="text-white font-bold text-xs">AI</span>
             </div>
-            <h1 className="font-semibold text-lg tracking-tight bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
+            <h1 className="font-semibold text-base tracking-tight bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
               AI Interview
             </h1>
           </div>
           <button
             onClick={handleMobileToggle}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            className="p-1.5 rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-700/50 transition"
           >
-            <X size={20} className="text-gray-600 dark:text-gray-300" />
+            <X size={18} className="text-gray-600 dark:text-gray-300" />
           </button>
         </div>
 
         {/* Mobile Navigation */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto h-[calc(100vh-8rem)]">
+        <nav className="flex-1 px-2.5 py-3 space-y-0.5 overflow-y-auto h-[calc(100vh-7rem)]">
           {menuItems.map((item) => (
             <NavLink
               key={item.path}
@@ -226,29 +228,31 @@ const AdminSidebar = ({ collapsed, onToggle, onLogout }) => {
               end={item.path === '/admin'}
               onClick={handleLinkClick}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                `flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-md'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-gradient-to-r from-indigo-500/90 to-blue-500/90 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/50'
                 }`
               }
             >
               {item.icon}
-              <span className="font-medium text-sm">{item.name}</span>
+              <span className="font-medium text-sm tracking-wide">
+                {item.name}
+              </span>
             </NavLink>
           ))}
         </nav>
 
         {/* Mobile Footer */}
-        <div className="p-3 border-t border-gray-200 dark:border-gray-700 mt-auto">
+        <div className="px-2.5 py-2.5 border-t border-gray-200/60 dark:border-gray-700/60">
           <button
             onClick={() => {
               handleLinkClick();
               onLogout();
             }}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200 w-full"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50/80 dark:hover:bg-red-950/30 transition-all duration-200 w-full"
           >
-            <LogOut size={20} />
+            <LogOut size={18} />
             <span className="font-medium text-sm">Logout</span>
           </button>
         </div>

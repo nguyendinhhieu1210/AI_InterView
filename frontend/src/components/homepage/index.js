@@ -1,0 +1,10 @@
+export { default as HeroSection } from './HeroSection';
+export { default as FeaturesSection } from './FeaturesSection';
+export { default as InterviewTypesSection } from './InterviewTypesSection';
+export { default as StatsSection } from './StatsSection';
+export { default as TestimonialsSection } from './TestimonialsSection';
+export { default as CTASection } from './CTASection';
+export { default as FloatingParticles } from './FloatingParticles';
+export { default as AnimatedBackground } from './AnimatedBackground';
+export { default as HowItWorksSection } from './HowItWorksSection';
+export { default as Footer } from './Footer';

@@ -1,9 +1,17 @@
-// backend/src/controllers/questionController.js
 const Question = require('../../models/Question');
 const UserProgress = require('../../models/UserProgress');
 const { validationResult } = require('express-validator');
 const xlsx = require('xlsx');
 const fs = require('fs');
+
+// ==========================================
+// HELPER: Kiểm tra các option có bị trùng không
+// ==========================================
+const areOptionsUnique = (options) => {
+  const values = [options.A, options.B, options.C, options.D];
+  const unique = new Set(values);
+  return unique.size === values.length;
+};
 
 // ========================================
 // ============ ADMIN CONTROLLERS ============
@@ -38,18 +46,14 @@ exports.getQuestions = async (req, res) => {
     const sort = {};
     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-    // Lấy câu hỏi với pagination
     const questions = await Question.find(query)
       .sort(sort)
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .populate('createdBy', 'name email');
 
-    // Tổng số câu hỏi theo query
     const total = await Question.countDocuments(query);
 
-    // ✅ Lấy stats tổng cho tất cả câu hỏi (không phân trang)
-    // Tạo query không có filter isActive để lấy đầy đủ stats
     const statsQuery = {};
     if (programmingLanguage)
       statsQuery.programmingLanguage = programmingLanguage;
@@ -58,7 +62,6 @@ exports.getQuestions = async (req, res) => {
     if (search) {
       statsQuery.$text = { $search: search };
     }
-    // Không áp dụng filter isActive để lấy tổng stats
 
     const allActive = await Question.countDocuments({
       ...statsQuery,
@@ -83,7 +86,6 @@ exports.getQuestions = async (req, res) => {
         total,
         totalPages: Math.ceil(total / limit),
       },
-      // ✅ Thêm stats vào response
       stats: {
         total: allTotal,
         active: allActive,
@@ -97,7 +99,7 @@ exports.getQuestions = async (req, res) => {
   }
 };
 
-// 2. Tạo câu hỏi mới
+// 2. Tạo câu hỏi mới (đã thêm kiểm tra trùng lặp)
 exports.createQuestion = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -124,6 +126,14 @@ exports.createQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Please provide all 4 options (A, B, C, D)',
+      });
+    }
+
+    // ✅ Kiểm tra trùng lặp
+    if (!areOptionsUnique(options)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Options A, B, C, D must be different from each other',
       });
     }
 
@@ -168,7 +178,7 @@ exports.createQuestion = async (req, res) => {
   }
 };
 
-// 3. Cập nhật câu hỏi
+// 3. Cập nhật câu hỏi (đã thêm kiểm tra trùng lặp)
 exports.updateQuestion = async (req, res) => {
   try {
     const { id } = req.params;
@@ -197,6 +207,14 @@ exports.updateQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           message: 'Please provide all 4 options (A, B, C, D)',
+        });
+      }
+
+      // ✅ Kiểm tra trùng lặp
+      if (!areOptionsUnique(updates.options)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Options A, B, C, D must be different from each other',
         });
       }
     }
@@ -279,10 +297,7 @@ exports.deleteQuestion = async (req, res) => {
   }
 };
 
-// 5. Import Excel
-// backend/src/controllers/questionController.js
-
-// 5. Import Excel
+// 5. Import Excel (đã thêm kiểm tra trùng lặp cho từng dòng)
 exports.importQuestionsFromExcel = async (req, res) => {
   try {
     if (!req.file) {
@@ -296,13 +311,11 @@ exports.importQuestionsFromExcel = async (req, res) => {
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
 
-    // ✅ Đọc với defval và raw để xử lý tốt hơn
     const data = xlsx.utils.sheet_to_json(worksheet, {
       defval: '',
       raw: false,
     });
 
-    // Xóa file sau khi đọc
     fs.unlinkSync(req.file.path);
 
     if (data.length === 0) {
@@ -312,7 +325,6 @@ exports.importQuestionsFromExcel = async (req, res) => {
       });
     }
 
-    // ✅ Log để debug
     console.log('📋 Excel headers:', Object.keys(data[0]));
     console.log('📊 Total rows:', data.length);
 
@@ -321,10 +333,8 @@ exports.importQuestionsFromExcel = async (req, res) => {
 
     data.forEach((row, index) => {
       try {
-        // ✅ Helper function để lấy value và trim
         const getValue = (value) => String(value ?? '').trim();
 
-        // ✅ Lấy tất cả values với getValue
         const question = getValue(row.Question);
         const optionA = getValue(row['Option A']);
         const optionB = getValue(row['Option B']);
@@ -337,7 +347,6 @@ exports.importQuestionsFromExcel = async (req, res) => {
         const tagsRaw = getValue(row.Tags);
         const featuredRaw = getValue(row.Featured);
 
-        // ✅ Kiểm tra từng field và báo lỗi chi tiết
         const missing = [];
         if (!question) missing.push('Question');
         if (!optionA) missing.push('Option A');
@@ -357,7 +366,6 @@ exports.importQuestionsFromExcel = async (req, res) => {
           return;
         }
 
-        // ✅ Kiểm tra correctAnswer có hợp lệ không
         if (!['A', 'B', 'C', 'D'].includes(correctAnswer)) {
           errors.push({
             row: index + 2,
@@ -367,7 +375,17 @@ exports.importQuestionsFromExcel = async (req, res) => {
           return;
         }
 
-        // ✅ Tạo tags
+        // ✅ Kiểm tra trùng lặp options
+        const options = { A: optionA, B: optionB, C: optionC, D: optionD };
+        if (!areOptionsUnique(options)) {
+          errors.push({
+            row: index + 2,
+            error: 'Options A, B, C, D must be different from each other',
+            data: row,
+          });
+          return;
+        }
+
         let tags = [];
         if (tagsRaw) {
           tags = tagsRaw
@@ -376,17 +394,11 @@ exports.importQuestionsFromExcel = async (req, res) => {
             .filter((t) => t);
         }
 
-        // ✅ Xử lý isFeatured
         const isFeatured = ['YES', 'TRUE'].includes(featuredRaw.toUpperCase());
 
         questions.push({
           question,
-          options: {
-            A: optionA,
-            B: optionB,
-            C: optionC,
-            D: optionD,
-          },
+          options,
           correctAnswer,
           explanation,
           programmingLanguage,
@@ -404,11 +416,9 @@ exports.importQuestionsFromExcel = async (req, res) => {
       }
     });
 
-    // ✅ Log kết quả
     console.log(`✅ Valid questions: ${questions.length}`);
     console.log(`❌ Errors: ${errors.length}`);
 
-    // ✅ Nếu có lỗi, trả về chi tiết
     if (errors.length > 0) {
       return res.status(400).json({
         success: false,
@@ -426,7 +436,6 @@ exports.importQuestionsFromExcel = async (req, res) => {
       });
     }
 
-    // ✅ Import vào database
     const result = await Question.insertMany(questions);
     const languages = await Question.getAllProgrammingLanguages();
 

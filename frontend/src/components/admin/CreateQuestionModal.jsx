@@ -1,6 +1,6 @@
 // frontend/src/components/admin/CreateQuestionModal.jsx
 import React, { useState } from 'react';
-import { X, Plus, Tag } from 'lucide-react';
+import { X, Plus, Tag, Star } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -28,6 +28,14 @@ export default function CreateQuestionModal({
   });
 
   const [newTag, setNewTag] = useState('');
+
+  // Mapping màu sắc cho các mức độ khó
+  const difficultyColorMap = {
+    Easy: '#22c55e', // xanh lá
+    Medium: '#eab308', // vàng
+    Hard: '#f97316', // cam
+    Expert: '#ef4444', // đỏ
+  };
 
   const handleChange = (field, value) => {
     if (field.includes('.')) {
@@ -188,6 +196,7 @@ export default function CreateQuestionModal({
               </div>
             </div>
 
+            {/* Difficulty - đã được fix màu sắc */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Difficulty
@@ -196,11 +205,22 @@ export default function CreateQuestionModal({
                 value={formData.difficulty}
                 onChange={(e) => handleChange('difficulty', e.target.value)}
                 className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:text-white"
+                style={{
+                  color: difficultyColorMap[formData.difficulty] || 'inherit',
+                }}
               >
-                <option value="Easy">🟢 Easy</option>
-                <option value="Medium">🟡 Medium</option>
-                <option value="Hard">🟠 Hard</option>
-                <option value="Expert">🔴 Expert</option>
+                <option value="Easy" style={{ color: '#22c55e' }}>
+                  Easy
+                </option>
+                <option value="Medium" style={{ color: '#eab308' }}>
+                  Medium
+                </option>
+                <option value="Hard" style={{ color: '#f97316' }}>
+                  Hard
+                </option>
+                <option value="Expert" style={{ color: '#ef4444' }}>
+                  Expert
+                </option>
               </select>
             </div>
           </div>
@@ -300,9 +320,10 @@ export default function CreateQuestionModal({
             />
             <label
               htmlFor="featured"
-              className="text-sm text-gray-700 dark:text-gray-300"
+              className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1"
             >
-              ⭐ Feature this question
+              <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+              Feature this question
             </label>
           </div>
 

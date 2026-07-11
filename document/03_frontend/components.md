@@ -9,25 +9,31 @@ Tất cả components tái sử dụng nằm trong `frontend/src/components/`.
 ## 2. Components Chi Tiết
 
 ### 🔐 ProtectedRoute
+
 **File:** `components/ProtectedRoute.jsx`
 
 Bảo vệ các route yêu cầu đăng nhập. Nếu user chưa xác thực → redirect về `/login`.
 
 ```jsx
 // Cách dùng trong App.js
-<Route path="/welcome" element={
-  <ProtectedRoute>
-    <WelcomePage />
-  </ProtectedRoute>
-} />
+<Route
+  path="/welcome"
+  element={
+    <ProtectedRoute>
+      <WelcomePage />
+    </ProtectedRoute>
+  }
+/>
 ```
 
 ---
 
 ### 📄 CVInfoModal
+
 **File:** `components/CVInfoModal.jsx` (~19KB)
 
 Modal hiển thị thông tin CV và phân tích skills:
+
 - Preview PDF file bằng `react-pdf`
 - Hiển thị tên file CV, tên ứng viên, kỹ năng đã trích xuất
 - Cho phép chọn tối đa 4 kỹ năng từ các nhóm Frontend / Backend / Theory / DevOps
@@ -35,20 +41,24 @@ Modal hiển thị thông tin CV và phân tích skills:
 - Sinh câu hỏi phỏng vấn dựa trên kỹ năng đã chọn
 
 **Props:**
+
 - `cvData`: object chứa `{ fileUrl, fileName, fullName, skills, rawText }`
 - `onClose()`: đóng modal
 - `onStartInterview(data)`: callback khi bắt đầu phỏng vấn
 - `onQuestionsGenerated(data)`: callback khi AI trả về câu hỏi
 
 **Ghi chú:**
+
 - `CVInfoModal` là modal overlay, được render từ `WellcomePage.jsx` sau khi upload CV thành công.
 
 ---
 
 ### 💻 CodingInterface
+
 **File:** `components/CodingInterface.jsx` (~24KB)
 
 CodingInterface là giao diện chính của Live Coding:
+
 - Monaco Editor tích hợp để viết code trong trình duyệt
 - Nhận dữ liệu `sessionId`, `problemStatement`, `language`, `topic`, `domain`, `difficulty`, `testCriteria`, `exampleInput`, `exampleOutput`
 - Quản lý các phase: `coding`, `explain_pending`, `explaining`, `review`
@@ -62,9 +72,11 @@ CodingInterface là giao diện chính của Live Coding:
 ---
 
 ### 📊 EvaluationModal
+
 **File:** `components/EvaluationModal.jsx` (~13KB)
 
 Modal hiển thị báo cáo đánh giá chi tiết sau khi hoàn thành bài thi Live Coding:
+
 - Nhận xét và đánh giá tổng hợp từ AI về giải pháp của người dùng
 - Hiển thị đề bài toán lập trình và code người dùng đã nộp (hỗ trợ sao chép nhanh)
 - Thống kê tỷ lệ chính xác của các câu trả lời giải thích phụ (Explanation Q&A)
@@ -74,9 +86,11 @@ Modal hiển thị báo cáo đánh giá chi tiết sau khi hoàn thành bài th
 ---
 
 ### 📝 InterviewReportModal
+
 **File:** `components/InterviewReportModal.jsx` (~10KB)
 
 Modal báo cáo chi tiết phỏng vấn:
+
 - Breakdown điểm MCQ vs Tự luận
 - Feedback chi tiết từng câu
 - Lời khuyên cải thiện
@@ -84,18 +98,22 @@ Modal báo cáo chi tiết phỏng vấn:
 ---
 
 ### 🚀 StartInterviewModal
+
 **File:** `components/StartInterviewModal.jsx` (~7.6KB)
 
 Modal xác nhận bắt đầu phỏng vấn:
+
 - Hiển thị thông tin bài (chủ đề, độ khó, số câu)
 - Nút bắt đầu / hủy
 
 ---
 
 ### 📌 TopicSelection
+
 **File:** `components/TopicSelection.jsx` (~9KB)
 
 Component chọn chủ đề phỏng vấn:
+
 - Grid các topic (HTML, CSS, JavaScript, React, Node.js, ...)
 - Filter theo category
 - Hiển thị selected state
@@ -103,9 +121,11 @@ Component chọn chủ đề phỏng vấn:
 ---
 
 ### 📤 UploadCV
+
 **File:** `components/UploadCV.jsx` (~6.2KB)
 
 Component upload CV:
+
 - Drag & drop hoặc click để chọn file
 - Hỗ trợ PDF (frontend) và gửi `multipart/form-data` đến backend
 - Hiển thị tên file, trạng thái upload và nút huỷ bỏ
@@ -115,6 +135,7 @@ Component upload CV:
   - `{ fileUrl, fileName, fullName, skills, rawText }`
 
 **Flow:**
+
 1. User chọn file PDF
 2. UploadCV gửi file lên `POST /api/cv/upload`
 3. Server trả về `fullName`, `skills`, `rawText`, `fileName`
@@ -123,6 +144,7 @@ Component upload CV:
 ---
 
 ### 🤖 AIFeedback
+
 **File:** `components/AIFeedback.jsx` (~1.5KB)
 
 Hiển thị feedback từ AI dạng đơn giản (text card).
@@ -130,6 +152,7 @@ Hiển thị feedback từ AI dạng đơn giản (text card).
 ---
 
 ### 👁️ PDFPreview
+
 **File:** `components/PDFPreview.jsx` (~1.8KB)
 
 Preview file PDF đã upload (dùng `react-pdf`).
@@ -137,9 +160,11 @@ Preview file PDF đã upload (dùng `react-pdf`).
 ---
 
 ### 📅 ActivityCalendar
+
 **File:** `components/ActivityCalendar.jsx` (~11KB)
 
 Heatmap lịch hoạt động theo ngày (tương tự GitHub contribution graph):
+
 - Hiển thị 1 năm gần nhất
 - Màu đậm nhạt theo số lần practice
 - Tooltip khi hover
@@ -147,9 +172,11 @@ Heatmap lịch hoạt động theo ngày (tương tự GitHub contribution graph
 ---
 
 ### 📈 PerformanceTrendChart
+
 **File:** `components/PerformanceTrendChart.jsx` (~30KB)
 
 Biểu đồ xu hướng hiệu suất theo thời gian:
+
 - Line chart điểm qua các lần phỏng vấn
 - Filter theo loại phỏng vấn (Standard / CV / Adaptive)
 - So sánh các chủ đề khác nhau
@@ -158,9 +185,11 @@ Biểu đồ xu hướng hiệu suất theo thời gian:
 ---
 
 ### 🎯 WeaknessAnalysis
+
 **File:** `components/WeaknessAnalysis.jsx` (~21KB)
 
 Phân tích điểm yếu của người dùng:
+
 - Radar chart theo chủ đề
 - Danh sách chủ đề cần cải thiện
 - Gợi ý tài nguyên học tập
@@ -168,6 +197,7 @@ Phân tích điểm yếu của người dùng:
 ---
 
 ### 📉 ProgressChart
+
 **File:** `components/ProgressChart.jsx` (~1.3KB)
 
 Biểu đồ tiến độ đơn giản (mini chart).
@@ -175,6 +205,7 @@ Biểu đồ tiến độ đơn giản (mini chart).
 ---
 
 ### 🌙 DarkModeToggle
+
 **File:** `components/DarkModeToggle.jsx` (~0.65KB)
 
 Nút toggle chuyển đổi Dark/Light mode.
@@ -190,14 +221,18 @@ Nút toggle chuyển đổi Dark/Light mode.
 ## 3. Pages Chi Tiết
 
 ### 🏠 WelcomePage (`WellcomePage.jsx`) – ~30KB
+
 Trang chủ sau khi đăng nhập:
+
 - Dashboard tổng quan (số lần practice, điểm TB)
 - Navigation đến các tính năng chính
 - Hiển thị hoạt động gần đây
 - ActivityCalendar & PerformanceTrendChart
 
 ### 🎤 InterviewPage – ~29KB
+
 Standard Interview:
+
 - Bước 1: Chọn topic (TopicSelection)
 - Bước 2: Chọn độ khó
 - Bước 3: StartInterviewModal
@@ -205,7 +240,9 @@ Standard Interview:
 - Bước 5: EvaluationModal kết quả
 
 ### 📋 InterviewCVPage – ~29KB
+
 CV-based Interview:
+
 - Upload CV (UploadCV component)
 - CVInfoModal xem kỹ năng và preview PDF
 - Sinh câu hỏi dựa trên CV qua `/api/cv/generate-questions`
@@ -213,20 +250,26 @@ CV-based Interview:
 - Phòng phỏng vấn hiển thị câu hỏi MCQ và text
 
 ### 🤖 AdaptiveInterviewPage – ~26KB
+
 Adaptive Interview:
+
 - Chọn chủ đề
 - Loop: câu hỏi → trả lời → AI điều chỉnh độ khó
 - Màn hình kết thúc session
 
 ### 💻 LiveCodingPage – ~0.8KB
+
 LiveCodingPage là trang khởi tạo session Live Coding:
+
 - Sử dụng `TopicSelection` để chọn ngôn ngữ, domain, topic và độ khó
 - Sau khi lựa chọn xong, gọi `POST /api/live-coding/start`
 - Nhận `sessionId` và câu hỏi đầu tiên, sau đó render `CodingInterface`
 - Giữ giao diện đơn giản, chỉ chuyển từ bước chọn sang editor
 
 ### 👤 ProfilePage – ~32KB
+
 Hồ sơ người dùng:
+
 - Thông tin cá nhân & avatar
 - Thống kê tổng (total interviews, avg score)
 - PerformanceTrendChart
@@ -234,14 +277,18 @@ Hồ sơ người dùng:
 - ActivityCalendar
 
 ### ⚙️ SettingsPage – ~22KB
+
 Cài đặt:
+
 - Dark/Light mode
 - Ngôn ngữ (VI/EN)
 - Đổi mật khẩu
 - Thông báo
 
 ### ❓ HelpSupportPage – ~36KB
+
 Hỗ trợ & FAQ:
+
 - Hướng dẫn sử dụng từng tính năng
 - FAQ accordion
 - Contact
@@ -253,43 +300,85 @@ Hỗ trợ & FAQ:
 > Các thành phần này được dùng riêng cho khu vực quản trị viên, nằm trong thư mục `layouts/` và `Pages/admin/`.
 
 ### 🛡️ AdminLayout & AdminRoute
+
 **File:** `layouts/AdminLayout.jsx`, `components/admin/AdminRoute.jsx`
+
 - `AdminRoute`: Đảm bảo chỉ người dùng đã đăng nhập và có `role === 'admin'` mới được truy cập. Nếu không, redirect về `/`.
 - `AdminLayout`: Cấu trúc chung của trang admin bao gồm Sidebar điều hướng và Topbar.
 
 ### 📊 Dashboard
+
 **File:** `Pages/admin/Dashboard.jsx`
+
 - Trang tổng quan hệ thống dành cho admin.
 - Hiển thị thống kê số lượng người dùng (tổng số, đã xác thực, admin) bằng cách gọi `/api/users/admin/users/stats`.
 - Hiển thị danh sách người dùng đăng ký gần đây.
 
 ### 👥 Users Management
+
 **File:** `Pages/admin/UsersList.jsx`, `Pages/admin/UserDetail.jsx`
+
 - `UsersList`: Bảng danh sách tất cả người dùng trong hệ thống. Cho phép phân trang và tìm kiếm.
 - `UserDetail`: Xem chi tiết hồ sơ một người dùng, quản lý quyền hạn, xem trạng thái xác thực và hỗ trợ tính năng reset password (dành cho admin).
 
 ### 🎤 Interviews Management
+
 **File:** `Pages/admin/Interviews.jsx`
+
 - Quản lý tất cả các bài phỏng vấn tiêu chuẩn của toàn bộ người dùng.
 - Hiển thị điểm số, kết quả đánh giá, thời gian hoàn thành.
 
 ### 📋 CV History Management
+
 **File:** `Pages/admin/CVHistory.jsx`
+
 - Quản lý các phiên phỏng vấn dựa trên CV.
 - Cho phép admin xem danh sách các CV đã được tải lên và điểm số phỏng vấn của từng người dùng.
 
 ### 💻 Live Coding Sessions Management
+
 **File:** `Pages/admin/CodingSessions.jsx`
+
 - Quản lý và theo dõi các bài thi Live Coding của người dùng.
 - Xem chi tiết code đã nộp, đánh giá của AI, và lịch sử thực thi.
 
 ### 🤖 Adaptive Interview Sessions Management
+
 **File:** `Pages/admin/AdaptiveSessions.jsx`
+
 - Quản lý các phiên phỏng vấn Adaptive (câu hỏi thích ứng theo độ khó).
 - Theo dõi toàn bộ lịch sử trò chuyện và đánh giá chi tiết từng câu trả lời.
 
+### 🧠 Question Bank Management
+
+**File:** `Pages/admin/QuestionManagement.jsx`
+
+- Trang quản lý ngân hàng câu hỏi MCQ cho admin.
+- Hỗ trợ tìm kiếm, lọc theo ngôn ngữ/programming language, độ khó, trạng thái hoạt động.
+- Cho phép tạo câu hỏi mới, chỉnh sửa, kích hoạt/vô hiệu, đánh dấu nổi bật và xóa câu hỏi đã bị vô hiệu.
+- Hỗ trợ import/export Excel và tạo exam set từ các câu hỏi hiện có.
+
+### 🧩 Exam Set Management
+
+**File:** `Pages/admin/ExamSetManagement.jsx`
+
+- Trang quản lý các bộ đề thi do admin tạo.
+- Cho phép tạo mới bộ đề, chỉnh sửa thông tin, kích hoạt/vô hiệu, xem danh sách câu hỏi bên trong.
+- Hỗ trợ thêm/xóa câu hỏi khỏi bộ đề và xem thống kê tổng quát về số câu hỏi, trạng thái hoạt động.
+
+### 🧱 Admin Modals
+
+**File:** `components/admin/CreateQuestionModal.jsx`, `components/admin/CreateExamSetModal.jsx`, `components/admin/ExamSetDetailModal.jsx`, `components/admin/ImportExcelModal.jsx`
+
+- `CreateQuestionModal`: form tạo/chỉnh sửa câu hỏi MCQ.
+- `CreateExamSetModal`: form tạo/chỉnh sửa bộ đề thi.
+- `ExamSetDetailModal`: xem chi tiết bộ đề, thêm/xóa câu hỏi.
+- `ImportExcelModal`: nhập câu hỏi từ file Excel.
+
 ### ⚙️ System Logs & Settings
+
 **File:** `Pages/admin/SystemLogs.jsx`, `Pages/admin/Settings.jsx`
+
 - `SystemLogs`: Xem nhật ký hoạt động hệ thống.
 - `Settings`: Cài đặt chung cho trang Admin.
 
@@ -297,11 +386,11 @@ Hỗ trợ & FAQ:
 
 ## 5. Quy Ước Component
 
-| Quy Ước | Mô Tả |
-|---|---|
-| File đặt tên | PascalCase (ví dụ: `CVInfoModal.jsx`) |
-| Functional components | Dùng hooks, không dùng class components |
-| State management | useState + useContext (không dùng Redux) |
-| Styling | TailwindCSS inline classes |
-| Animation | Framer Motion (`motion.div`, `AnimatePresence`) |
-| API calls | Trong `useEffect` hoặc event handlers, qua `services/` |
+| Quy Ước               | Mô Tả                                                  |
+| --------------------- | ------------------------------------------------------ |
+| File đặt tên          | PascalCase (ví dụ: `CVInfoModal.jsx`)                  |
+| Functional components | Dùng hooks, không dùng class components                |
+| State management      | useState + useContext (không dùng Redux)               |
+| Styling               | TailwindCSS inline classes                             |
+| Animation             | Framer Motion (`motion.div`, `AnimatePresence`)        |
+| API calls             | Trong `useEffect` hoặc event handlers, qua `services/` |

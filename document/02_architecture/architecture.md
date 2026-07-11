@@ -52,7 +52,9 @@ backend/
 │   ├── weaknessRoutes.js  ← /api/weakness/*
 │   ├── adaptiveInterviewRoutes.js ← /api/adaptive/*
 │   ├── liveCodingRoutes.js        ← /api/live-coding/*
-│   └── activityRoutes.js          ← /api/activity/*
+│   ├── activityRoutes.js          ← /api/activity/*
+│   ├── admin/questionRoutes.js    ← /api/admin/questions, /api/admin/programming-languages
+│   └── admin/examSetRoutes.js     ← /api/admin/exam-sets
 ├── controllers/           ← Xử lý request/response (thin layer)
 │   ├── authController.js
 │   ├── interviewController.js
@@ -61,7 +63,9 @@ backend/
 │   ├── liveCodingController.js
 │   ├── weaknessController.js
 │   ├── userController.js
-│   └── activityController.js
+│   ├── activityController.js
+│   ├── admin/questionController.js
+│   └── admin/examSetController.js
 ├── services/              ← Business logic chính
 │   ├── aiService.js       ← Gọi AI API tổng hợp
 │   ├── weaknessService.js ← Phân tích điểm yếu
@@ -84,7 +88,9 @@ backend/
 │   ├── CVInterviewSession.js
 │   ├── LiveCodingSession.js
 │   ├── Activity.js
-│   └── Assessment.js
+│   ├── Assessment.js
+│   ├── Question.js
+│   └── ExamSet.js
 ├── middleware/
 │   └── auth.js            ← JWT verification middleware
 ├── utils/                 ← Tiện ích chung
@@ -194,11 +200,11 @@ frontend/src/
 
 ## 5. Bảo Mật
 
-| Cơ Chế | Mô Tả |
-|---|---|
-| JWT Authentication | Token lưu trong localStorage, đính kèm header mỗi request |
-| Password Hashing | bcryptjs với salt 10 rounds |
-| Email Verification | OTP 6 chữ số, hết hạn sau 10 phút |
-| CORS | Chỉ cho phép origin từ FRONTEND_URL |
-| Protected Routes | Frontend dùng `<ProtectedRoute>`, Backend dùng middleware `auth.js` |
-| File Upload | Multer giới hạn loại file và kích thước |
+| Cơ Chế             | Mô Tả                                                               |
+| ------------------ | ------------------------------------------------------------------- |
+| JWT Authentication | Token lưu trong localStorage, đính kèm header mỗi request           |
+| Password Hashing   | bcryptjs với salt 10 rounds                                         |
+| Email Verification | OTP 6 chữ số, hết hạn sau 10 phút                                   |
+| CORS               | Chỉ cho phép origin từ FRONTEND_URL                                 |
+| Protected Routes   | Frontend dùng `<ProtectedRoute>`, Backend dùng middleware `auth.js` |
+| File Upload        | Multer giới hạn loại file và kích thước                             |

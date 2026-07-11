@@ -421,6 +421,97 @@ function multiplyTreeValues(treeArray, multiplier) {
   return treeArray.map((val) => (val === -1 ? -1 : val * multiplier));
 }
 
+function computeExpectedMultiplierOutput(
+  input,
+  multiplier,
+  preserveNulls = false
+) {
+  if (!Array.isArray(input)) return [];
+  return input.map((value) => {
+    if (preserveNulls && value === -1) return -1;
+    return value * multiplier;
+  });
+}
+
+function validateMultiplierPattern(input, output, options = {}) {
+  const { defaultMultiplier = 2, preserveNulls = false } = options;
+
+  if (!Array.isArray(input) || !Array.isArray(output)) {
+    return {
+      isValid: false,
+      multiplier: defaultMultiplier,
+      fixedOutput: [],
+    };
+  }
+
+  if (input.length !== output.length) {
+    return {
+      isValid: false,
+      multiplier: defaultMultiplier,
+      fixedOutput: computeExpectedMultiplierOutput(
+        input,
+        defaultMultiplier,
+        preserveNulls
+      ),
+    };
+  }
+
+  let multiplier = null;
+  let allMatch = true;
+  let hasComparableValue = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const inputValue = input[i];
+    const outputValue = output[i];
+
+    if (preserveNulls && inputValue === -1) {
+      if (outputValue !== -1) {
+        allMatch = false;
+        break;
+      }
+      continue;
+    }
+
+    if (inputValue === 0) {
+      if (outputValue !== 0) {
+        allMatch = false;
+        break;
+      }
+      continue;
+    }
+
+    hasComparableValue = true;
+    const ratio = outputValue / inputValue;
+
+    if (multiplier === null) {
+      multiplier = ratio;
+    } else if (Math.abs(ratio - multiplier) > 0.0001) {
+      allMatch = false;
+      break;
+    }
+  }
+
+  if (
+    allMatch &&
+    hasComparableValue &&
+    multiplier !== null &&
+    Number.isInteger(multiplier) &&
+    Math.abs(multiplier) >= 1
+  ) {
+    return { isValid: true, multiplier, fixedOutput: output };
+  }
+
+  return {
+    isValid: false,
+    multiplier: defaultMultiplier,
+    fixedOutput: computeExpectedMultiplierOutput(
+      input,
+      defaultMultiplier,
+      preserveNulls
+    ),
+  };
+}
+
 function sumTreeValues(treeArray) {
   if (!treeArray || treeArray.length === 0) return 0;
   return treeArray.reduce((sum, val) => sum + (val === -1 ? 0 : val), 0);
@@ -778,6 +869,15 @@ function computeArrayOutput(topicLower, arr) {
   const sortedAsc = () => [...arr].sort((a, b) => a - b);
   const sumOf = (a) => a.reduce((s, x) => s + x, 0);
 
+  if (
+    topicLower.includes('subarray') &&
+    (topicLower.includes('maximum sum') || topicLower.includes('max sum')) &&
+    !topicLower.includes('return the subarray') &&
+    !topicLower.includes('return the maximum subarray')
+  ) {
+    return { value: String(computeMaxSubarraySum(arr)), type: 'number' };
+  }
+
   // ===== INDEX SUM =====
   if (
     topicLower.includes('index') &&
@@ -806,10 +906,7 @@ function computeArrayOutput(topicLower, arr) {
     topicLower.includes('hiệu') ||
     topicLower.includes('chênh lệch')
   ) {
-    if (arr.length === 0) {
-      return { value: '-1', type: 'number' };
-    }
-    if (arr.length === 1) {
+    if (arr.length <= 1) {
       return { value: '0', type: 'number' };
     }
     return {
@@ -879,6 +976,46 @@ function computeArrayOutput(topicLower, arr) {
 }
 
 // ===== HELPERS CHO CÁC BÀI TOÁN PHỨC TẠP =====
+function inferSubarrayTask(problemStatement, functionSignature = '') {
+  const ps = (problemStatement || '').toLowerCase();
+  const fn = (functionSignature || '').toLowerCase().replace(/\s+/g, '');
+
+  if (
+    ps.includes('return the subarray') ||
+    ps.includes('return the maximum subarray') ||
+    ps.includes('return the subarray itself') ||
+    ps.includes('return the contiguous subarray') ||
+    ps.includes('return the maximum contiguous subarray') ||
+    fn.includes('findsubarraywithmaxsum') ||
+    fn.includes('subarraywithmaxsum')
+  ) {
+    return 'SUBARRAY';
+  }
+
+  if (
+    ps.includes('maximum sum') ||
+    ps.includes('max sum') ||
+    ps.includes('sum of a subarray') ||
+    ps.includes('sum of the subarray') ||
+    fn.includes('maxsubarraysum') ||
+    fn.includes('findmaxsubarraysum') ||
+    fn.includes('subarraysum')
+  ) {
+    return 'SUM';
+  }
+
+  if (
+    ps.includes('subarray') &&
+    ps.includes('sum') &&
+    !ps.includes('maximum') &&
+    !ps.includes('max')
+  ) {
+    return 'SUMS';
+  }
+
+  return null;
+}
+
 function computeMaxSubarrayArray(arr) {
   if (!arr || arr.length === 0) return [];
   let maxSum = arr[0],
@@ -950,6 +1087,13 @@ function computeSecondMin(arr) {
 // ========== INFER OPERATION FROM PROBLEM ==========
 function inferOperationFromProblem(problemStatement) {
   const lower = problemStatement.toLowerCase();
+  const hasRangeKeyword =
+    lower.includes('diff') ||
+    lower.includes('range') ||
+    lower.includes('difference') ||
+    lower.includes('hiệu') ||
+    lower.includes('chênh lệch');
+
   if (
     lower.includes('index') &&
     (lower.includes('add') ||
@@ -964,6 +1108,9 @@ function inferOperationFromProblem(problemStatement) {
   }
   if (lower.includes('reverse')) {
     return 'REVERSE';
+  }
+  if (hasRangeKeyword) {
+    return 'RANGE';
   }
   if (
     lower.includes('max') ||
@@ -984,16 +1131,6 @@ function inferOperationFromProblem(problemStatement) {
   }
   if (lower.includes('sum') || lower.includes('total')) {
     return 'SUM';
-  }
-  // ===== RANGE (diff) =====
-  if (
-    lower.includes('diff') ||
-    lower.includes('range') ||
-    lower.includes('difference') ||
-    lower.includes('hiệu') ||
-    lower.includes('chênh lệch')
-  ) {
-    return 'RANGE';
   }
   return null;
 }
@@ -1079,48 +1216,33 @@ function validateAndFixExampleOutput(
     ) {
       if (Array.isArray(input) && input.length > 0) {
         if (Array.isArray(output) && output.length === input.length) {
-          let multiplier = null;
-          let allMatch = true;
-          let hasNonZero = false;
+          const preserveNulls = input.some((value) => value === -1);
+          const validation = validateMultiplierPattern(input, output, {
+            defaultMultiplier: 2,
+            preserveNulls,
+          });
 
-          for (let i = 0; i < input.length; i++) {
-            if (input[i] !== 0) {
-              hasNonZero = true;
-              const ratio = output[i] / input[i];
-              if (multiplier === null) {
-                multiplier = ratio;
-              } else if (Math.abs(ratio - multiplier) > 0.0001) {
-                allMatch = false;
-                break;
-              }
-            }
-          }
-
-          if (allMatch && multiplier !== null && hasNonZero) {
-            if (Number.isInteger(multiplier) && Math.abs(multiplier) >= 1) {
-              console.log(
-                `[VALIDATE] Valid multiplier detected: ${multiplier}`
-              );
-              return {
-                isValid: true,
-                fixedOutput: exampleOutput,
-                multiplier,
-                message: `Multiplier = ${multiplier}`,
-              };
-            }
+          if (validation.isValid) {
+            console.log(
+              `[VALIDATE] Valid multiplier detected: ${validation.multiplier}`
+            );
+            return {
+              isValid: true,
+              fixedOutput: exampleOutput,
+              multiplier: validation.multiplier,
+              message: `Multiplier = ${validation.multiplier}`,
+            };
           }
 
           console.log(`[VALIDATE] Invalid multiplier pattern, fixing...`);
-          const defaultMultiplier = 2;
-          const fixedOutput = input.map((x) => x * defaultMultiplier);
           console.log(
-            `[VALIDATE] Fixed output: ${JSON.stringify(fixedOutput)}`
+            `[VALIDATE] Fixed output: ${JSON.stringify(validation.fixedOutput)}`
           );
           return {
             isValid: false,
-            fixedOutput: JSON.stringify(fixedOutput),
-            multiplier: defaultMultiplier,
-            message: `Fixed: using multiplier = ${defaultMultiplier}`,
+            fixedOutput: JSON.stringify(validation.fixedOutput),
+            multiplier: validation.multiplier,
+            message: `Fixed: using multiplier = ${validation.multiplier}`,
           };
         }
 
@@ -1162,6 +1284,33 @@ function validateAndFixExampleOutput(
             isValid: false,
             fixedOutput: String(Math.round(avg * 100) / 100),
             message: `Fixed average: ${Math.round(avg * 100) / 100}`,
+          };
+        }
+      }
+    }
+
+    // ===== RANGE (MAX - MIN) =====
+    if (
+      topicLower.includes('diff') ||
+      topicLower.includes('range') ||
+      topicLower.includes('difference') ||
+      topicLower.includes('hiệu') ||
+      topicLower.includes('chênh lệch')
+    ) {
+      if (Array.isArray(input) && input.every((x) => typeof x === 'number')) {
+        const expected =
+          input.length <= 1 ? 0 : Math.max(...input) - Math.min(...input);
+        if (
+          typeof output === 'number' &&
+          Math.abs(output - expected) > 0.0001
+        ) {
+          console.log(
+            `[VALIDATE] Range mismatch: expected ${expected}, got ${output}`
+          );
+          return {
+            isValid: false,
+            fixedOutput: String(expected),
+            message: `Fixed range: ${expected}`,
           };
         }
       }
@@ -1810,7 +1959,12 @@ function computeFallbackOutput(topic, input, difficulty) {
         const arr = JSON.parse(input);
         if (Array.isArray(arr)) {
           const multiplier = 2;
-          const result = arr.map((x) => x * multiplier);
+          const preserveNulls = arr.some((value) => value === -1);
+          const result = computeExpectedMultiplierOutput(
+            arr,
+            multiplier,
+            preserveNulls
+          );
           return JSON.stringify(result);
         }
       } catch (e) {}
@@ -2124,31 +2278,14 @@ function validateAndFixQuestion(
         Array.isArray(output) &&
         input.length === output.length
       ) {
-        let multiplier = null;
-        let allMatch = true;
-        let hasNonZero = false;
+        const preserveNulls = input.some((value) => value === -1);
+        const validation = validateMultiplierPattern(input, output, {
+          defaultMultiplier: 2,
+          preserveNulls,
+        });
 
-        for (let i = 0; i < input.length; i++) {
-          if (input[i] !== 0) {
-            hasNonZero = true;
-            const ratio = output[i] / input[i];
-            if (multiplier === null) {
-              multiplier = ratio;
-            } else if (Math.abs(ratio - multiplier) > 0.0001) {
-              allMatch = false;
-              break;
-            }
-          }
-        }
-
-        if (
-          !allMatch ||
-          !hasNonZero ||
-          multiplier === null ||
-          !Number.isInteger(multiplier)
-        ) {
-          const defaultMultiplier = 2;
-          const fixedOutput = input.map((x) => x * defaultMultiplier);
+        if (!validation.isValid) {
+          const fixedOutput = validation.fixedOutput;
           console.log(
             `[FIX] Fixing multiplier output: ${JSON.stringify(fixedOutput)}`
           );
@@ -2158,10 +2295,10 @@ function validateAndFixQuestion(
             fixed.problemStatement &&
             !fixed.problemStatement.includes('multiplier')
           ) {
-            fixed.problemStatement += ` Use a multiplier of ${defaultMultiplier} for the example.`;
+            fixed.problemStatement += ` Use a multiplier of ${validation.multiplier} for the example.`;
           }
         } else {
-          console.log(`[VALIDATE] Multiplier OK: ${multiplier}`);
+          console.log(`[VALIDATE] Multiplier OK: ${validation.multiplier}`);
         }
       }
     } catch (e) {
@@ -2211,29 +2348,22 @@ function validateAndFixQuestion(
     } catch (e) {}
 
     if (Array.isArray(inputArr) && inputArr.length > 0) {
-      if (
-        fn.includes('findsubarraywithmaxsum') ||
-        (ps.includes('subarray') && ps.includes('maximum sum'))
-      ) {
+      const subarrayTask = inferSubarrayTask(
+        fixed.problemStatement,
+        fixed.functionSignature
+      );
+
+      if (subarrayTask === 'SUBARRAY') {
         const sub = computeMaxSubarrayArray(inputArr);
         fixed.exampleOutput = JSON.stringify(sub);
         fixed.expectedType = 'array';
         console.log(`[FIX] findSubarrayWithMaxSum: ${fixed.exampleOutput}`);
-      } else if (
-        fn.includes('maxsubarraysum') ||
-        (ps.includes('maximum sum') && !ps.includes('return the subarray'))
-      ) {
+      } else if (subarrayTask === 'SUM') {
         const sum = computeMaxSubarraySum(inputArr);
         fixed.exampleOutput = String(sum);
         fixed.expectedType = 'number';
         console.log(`[FIX] maxSubarraySum: ${fixed.exampleOutput}`);
-      } else if (
-        fn.includes('findsubarraysums') ||
-        (ps.includes('subarray') &&
-          ps.includes('sum') &&
-          !ps.includes('maximum') &&
-          !ps.includes('max'))
-      ) {
+      } else if (subarrayTask === 'SUMS') {
         const sums = computeAllSubarraySums(inputArr);
         fixed.exampleOutput = JSON.stringify(sums);
         fixed.expectedType = 'array';
@@ -2273,24 +2403,18 @@ function validateAndFixQuestion(
         console.log(`[FIX] findSecondMin: ${fixed.exampleOutput}`);
       }
     } else if (Array.isArray(inputArr) && inputArr.length === 0) {
-      if (
-        fn.includes('findsubarraywithmaxsum') ||
-        (ps.includes('subarray') && ps.includes('maximum sum'))
-      ) {
+      const subarrayTask = inferSubarrayTask(
+        fixed.problemStatement,
+        fixed.functionSignature
+      );
+
+      if (subarrayTask === 'SUBARRAY') {
         fixed.exampleOutput = '[]';
         fixed.expectedType = 'array';
-      } else if (
-        fn.includes('maxsubarraysum') ||
-        (ps.includes('maximum sum') && !ps.includes('return the subarray'))
-      ) {
+      } else if (subarrayTask === 'SUM') {
         fixed.exampleOutput = '0';
         fixed.expectedType = 'number';
-      } else if (
-        fn.includes('findsubarraysums') ||
-        (ps.includes('subarray') &&
-          ps.includes('sum') &&
-          !ps.includes('maximum'))
-      ) {
+      } else if (subarrayTask === 'SUMS') {
         fixed.exampleOutput = '[]';
         fixed.expectedType = 'array';
       } else if (

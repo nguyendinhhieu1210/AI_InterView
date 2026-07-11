@@ -11,6 +11,7 @@
 - Thực hành Live Coding với AI đánh giá code và hỏi giải thích
 - Làm bài thi từ ngân hàng câu hỏi MCQ (Exam Sets) do admin tạo sẵn
 - Xem lịch sử phỏng vấn, phân tích điểm yếu, và biểu đồ tiến độ
+- Admin có thể tạo, chỉnh sửa, kích hoạt/vô hiệu hóa câu hỏi và bộ đề thi, cũng như import/export bằng Excel
 
 Hệ thống có hai nhóm người dùng chính:
 
@@ -109,17 +110,17 @@ Hệ thống có hai nhóm người dùng chính:
 
 ## 3. Các Module Chính
 
-| Module                  | Mô Tả                                                                         |
-| ----------------------- | ----------------------------------------------------------------------------- |
-| **Authentication**      | Đăng ký, đăng nhập, xác thực email bằng OTP, reset mật khẩu, Refresh Token    |
-| **Standard Interview**  | Phỏng vấn theo chủ đề chọn sẵn (MCQ + tự luận), AI chấm điểm, tổng 100 điểm   |
-| **CV Interview**        | Upload CV (PDF) → AI phân tích kỹ năng → sinh câu hỏi dựa trên CV             |
-| **Adaptive Interview**  | Phỏng vấn thích ứng: AI điều chỉnh độ khó theo hiệu suất, roadmap học tập     |
-| **Live Coding**         | Luyện tập code → AI đánh giá → 3 câu hỏi giải thích → đánh giá tổng hợp       |
-| **Exam Sets**           | User làm bài thi MCQ từ bộ đề admin tạo sẵn, chấm điểm tự động                |
-| **History & Analytics** | Xem lịch sử phỏng vấn (4 loại + coding), biểu đồ xu hướng, phân tích điểm yếu |
-| **Profile & Settings**  | Quản lý hồ sơ cá nhân, theme sáng/tối, đổi mật khẩu, đa ngôn ngữ              |
-| **Admin Panel**         | Quản lý users, xem lịch sử toàn hệ thống, Question Bank, Exam Sets, Token AI  |
+| Module                  | Mô Tả                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| **Authentication**      | Đăng ký, đăng nhập, xác thực email bằng OTP, reset mật khẩu, Refresh Token                        |
+| **Standard Interview**  | Phỏng vấn theo chủ đề chọn sẵn (MCQ + tự luận), AI chấm điểm, tổng 100 điểm                       |
+| **CV Interview**        | Upload CV (PDF) → AI phân tích kỹ năng → sinh câu hỏi dựa trên CV                                 |
+| **Adaptive Interview**  | Phỏng vấn thích ứng: AI điều chỉnh độ khó theo hiệu suất, roadmap học tập                         |
+| **Live Coding**         | Luyện tập code → AI đánh giá → 3 câu hỏi giải thích → đánh giá tổng hợp                           |
+| **Exam Sets**           | User làm bài thi MCQ từ bộ đề admin tạo sẵn, chấm điểm tự động                                    |
+| **History & Analytics** | Xem lịch sử phỏng vấn (4 loại + coding), biểu đồ xu hướng, phân tích điểm yếu                     |
+| **Profile & Settings**  | Quản lý hồ sơ cá nhân, theme sáng/tối, đổi mật khẩu, đa ngôn ngữ                                  |
+| **Admin Panel**         | Quản lý users, xem lịch sử toàn hệ thống, Question Bank, Exam Sets, import/export Excel, Token AI |
 
 ---
 

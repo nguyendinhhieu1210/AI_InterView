@@ -11,13 +11,12 @@ exports.getExamSets = async (req, res) => {
 
     let query = {};
 
-    // ✅ Xử lý filter status: 'all', 'active', 'inactive'
+    // Lọc theo status: 'active', 'inactive', hoặc lấy tất cả (không truyền status)
     if (status === 'active') {
       query.isActive = true;
     } else if (status === 'inactive') {
       query.isActive = false;
     }
-    // Nếu không có status hoặc status === 'all' thì lấy tất cả
 
     if (programmingLanguage) query.programmingLanguage = programmingLanguage;
     if (search) {
@@ -35,7 +34,7 @@ exports.getExamSets = async (req, res) => {
       )
       .sort({ createdAt: -1 });
 
-    // ✅ Tính stats
+    // Tính stats
     const total = examSets.length;
     const active = examSets.filter((e) => e.isActive).length;
     const inactive = examSets.filter((e) => !e.isActive).length;
@@ -83,7 +82,7 @@ exports.getExamSetById = async (req, res) => {
       });
     }
 
-    // Tăng views
+    // Tăng lượt xem
     examSet.metadata.views = (examSet.metadata.views || 0) + 1;
     await examSet.save();
 
@@ -100,7 +99,7 @@ exports.getExamSetById = async (req, res) => {
   }
 };
 
-// 3. Tạo exam set mới
+// 3. Tạo exam set mới (có kiểm tra trùng lặp ngôn ngữ)
 exports.createExamSet = async (req, res) => {
   try {
     const {
@@ -117,6 +116,24 @@ exports.createExamSet = async (req, res) => {
       });
     }
 
+    // ✅ KIỂM TRA: Đã có exam set nào cho ngôn ngữ này chưa (bất kể active hay inactive)
+    const existingExamSet = await ExamSet.findOne({
+      programmingLanguage: programmingLanguage,
+    });
+
+    if (existingExamSet) {
+      return res.status(400).json({
+        success: false,
+        message: `An exam set for "${programmingLanguage}" already exists. Please delete the existing exam set first before creating a new one.`,
+        existingExamSet: {
+          id: existingExamSet._id,
+          name: existingExamSet.name,
+          isActive: existingExamSet.isActive,
+          createdAt: existingExamSet.createdAt,
+        },
+      });
+    }
+
     // Kiểm tra số lượng câu hỏi có sẵn
     const totalAvailable = await Question.countDocuments({
       programmingLanguage: programmingLanguage,
@@ -130,7 +147,6 @@ exports.createExamSet = async (req, res) => {
       });
     }
 
-    // Kiểm tra số lượng yêu cầu
     if (numberOfQuestions > totalAvailable) {
       return res.status(400).json({
         success: false,
@@ -145,11 +161,7 @@ exports.createExamSet = async (req, res) => {
     // Lấy câu hỏi random
     const questions = await Question.aggregate([
       { $match: { programmingLanguage: programmingLanguage, isActive: true } },
-      {
-        $sample: {
-          size: actualLimit,
-        },
-      },
+      { $sample: { size: actualLimit } },
     ]);
 
     if (questions.length === 0) {
@@ -205,7 +217,7 @@ exports.createExamSet = async (req, res) => {
   }
 };
 
-// 4. Cập nhật exam set - CHỈ CẬP NHẬT, KHÔNG XÓA
+// 4. Cập nhật exam set - chỉ cập nhật name, description, isActive
 exports.updateExamSet = async (req, res) => {
   try {
     const { id } = req.params;
@@ -219,7 +231,6 @@ exports.updateExamSet = async (req, res) => {
       });
     }
 
-    // ✅ CHỈ CẬP NHẬT CÁC FIELD, KHÔNG XÓA
     if (name) examSet.name = name;
     if (description !== undefined) examSet.description = description;
     if (isActive !== undefined) {
@@ -258,7 +269,6 @@ exports.deleteExamSet = async (req, res) => {
       });
     }
 
-    // ✅ Xóa thật khỏi database
     await ExamSet.findByIdAndDelete(id);
 
     console.log(`🗑️ Exam set "${examSet.name}" permanently deleted`);
@@ -310,7 +320,7 @@ exports.addQuestionsToExamSet = async (req, res) => {
       });
     }
 
-    // Kiểm tra câu hỏi có cùng programming language không
+    // Kiểm tra câu hỏi có cùng ngôn ngữ với exam set
     const validQuestions = await Question.find({
       _id: { $in: newQuestions },
       programmingLanguage: examSet.programmingLanguage,
@@ -324,7 +334,6 @@ exports.addQuestionsToExamSet = async (req, res) => {
       });
     }
 
-    // Kiểm tra câu hỏi không cùng ngôn ngữ
     const invalidQuestions = newQuestions.filter(
       (qId) => !validQuestions.some((q) => q._id.toString() === qId)
     );
@@ -386,7 +395,7 @@ exports.removeQuestionFromExamSet = async (req, res) => {
     );
     examSet.totalQuestions = examSet.questions.length;
 
-    // Cập nhật difficulty stats
+    // Cập nhật lại difficulty stats
     const questions = await Question.find({ _id: { $in: examSet.questions } });
     const stats = { Easy: 0, Medium: 0, Hard: 0, Expert: 0 };
     questions.forEach((q) => {

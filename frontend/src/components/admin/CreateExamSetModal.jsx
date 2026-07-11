@@ -1,6 +1,6 @@
 // frontend/src/components/admin/CreateExamSetModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, Layers, FileText } from 'lucide-react';
+import { X, Layers, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -19,6 +19,38 @@ export default function CreateExamSetModal({
   });
   const [result, setResult] = useState(null);
   const [maxAvailable, setMaxAvailable] = useState(0);
+
+  // ✅ Danh sách ngôn ngữ đã có exam set (bất kể active/inactive)
+  const [usedLanguages, setUsedLanguages] = useState([]);
+  const [loadingUsedLanguages, setLoadingUsedLanguages] = useState(false);
+
+  // ✅ Fetch danh sách exam set hiện có để biết ngôn ngữ nào đã được dùng
+  useEffect(() => {
+    if (editingExamSet) return; // chỉ cần khi tạo mới
+
+    let isMounted = true;
+    setLoadingUsedLanguages(true);
+
+    api
+      .get('/admin/exam-sets')
+      .then((res) => {
+        if (!isMounted) return;
+        const existing = res.data?.data || [];
+        const usedList = existing.map((e) => e.programmingLanguage);
+        setUsedLanguages(usedList);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch existing exam sets:', error);
+        // Không chặn form nếu fetch lỗi, chỉ log — backend vẫn sẽ chặn khi submit
+      })
+      .finally(() => {
+        if (isMounted) setLoadingUsedLanguages(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [editingExamSet]);
 
   // ✅ Khi chọn ngôn ngữ, tự động cập nhật số lượng câu hỏi tối đa
   useEffect(() => {
@@ -42,11 +74,37 @@ export default function CreateExamSetModal({
     }
   }, [formData.programmingLanguage, programmingLanguages, editingExamSet]);
 
+  // ✅ Nếu ngôn ngữ đang chọn bỗng nằm trong danh sách đã dùng (vd sau khi fetch xong),
+  // reset lựa chọn để tránh submit vào ngôn ngữ không hợp lệ
+  useEffect(() => {
+    if (
+      !editingExamSet &&
+      formData.programmingLanguage &&
+      usedLanguages.includes(formData.programmingLanguage)
+    ) {
+      setFormData((prev) => ({ ...prev, programmingLanguage: '' }));
+      toast.error(
+        `"${formData.programmingLanguage}" đã có exam set. Vui lòng chọn ngôn ngữ khác.`
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usedLanguages]);
+
+  const isLanguageUsed = (langName) => usedLanguages.includes(langName);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.programmingLanguage) {
       toast.error('Please select a programming language');
+      return;
+    }
+
+    // ✅ Chặn thêm ở frontend: ngôn ngữ đã có exam set thì không cho submit
+    if (!editingExamSet && isLanguageUsed(formData.programmingLanguage)) {
+      toast.error(
+        `⚠️ "${formData.programmingLanguage}" already has an exam set. Please delete it first or choose another language.`
+      );
       return;
     }
 
@@ -86,7 +144,20 @@ export default function CreateExamSetModal({
         onSuccess();
       }, 1500);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create exam set');
+      const message =
+        error.response?.data?.message || 'Failed to create exam set';
+      toast.error(message);
+
+      // ✅ Nếu backend báo ngôn ngữ đã tồn tại (race condition hoặc dữ liệu cũ),
+      // cập nhật lại usedLanguages ngay để UI đồng bộ
+      if (error.response?.data?.existingExamSet) {
+        setUsedLanguages((prev) =>
+          prev.includes(formData.programmingLanguage)
+            ? prev
+            : [...prev, formData.programmingLanguage]
+        );
+        setFormData((prev) => ({ ...prev, programmingLanguage: '' }));
+      }
     } finally {
       setLoading(false);
     }
@@ -129,9 +200,17 @@ export default function CreateExamSetModal({
 
           {/* Programming Language */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Programming Language <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Programming Language <span className="text-red-500">*</span>
+              </label>
+              {!editingExamSet && loadingUsedLanguages && (
+                <span className="flex items-center gap-1 text-xs text-gray-400">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Checking availability...
+                </span>
+              )}
+            </div>
             <select
               value={formData.programmingLanguage}
               onChange={(e) =>
@@ -140,22 +219,34 @@ export default function CreateExamSetModal({
                   programmingLanguage: e.target.value,
                 })
               }
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:text-white"
-              disabled={!!editingExamSet}
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:text-white disabled:opacity-60"
+              disabled={!!editingExamSet || loadingUsedLanguages}
             >
               <option value="">Select a programming language</option>
               {programmingLanguages &&
-                programmingLanguages.map((lang) => (
-                  <option
-                    key={lang.name}
-                    value={lang.name}
-                    disabled={lang.count < 5}
-                  >
-                    {lang.name} ({lang.count} questions)
-                    {lang.count < 5 && ' ⚠️ Not enough questions (min 5)'}
-                  </option>
-                ))}
+                programmingLanguages.map((lang) => {
+                  const notEnough = lang.count < 5;
+                  const alreadyUsed =
+                    !editingExamSet && isLanguageUsed(lang.name);
+                  const disabled = notEnough || alreadyUsed;
+
+                  let suffix = '';
+                  if (alreadyUsed) suffix = ' ✅ Already has an exam set';
+                  else if (notEnough)
+                    suffix = ' ⚠️ Not enough questions (min 5)';
+
+                  return (
+                    <option
+                      key={lang.name}
+                      value={lang.name}
+                      disabled={disabled}
+                    >
+                      {lang.name} ({lang.count} questions){suffix}
+                    </option>
+                  );
+                })}
             </select>
+
             {editingExamSet ? (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Programming language cannot be changed after creation
@@ -163,9 +254,25 @@ export default function CreateExamSetModal({
             ) : (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Select a programming language with at least 5 questions
-                available
+                available. Languages that already have an exam set are disabled
+                — delete the existing exam set to create a new one.
               </p>
             )}
+
+            {/* ✅ Danh sách nhỏ các ngôn ngữ đã có exam set, để user không phải đoán */}
+            {!editingExamSet &&
+              !loadingUsedLanguages &&
+              usedLanguages.length > 0 && (
+                <div className="mt-2 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-purple-500" />
+                  <span>
+                    Already have an exam set:{' '}
+                    <span className="font-medium text-gray-600 dark:text-gray-300">
+                      {usedLanguages.join(', ')}
+                    </span>
+                  </span>
+                </div>
+              )}
           </div>
 
           {/* Description */}
@@ -211,7 +318,8 @@ export default function CreateExamSetModal({
                     numberOfQuestions: Math.max(1, limitedValue),
                   });
                 }}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:text-white"
+                disabled={!formData.programmingLanguage}
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:text-white disabled:opacity-60"
               />
               <div className="flex justify-between items-center mt-1">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -301,6 +409,8 @@ export default function CreateExamSetModal({
                 loading ||
                 (!editingExamSet &&
                   (!formData.programmingLanguage ||
+                    loadingUsedLanguages ||
+                    isLanguageUsed(formData.programmingLanguage) ||
                     formData.numberOfQuestions > maxAvailable ||
                     formData.numberOfQuestions < 1))
               }

@@ -35,6 +35,9 @@ import CodingHistoryDetailPage from './Pages/CodingHistoryDetailPage';
 import UserExamSetsPage from './Pages/UserExamSetsPage';
 import UserExamDetailPage from './Pages/UserExamDetailPage';
 
+// Home page
+import HomePage from './Pages/homepage/HomePage';
+
 // Admin pages
 import AdminLayout from './layouts/AdminLayout';
 import AdminRoute from './components/admin/AdminRoute';
@@ -86,7 +89,7 @@ function App() {
       <Routes>
         {/* ───── 1. AUTH ROUTES (public, cố định light) ───── */}
         <Route
-          path="/"
+          path="/register"
           element={
             <AuthWrapper>
               <Register />
@@ -125,6 +128,8 @@ function App() {
             </AuthWrapper>
           }
         />
+
+        <Route path="/" element={<HomePage />} />
 
         {/* ───── 2. ADMIN ROUTES (cố định light, tách hoàn toàn) ───── */}
         <Route
