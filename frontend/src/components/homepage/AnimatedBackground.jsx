@@ -17,7 +17,7 @@ const AnimatedBackground = ({ variant = 1 }) => {
             repeat: Infinity,
             ease: 'linear',
           }}
-          className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-r from-blue-200/30 to-purple-200/30 rounded-full blur-3xl"
+          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 blur-3xl"
         />
         <motion.div
           animate={{
@@ -31,7 +31,7 @@ const AnimatedBackground = ({ variant = 1 }) => {
             repeat: Infinity,
             ease: 'linear',
           }}
-          className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-r from-purple-200/30 to-pink-200/30 rounded-full blur-3xl"
+          className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-gradient-to-r from-secondary/20 to-primary/20 blur-3xl"
         />
       </>
     ),
@@ -47,7 +47,7 @@ const AnimatedBackground = ({ variant = 1 }) => {
             repeat: Infinity,
             ease: 'linear',
           }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-blue-100/10 to-purple-100/10 rounded-full blur-3xl"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 blur-3xl"
         />
         <motion.div
           animate={{
@@ -59,7 +59,7 @@ const AnimatedBackground = ({ variant = 1 }) => {
             repeat: Infinity,
             ease: 'easeInOut',
           }}
-          className="absolute top-10 left-10 w-40 h-40 bg-blue-400/10 rounded-full blur-2xl"
+          className="absolute top-10 left-10 w-40 h-40 rounded-full bg-primary/10 blur-2xl"
         />
         <motion.div
           animate={{
@@ -71,7 +71,7 @@ const AnimatedBackground = ({ variant = 1 }) => {
             repeat: Infinity,
             ease: 'easeInOut',
           }}
-          className="absolute bottom-10 right-10 w-40 h-40 bg-purple-400/10 rounded-full blur-2xl"
+          className="absolute bottom-10 right-10 w-40 h-40 rounded-full bg-secondary/10 blur-2xl"
         />
       </>
     ),
@@ -80,7 +80,7 @@ const AnimatedBackground = ({ variant = 1 }) => {
         {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 bg-white rounded-full"
+            className="absolute w-1 h-1 rounded-full bg-text"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -102,7 +102,7 @@ const AnimatedBackground = ({ variant = 1 }) => {
   };
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {variants[variant]}
     </div>
   );

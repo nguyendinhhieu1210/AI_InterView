@@ -16,22 +16,22 @@ const footerLinks = {
     { label: 'MCQ Bank', href: '#' },
   ],
   resources: [
-    { label: 'Hướng dẫn', href: '#' },
+    { label: 'Guides', href: '#' },
     { label: 'Blog', href: '#' },
-    { label: 'Tin tức', href: '#' },
-    { label: 'Hỗ trợ', href: '#' },
+    { label: 'News', href: '#' },
+    { label: 'Support', href: '#' },
   ],
   company: [
-    { label: 'Về chúng tôi', href: '#' },
-    { label: 'Tuyển dụng', href: '#' },
-    { label: 'Liên hệ', href: '#' },
-    { label: 'Đối tác', href: '#' },
+    { label: 'About us', href: '#' },
+    { label: 'Careers', href: '#' },
+    { label: 'Contact', href: '#' },
+    { label: 'Partners', href: '#' },
   ],
   legal: [
-    { label: 'Điều khoản', href: '#' },
-    { label: 'Bảo mật', href: '#' },
-    { label: 'Cookie', href: '#' },
-    { label: 'Quyền riêng tư', href: '#' },
+    { label: 'Terms', href: '#' },
+    { label: 'Privacy', href: '#' },
+    { label: 'Cookies', href: '#' },
+    { label: 'Security', href: '#' },
   ],
 };
 
@@ -46,7 +46,7 @@ const socialIcons = [
 const Footer = () => {
   return (
     <footer className="relative border-t border-border bg-card/80 text-text">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-primary/5 blur-3xl" />
         <div className="absolute left-1/2 top-0 h-[300px] w-[300px] rounded-full bg-secondary/5 blur-3xl" />
       </div>
@@ -55,21 +55,21 @@ const Footer = () => {
         <div className="mb-12 grid gap-8 rounded-[28px] border border-border/80 bg-bg/60 p-8 md:grid-cols-[1.1fr_0.9fr] md:items-center">
           <div>
             <h3 className="text-2xl font-bold text-text">
-              Đăng ký nhận tin mới nhất
+              Stay updated with the latest interview insights
             </h3>
             <p className="mt-2 text-muted">
-              Nhận các mẹo luyện phỏng vấn, cập nhật tính năng và ưu đãi mỗi
-              tuần.
+              Receive practical interview tips, feature updates, and exclusive
+              preparation resources every week.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               type="email"
-              placeholder="Email của bạn"
+              placeholder="Your email"
               className="flex-1 rounded-2xl border border-border bg-card px-4 py-3 outline-none transition focus:border-primary"
             />
             <button className="rounded-2xl bg-gradient-to-r from-primary to-secondary px-6 py-3 font-semibold text-white shadow-lg shadow-primary/30 transition hover:-translate-y-0.5">
-              Đăng ký
+              Subscribe
             </button>
           </div>
         </div>
@@ -123,7 +123,7 @@ const Footer = () => {
         <div className="mt-8 grid gap-4 text-sm text-muted sm:grid-cols-2 md:grid-cols-3">
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
-            <span>support@aiinterview.vn</span>
+            <span>support@aiinterview.ai</span>
           </div>
           <div className="flex items-center gap-2">
             <Phone className="h-4 w-4" />
@@ -131,7 +131,7 @@ const Footer = () => {
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
-            <span>Hà Nội, Việt Nam</span>
+            <span>Hanoi, Vietnam</span>
           </div>
         </div>
       </div>

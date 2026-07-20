@@ -13,39 +13,39 @@ import {
 const steps = [
   {
     number: '01',
-    title: 'Chọn ngôn ngữ & độ khó',
+    title: 'Choose your focus',
     description:
-      'Lựa chọn ngôn ngữ lập trình và cấp độ phù hợp để hệ thống xây dựng bộ câu hỏi sát nhu cầu nhất.',
+      'Pick the role, language, and difficulty level that best match your preparation goals.',
     icon: Code2,
-    buttonText: 'Chọn ngay',
-    accent: 'from-cyan-500 to-blue-500',
+    buttonText: 'Select now',
+    accent: 'from-primary to-secondary',
   },
   {
     number: '02',
-    title: 'Luyện tập với AI',
+    title: 'Practice with AI',
     description:
-      'Trả lời câu hỏi, giải bài tập coding và nhận góp ý hữu ích như một interviewer thật.',
+      'Answer questions, solve coding tasks, and receive guidance that feels like a real interviewer.',
     icon: Brain,
-    buttonText: 'Thử ngay',
-    accent: 'from-violet-500 to-fuchsia-500',
+    buttonText: 'Try it',
+    accent: 'from-secondary to-primary',
   },
   {
     number: '03',
-    title: 'Nhận đánh giá chi tiết',
+    title: 'Receive detailed feedback',
     description:
-      'Theo dõi điểm số và nhận xét cụ thể cho từng câu trả lời để biết mình đang thiếu gì.',
+      'Review scores and personalized comments to understand where you stand and what to improve.',
     icon: BarChart,
-    buttonText: 'Xem báo cáo',
-    accent: 'from-emerald-500 to-teal-500',
+    buttonText: 'See report',
+    accent: 'from-success to-primary',
   },
   {
     number: '04',
-    title: 'Gửi kết quả về Gmail',
+    title: 'Get a summary by email',
     description:
-      'Nhận bản báo cáo chi tiết qua email để tiện theo dõi tiến bộ và chuẩn bị tốt hơn.',
+      'Receive a polished recap of your progress so you can keep improving between sessions.',
     icon: Mail,
-    buttonText: 'Đăng ký nhận',
-    accent: 'from-amber-500 to-orange-500',
+    buttonText: 'Subscribe',
+    accent: 'from-warning to-secondary',
   },
 ];
 
@@ -67,14 +67,14 @@ const HowItWorksSection = () => {
         >
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
             <Sparkles className="h-4 w-4" />
-            <span>Cách hoạt động</span>
+            <span>How it works</span>
           </div>
           <h2 className="mb-4 text-3xl font-bold md:text-5xl">
-            Quy trình luyện phỏng vấn
+            A simple workflow for stronger interview readiness
           </h2>
           <p className="text-lg text-muted">
-            Từng bước một, rõ ràng và hiệu quả để bạn tự tin hơn khi vào phòng
-            phỏng vấn thật.
+            Each step is designed to make your preparation clear, focused, and
+            practical.
           </p>
         </motion.div>
 
@@ -89,7 +89,7 @@ const HowItWorksSection = () => {
                 transition={{ duration: 0.45, delay: index * 0.08 }}
                 viewport={{ once: true }}
                 whileHover={{ y: -6, scale: 1.01 }}
-                className="group rounded-[24px] border border-border/80 bg-card/70 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)] backdrop-blur-sm"
+                className="group rounded-[24px] border border-border/80 bg-card/70 p-6 shadow-soft backdrop-blur-sm"
               >
                 <div
                   className={`inline-flex rounded-full bg-gradient-to-r ${step.accent} bg-clip-text text-4xl font-bold text-transparent`}
@@ -127,7 +127,7 @@ const HowItWorksSection = () => {
             to="/register"
             className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-secondary px-8 py-3.5 font-semibold text-white shadow-lg shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-primary/50"
           >
-            Bắt đầu luyện tập ngay
+            Start practicing now
             <ChevronRight className="h-5 w-5" />
           </Link>
         </motion.div>

@@ -6,10 +6,10 @@ const FloatingParticles = ({ count = 30, color = 'blue' }) => {
   const particles = [];
 
   const colors = {
-    blue: 'from-blue-400/20 to-purple-400/20',
-    purple: 'from-purple-400/20 to-pink-400/20',
-    green: 'from-green-400/20 to-emerald-400/20',
-    orange: 'from-orange-400/20 to-red-400/20',
+    blue: 'from-primary/20 to-secondary/20',
+    purple: 'from-secondary/20 to-primary/20',
+    green: 'from-success/20 to-primary/20',
+    orange: 'from-warning/20 to-error/20',
   };
 
   for (let i = 0; i < count; i++) {

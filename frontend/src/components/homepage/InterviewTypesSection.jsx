@@ -15,91 +15,91 @@ const features = [
   {
     id: 'cv',
     icon: FileText,
-    title: 'Phân tích CV thông minh',
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-500/10',
+    title: 'CV Intelligence',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
     image:
       'https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=900&q=80',
     shortDesc:
-      'Upload CV để AI phân tích kỹ năng và tạo bộ câu hỏi cá nhân hóa.',
+      'Upload your resume and let AI create role-specific interview questions from your background.',
     longDesc:
-      'Hệ thống AI sẽ trích xuất kỹ năng, dự án và kinh nghiệm từ CV, từ đó tạo ra bộ câu hỏi sát nhu cầu tuyển dụng của từng vị trí.',
+      'The system extracts skill signals, projects, and experience from your CV so every question becomes more relevant and realistic.',
     highlights: [
-      'Trích xuất kỹ năng và dự án',
-      'Tạo câu hỏi phù hợp từng vị trí',
-      'Gợi ý kỹ năng còn thiếu',
+      'Extracts skills and projects',
+      'Builds role-specific prompts',
+      'Suggests gaps to improve',
     ],
   },
   {
     id: 'adaptive',
     icon: Brain,
-    title: 'Phỏng vấn Thích ứng',
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/10',
+    title: 'Adaptive Mock Interviews',
+    color: 'text-secondary',
+    bgColor: 'bg-secondary/10',
     image:
       'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80',
     shortDesc:
-      'Câu hỏi tự động điều chỉnh độ khó theo trình độ để tối ưu quá trình học.',
+      'Questions automatically adjust to your skill level, keeping sessions productive and engaging.',
     longDesc:
-      'AI liên tục phân tích phản hồi của bạn và tự điều chỉnh độ khó câu hỏi tiếp theo để luôn ở mức phù hợp nhất.',
+      'AI continuously evaluates your answers and calibrates the next challenge to keep you at the right level of difficulty.',
     highlights: [
-      'Điều chỉnh độ khó theo thời gian thực',
-      'Lộ trình học tập tối ưu',
-      'Tránh cảm giác nhàm chán hoặc quá tải',
+      'Real-time difficulty tuning',
+      'Optimized learning path',
+      'Keeps practice challenging without overwhelming you',
     ],
   },
   {
     id: 'livecoding',
     icon: Code2,
-    title: 'Live Coding',
-    color: 'text-emerald-400',
-    bgColor: 'bg-emerald-500/10',
+    title: 'Live Coding Practice',
+    color: 'text-success',
+    bgColor: 'bg-success/10',
     image:
       'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80',
     shortDesc:
-      'Thực hành lập trình với AI chấm điểm, giải thích và đề xuất cải thiện.',
+      'Work through coding challenges with AI scoring, explanation, and improvement suggestions.',
     longDesc:
-      'Trình soạn thảo code tích hợp giúp bạn viết và chạy thử ngay trên nền tảng, đồng thời nhận phản hồi chi tiết từ AI.',
+      'Our interactive coding environment lets you write, test, and refine solutions while receiving structured feedback.',
     highlights: [
-      'Hỗ trợ nhiều ngôn ngữ',
-      'Chấm điểm tự động với giải thích',
-      'Gợi ý tối ưu hiệu năng code',
+      'Supports multiple languages',
+      'Automated scoring with explanations',
+      'Optimization suggestions',
     ],
   },
   {
     id: 'exam',
     icon: BookOpen,
-    title: 'Bộ đề thi MCQ',
-    color: 'text-pink-400',
-    bgColor: 'bg-pink-500/10',
+    title: 'MCQ Practice Bank',
+    color: 'text-error',
+    bgColor: 'bg-error/10',
     image:
       'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=900&q=80',
     shortDesc:
-      'Ôn tập với ngân hàng câu hỏi trắc nghiệm đa dạng và chất lượng.',
+      'Reinforce fundamentals with a curated and constantly refreshed question bank.',
     longDesc:
-      'Kho câu hỏi được biên soạn chuyên nghiệp giúp bạn củng cố kiến thức nền tảng một cách toàn diện trước khi bước vào buổi phỏng vấn thật.',
+      'Professional question sets help you cover core concepts thoroughly before stepping into real interviews.',
     highlights: [
-      'Hàng nghìn câu hỏi đa dạng',
-      'Đề thi được biên soạn chuyên nghiệp',
-      'Kết quả và giải thích chi tiết',
+      'Large variety of questions',
+      'Professionally curated content',
+      'Detailed explanations and results',
     ],
   },
   {
     id: 'history',
     icon: FileText,
-    title: 'Phân tích & Lịch sử',
-    color: 'text-orange-400',
-    bgColor: 'bg-orange-500/10',
+    title: 'Insights & History',
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
     image:
       'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=900&q=80',
     shortDesc:
-      'Theo dõi tiến độ, điểm yếu và biểu đồ cải thiện qua từng lần luyện tập.',
+      'Track progress, weaknesses, and improvements across every practice session.',
     longDesc:
-      'Bảng điều khiển trực quan giúp bạn nhận diện điểm mạnh, điểm yếu và lộ trình cải thiện rõ ràng hơn.',
+      'A clear dashboard makes it easy to spot your strengths, focus on weaker areas, and measure growth over time.',
     highlights: [
-      'Biểu đồ tiến độ theo kỹ năng',
-      'Phân tích điểm yếu cần tập trung',
-      'So sánh với mặt bằng chung',
+      'Skill-based progress charts',
+      'Weakness analysis',
+      'Clear comparison against hiring benchmarks',
     ],
   },
 ];
@@ -121,19 +121,19 @@ const InterviewTypesSection = () => {
           className="mx-auto mb-16 max-w-3xl text-center"
         >
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-            <Zap className="h-4 w-4 text-yellow-400" />
-            <span>Tính năng cốt lõi</span>
+            <Zap className="h-4 w-4 text-warning" />
+            <span>Core experience</span>
           </div>
 
           <h2 className="mb-4 text-3xl font-bold md:text-5xl">
-            Luyện tập thông minh với{' '}
+            Practice smarter with{' '}
             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               AI Interview
             </span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-muted">
-            Từ phân tích CV, mock interview đến live coding và theo dõi tiến độ
-            — mọi thứ đều được kết nối trong một nền tảng chuyên nghiệp.
+            From CV review and mock interviews to live coding and progress
+            analytics, everything is connected inside one polished experience.
           </p>
         </motion.div>
 
@@ -149,7 +149,7 @@ const InterviewTypesSection = () => {
                 viewport={{ once: true }}
                 className="group cursor-pointer"
               >
-                <div className="relative overflow-hidden rounded-[24px] border border-border/80 bg-card/70 shadow-[0_18px_45px_rgba(15,23,42,0.08)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
+                <div className="relative overflow-hidden rounded-[24px] border border-border/80 bg-card/70 shadow-soft backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
                   <div className="h-40 overflow-hidden">
                     <img
                       src={feature.image}
@@ -170,7 +170,7 @@ const InterviewTypesSection = () => {
                       {feature.shortDesc}
                     </p>
 
-                    <div className="mt-5 overflow-hidden max-h-0 transition-all duration-300 group-hover:max-h-80">
+                    <div className="mt-5 max-h-0 overflow-hidden transition-all duration-300 group-hover:max-h-80">
                       <p className="text-sm leading-7 text-text/80">
                         {feature.longDesc}
                       </p>
@@ -189,7 +189,7 @@ const InterviewTypesSection = () => {
                         to="/login"
                         className="mt-6 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-primary to-secondary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition duration-300 hover:shadow-primary/30"
                       >
-                        Bắt đầu ngay
+                        Start now
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </div>

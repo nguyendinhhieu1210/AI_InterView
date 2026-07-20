@@ -6,30 +6,30 @@ const stats = [
   {
     icon: Users,
     value: 10000,
-    label: 'Người dùng hoạt động',
+    label: 'Active learners',
     suffix: '+',
-    gradient: 'from-cyan-500 to-blue-500',
+    gradient: 'from-primary to-secondary',
   },
   {
     icon: FileText,
     value: 50000,
-    label: 'Buổi phỏng vấn',
+    label: 'Practice sessions',
     suffix: '+',
-    gradient: 'from-violet-500 to-fuchsia-500',
+    gradient: 'from-secondary to-primary',
   },
   {
     icon: Award,
     value: 92,
-    label: 'Tỷ lệ thành công',
+    label: 'Success rate',
     suffix: '%',
-    gradient: 'from-emerald-500 to-teal-500',
+    gradient: 'from-success to-primary',
   },
   {
     icon: Clock,
     value: 100000,
-    label: 'Giờ luyện tập',
+    label: 'Hours of preparation',
     suffix: '+',
-    gradient: 'from-amber-500 to-orange-500',
+    gradient: 'from-warning to-secondary',
   },
 ];
 
@@ -81,6 +81,24 @@ const StatsSection = () => {
       </div>
 
       <div className="container relative z-10 mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5 }}
+          className="mx-auto mb-10 max-w-2xl text-center"
+        >
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+            Trusted by ambitious candidates
+          </p>
+          <h2 className="mt-3 text-3xl font-bold md:text-4xl">
+            A platform built for measurable confidence
+          </h2>
+          <p className="mt-3 text-lg text-muted">
+            From early preparation to final-round readiness, our community keeps
+            growing.
+          </p>
+        </motion.div>
+
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
@@ -90,7 +108,7 @@ const StatsSection = () => {
                 initial={{ opacity: 0, y: 24 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: index * 0.08 }}
-                className="rounded-[24px] border border-border/80 bg-card/70 p-6 text-center shadow-[0_18px_45px_rgba(15,23,42,0.06)] backdrop-blur-sm"
+                className="rounded-[24px] border border-border/80 bg-card/70 p-6 text-center shadow-soft backdrop-blur-sm"
               >
                 <div
                   className={`mx-auto mb-4 inline-flex rounded-2xl bg-gradient-to-br ${stat.gradient} p-3 text-white shadow-lg`}

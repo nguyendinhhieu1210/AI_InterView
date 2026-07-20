@@ -5,279 +5,306 @@ import { Star, Users, ArrowRight } from 'lucide-react';
 const testimonials = [
   {
     id: 1,
-    name: 'Minh Thảo',
+    name: 'Mina Tran',
     role: 'Frontend Developer',
-    content: `"AI-Interview đã giúp mình tự tin hơn rất nhiều. Sau vài buổi luyện tập với AI, mình nhận ra và sửa được những lỗi trả lời lan man mà trước giờ không để ý. AI feedback chi tiết và chính xác đến bất ngờ!"`,
+    content:
+      'The feedback was sharp and practical. I quickly learned how to structure my answers better and sound more confident under pressure.',
     rating: 5,
-    badge: 'Đã được tuyển',
-    badgeColor: 'bg-green-500/20 text-green-400',
+    badge: 'Hired',
+    badgeColor: 'bg-success/15 text-success',
     gender: 'female',
   },
   {
     id: 2,
-    name: 'Hữu Đức',
+    name: 'David Park',
     role: 'Data Analyst',
-    content: `"Sau đúng 2 tuần luyện tập mỗi tối 20-30 phút với các câu hỏi technical về SQL và phân tích dữ liệu, mình đã tự tin bước vào vòng phỏng vấn cuối và nhận được offer từ công ty mơ ước!"`,
+    content:
+      'After two weeks of consistent practice, I walked into the final round feeling calm, prepared, and much clearer in my communication.',
     rating: 5,
-    badge: 'Việc mơ ước',
-    badgeColor: 'bg-blue-500/20 text-blue-400',
+    badge: 'Dream role',
+    badgeColor: 'bg-primary/15 text-primary',
     gender: 'male',
   },
   {
     id: 3,
-    name: 'Thanh Hà',
+    name: 'Sarah Nguyen',
     role: 'Product Manager',
-    content: `"Bộ câu hỏi ở đây phong phú hơn mình nghĩ rất nhiều, từ case study, ưu tiên tính năng cho tới xử lý conflict trong team. AI scoring chấm rất thực tế, giống hệt cách một hiring manager thật sẽ đánh giá."`,
+    content:
+      'The questions felt realistic, and the scoring was surprisingly close to how a hiring manager evaluates candidates in real life.',
     rating: 5,
-    badge: 'Điểm cao',
-    badgeColor: 'bg-purple-500/20 text-purple-400',
+    badge: 'Top performer',
+    badgeColor: 'bg-secondary/15 text-secondary',
     gender: 'female',
   },
   {
     id: 4,
-    name: 'Quốc Bảo',
+    name: 'Alex Kim',
     role: 'Backend Engineer',
-    content: `"Trước đây mình rất sợ phỏng vấn vì hay bị khớp khi trình bày. Sau một thời gian luyện tập trả lời thành tiếng trên platform, giờ mình hào hứng hẳn mỗi khi có buổi interview mới."`,
+    content:
+      'I used to ramble during interviews. Practicing here taught me how to answer with clarity, structure, and professional confidence.',
     rating: 5,
-    badge: 'Tự tin+',
-    badgeColor: 'bg-pink-500/20 text-pink-400',
+    badge: 'Confident now',
+    badgeColor: 'bg-error/15 text-error',
     gender: 'male',
   },
   {
     id: 5,
-    name: 'Hoàng Nam',
+    name: 'Hoang Nam',
     role: 'QA Engineer',
-    content: `"Chỉ với 30 phút luyện tập mỗi ngày trong đúng 1 tuần, tập trung vào các câu hỏi về test case và automation, mình đã pass thẳng vòng phỏng vấn cho vị trí senior mà trước đó còn hơi lo mình chưa đủ kinh nghiệm."`,
+    content:
+      'In just one week of focused practice, I felt ready for a senior-level interview that previously seemed intimidating.',
     rating: 5,
-    badge: 'Vị trí Senior',
-    badgeColor: 'bg-orange-500/20 text-orange-400',
+    badge: 'Senior role',
+    badgeColor: 'bg-warning/15 text-warning',
     gender: 'male',
   },
   {
     id: 6,
-    name: 'Phương Linh',
+    name: 'Phuong Linh',
     role: 'Business Analyst',
-    content: `"Điều làm mình bất ngờ nhất là AI scoring chấm điểm chuẩn không kém gì một interviewer dày dạn kinh nghiệm, nhận ra ngay khi câu trả lời của mình thiếu số liệu cụ thể."`,
+    content:
+      'The scoring felt as rigorous as a real interviewer’s evaluation, especially when my answers lacked concrete evidence.',
     rating: 5,
-    badge: 'AI chính xác',
-    badgeColor: 'bg-cyan-500/20 text-cyan-400',
+    badge: 'Accurate AI',
+    badgeColor: 'bg-primary/15 text-primary',
     gender: 'female',
   },
   {
     id: 7,
-    name: 'Tiến Đạt',
+    name: 'Tien Dat',
     role: 'Mobile Developer',
-    content: `"AI-Interview giúp mình chuẩn bị behavioral questions tốt hơn bao giờ hết, đặc biệt là cách xây dựng câu trả lời theo framework STAR mạch lạc thay vì kể chuyện lan man như trước."`,
+    content:
+      'This platform helped me prepare behavioral answers far better than before, especially with the STAR structure.',
     rating: 5,
-    badge: 'Behavioral',
-    badgeColor: 'bg-indigo-500/20 text-indigo-400',
+    badge: 'Behavioral ready',
+    badgeColor: 'bg-secondary/15 text-secondary',
     gender: 'male',
   },
   {
     id: 8,
-    name: 'Hải Yến',
+    name: 'Hai Yen',
     role: 'HR Specialist',
-    content: `"Là người trực tiếp làm HR và tuyển dụng, mình thấy rõ những ứng viên từng luyện tập trên platform này trả lời có cấu trúc, tự tin và đi thẳng vào trọng tâm hơn hẳn so với mặt bằng chung."`,
+    content:
+      'As someone in hiring, I noticed candidates who practiced here answered more clearly, more confidently, and more directly.',
     rating: 5,
-    badge: 'HR đánh giá cao',
-    badgeColor: 'bg-rose-500/20 text-rose-400',
+    badge: 'Highly rated',
+    badgeColor: 'bg-success/15 text-success',
     gender: 'female',
   },
   {
     id: 9,
-    name: 'Đức Anh',
-    role: 'Full Stack Dev',
-    content: `"Bộ câu hỏi system design ở đây rất sát với thực tế phỏng vấn, từ thiết kế hệ thống chịu tải cao đến trade-off giữa consistency và availability. Nhờ luyện tập kỹ, mình đã pass vòng system design ở một công ty Big Tech."`,
+    name: 'Duc Anh',
+    role: 'Full Stack Developer',
+    content:
+      'The system design questions were very realistic, and the practice sessions helped me perform much better in the real interview.',
     rating: 5,
     badge: 'Big Tech',
-    badgeColor: 'bg-yellow-500/20 text-yellow-400',
+    badgeColor: 'bg-warning/15 text-warning',
     gender: 'male',
   },
   {
     id: 10,
     name: 'Mai Chi',
     role: 'Project Manager',
-    content: `"Giao diện đẹp, thao tác mượt, không hề rối như một số app luyện phỏng vấn mình từng dùng trước đây. Chỉ mất vài phút là mình đã có thể bắt đầu một buổi luyện tập mới."`,
+    content:
+      'The interface is polished and easy to use. I could start a new practice session in just a few minutes.',
     rating: 5,
-    badge: 'Dễ sử dụng',
-    badgeColor: 'bg-lime-500/20 text-lime-400',
+    badge: 'Easy to use',
+    badgeColor: 'bg-primary/15 text-primary',
     gender: 'female',
   },
   {
     id: 11,
-    name: 'Trung Kiên',
+    name: 'Trung Kien',
     role: 'Cloud Architect',
-    content: `"Nhờ luyện tập kỹ các câu hỏi về đàm phán lương và trình bày giá trị bản thân trên AI-Interview, mình đã tự tin thương lượng và mức lương tăng tới 40% sau khi chuyển sang công ty mới. Thực sự đáng từng phút bỏ ra!"`,
+    content:
+      'With repeated practice on salary negotiation and self-presentation, I became much more confident in my value proposition.',
     rating: 5,
-    badge: 'Lương +40%',
-    badgeColor: 'bg-emerald-500/20 text-emerald-400',
+    badge: 'Negotiation ready',
+    badgeColor: 'bg-secondary/15 text-secondary',
     gender: 'male',
   },
   {
     id: 12,
-    name: 'Bích Ngọc',
+    name: 'Bich Ngoc',
     role: 'Content Creator',
-    content: `"Trước đây câu 'Why should we hire you?' luôn làm mình bối rối vì không biết nên trả lời sao cho vừa khiêm tốn vừa thuyết phục. Sau khi luyện tập nhiều lần trên platform và xem lại feedback, mình đã tự tin trả lời trôi chảy ở buổi phỏng vấn thật."`,
+    content:
+      'The platform helped me answer the question “Why should we hire you?” with more confidence and better structure.',
     rating: 5,
-    badge: 'Tự tin+',
-    badgeColor: 'bg-pink-500/20 text-pink-400',
+    badge: 'More confident',
+    badgeColor: 'bg-error/15 text-error',
     gender: 'female',
   },
   {
     id: 13,
     name: 'Quang Huy',
     role: 'Data Engineer',
-    content: `"Bộ câu hỏi cập nhật liên tục, mỗi lần vào luyện tập mình đều gặp câu hỏi mới về pipeline, xử lý dữ liệu lớn hay tối ưu hoá query, nên gần như không bao giờ hết nội dung để luyện tập."`,
+    content:
+      'The content is constantly updated, so I always found fresh questions around pipelines, data processing, and query optimization.',
     rating: 5,
-    badge: 'Nội dung mới',
-    badgeColor: 'bg-teal-500/20 text-teal-400',
+    badge: 'Fresh content',
+    badgeColor: 'bg-success/15 text-success',
     gender: 'male',
   },
   {
     id: 14,
-    name: 'Khánh Vy',
+    name: 'Khanh Vy',
     role: 'Scrum Master',
-    content: `"Tính năng mock interview thực sự là game changer với mình. Cảm giác như có một mentor riêng sẵn sàng luyện tập cùng bất kể giờ giấc, chỉnh sửa từng câu trả lời cho tới khi mình thật sự tự tin."`,
+    content:
+      'The mock interview experience felt like having a mentor available 24/7 to refine every answer until I felt ready.',
     rating: 5,
     badge: 'Mentor 24/7',
-    badgeColor: 'bg-sky-500/20 text-sky-400',
+    badgeColor: 'bg-primary/15 text-primary',
     gender: 'female',
   },
   {
     id: 15,
-    name: 'Minh Tuấn',
+    name: 'Minh Tuan',
     role: 'iOS Developer',
-    content: `"Sau khi luyện tập đều đặn trên platform trong vài tuần, đến khi bước vào buổi phỏng vấn thật, mình cảm thấy nhẹ nhàng hơn rất nhiều so với những lần phỏng vấn trước, không còn bị căng thẳng quá mức nữa."`,
+    content:
+      'After a few weeks of consistent practice, I walked into the real interview feeling far less stressed than before.',
     rating: 5,
-    badge: 'Không stress',
-    badgeColor: 'bg-violet-500/20 text-violet-400',
+    badge: 'Less stress',
+    badgeColor: 'bg-secondary/15 text-secondary',
     gender: 'male',
   },
   {
     id: 16,
-    name: 'Lan Phương',
+    name: 'Lan Phuong',
     role: 'Finance Analyst',
-    content: `"Platform hỗ trợ cả tiếng Việt lẫn tiếng Anh nên mình có thể luyện tập song song cả hai, rất phù hợp cho các bạn đang chuẩn bị apply vào công ty nước ngoài hoặc môi trường làm việc đa quốc gia."`,
+    content:
+      'The platform supports both English and Vietnamese, which is perfect for preparing for international opportunities.',
     rating: 5,
-    badge: 'Song ngữ',
-    badgeColor: 'bg-fuchsia-500/20 text-fuchsia-400',
+    badge: 'Bilingual',
+    badgeColor: 'bg-warning/15 text-warning',
     gender: 'female',
   },
 ];
 
-// Hàm tạo avatar với UI Avatars API (hỗ trợ tên và giới tính)
 const getAvatarUrl = (name, gender) => {
-  // Sử dụng UI Avatars API - hỗ trợ tên và màu sắc
   const colors =
     gender === 'female'
       ? ['ff6b6b', 'f06595', 'cc5de8', '845ef7', '5c7cfa', '339af0']
       : ['4dabf7', '339af0', '228be6', '1c7ed6', '1971c2', '1864ab'];
 
   const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=128&background=${randomColor}&color=fff&font-size=0.5&bold=true`;
 };
 
 const TestimonialsSection = () => {
   return (
-    <section className="relative py-24 px-4 md:px-6 bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 overflow-hidden">
-      {/* Hiệu ứng blob chuyển động */}
+    <section className="relative overflow-hidden bg-bg px-4 py-24 md:px-6">
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-purple-500/10 rounded-full blur-3xl animate-blob" />
-        <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-pink-500/10 rounded-full blur-3xl animate-blob animation-delay-2000" />
-        <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-3xl animate-blob animation-delay-4000" />
+        <div className="absolute left-1/2 top-0 h-[1000px] w-[1000px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl animate-blob" />
+        <div className="absolute bottom-0 right-0 h-[800px] w-[800px] rounded-full bg-secondary/10 blur-3xl animate-blob animation-delay-2000" />
+        <div className="absolute left-0 top-1/2 h-[600px] w-[600px] rounded-full bg-primary/5 blur-3xl animate-blob animation-delay-4000" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.06),_transparent_42%)]" />
       </div>
 
-      <div className="container mx-auto relative z-10">
+      <div className="container relative z-10 mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
           viewport={{ once: true }}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="mx-auto mb-16 max-w-3xl text-center"
         >
           <motion.div
-            className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2 rounded-full text-sm font-medium text-white/90 mb-4"
-            whileHover={{ scale: 1.05 }}
+            className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary backdrop-blur-sm"
+            whileHover={{ scale: 1.05, y: -2 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 18 }}
           >
-            <Users className="w-4 h-4 text-yellow-400" />
-            <span>CỘNG ĐỒNG</span>
+            <Users className="h-4 w-4 text-warning" />
+            <span>Community success</span>
           </motion.div>
 
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-            Gia nhập cùng hàng nghìn ứng viên
+          <h2 className="mb-4 text-3xl font-bold text-text md:text-5xl">
+            Join thousands of candidates who prepared with confidence
           </h2>
-          <p className="text-lg text-white/70">
-            Nghe từ những người đã nâng cấp kỹ năng phỏng vấn với AI-Interview
+          <p className="text-lg leading-8 text-muted">
+            Hear what users say about the quality, relevance, and realism of our
+            AI interview practice.
           </p>
         </motion.div>
 
-        {/* Grid 4 cột */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {testimonials.map((testimonial, index) => (
-            <motion.div
+            <motion.article
               key={testimonial.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.05 }}
+              initial={{ opacity: 0, y: 24, scale: 0.96 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{
+                duration: 0.55,
+                delay: index * 0.06,
+                ease: 'easeOut',
+              }}
               viewport={{ once: true }}
-              className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 hover:border-white/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl flex flex-col"
+              whileHover={{ y: -8, scale: 1.02, rotateX: 2, rotateY: -2 }}
+              className="group relative flex flex-col overflow-hidden rounded-[24px] border border-border/70 bg-card/70 p-5 shadow-soft backdrop-blur-xl"
             >
-              <div className="flex justify-between items-start mb-3">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+              <div className="relative mb-3 flex items-start justify-between">
                 <span
-                  className={`text-xs font-semibold px-3 py-1 rounded-full ${testimonial.badgeColor}`}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${testimonial.badgeColor}`}
                 >
                   {testimonial.badge}
                 </span>
-                <div className="flex gap-0.5 flex-shrink-0">
+                <div className="flex gap-0.5">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star
+                    <motion.span
                       key={i}
-                      className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400"
-                    />
+                      initial={{ opacity: 0, scale: 0.7 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.1 + i * 0.03 }}
+                    >
+                      <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                    </motion.span>
                   ))}
                 </div>
               </div>
 
-              <p className="text-white/80 text-sm leading-relaxed mb-4 flex-grow">
-                {testimonial.content}
+              <p className="relative mb-4 flex-grow text-sm leading-relaxed text-muted">
+                “{testimonial.content}”
               </p>
 
-              <div className="flex items-center gap-3 mt-auto pt-3 border-t border-white/5">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-secondary p-0.5 flex-shrink-0">
+              <div className="relative mt-auto flex items-center gap-3 border-t border-border/70 pt-3">
+                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary p-[2px] shadow-lg shadow-primary/20">
                   <img
                     src={getAvatarUrl(testimonial.name, testimonial.gender)}
                     alt={testimonial.name}
-                    className="w-full h-full rounded-full object-cover"
+                    className="h-full w-full rounded-full object-cover"
                   />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="font-semibold text-white text-sm truncate">
+                  <h4 className="truncate text-sm font-semibold text-text">
                     {testimonial.name}
                   </h4>
-                  <p className="text-xs text-white/50 truncate">
+                  <p className="truncate text-xs text-muted">
                     {testimonial.role}
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </motion.article>
           ))}
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
           viewport={{ once: true }}
-          className="text-center mt-12"
+          className="mt-12 text-center"
         >
-          <button
+          <motion.button
             type="button"
-            className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300"
+            whileHover={{ y: -3, scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-secondary px-8 py-3 font-semibold text-white shadow-lg shadow-primary/25 transition-all duration-300"
           >
-            Gia nhập 10,000+ ứng viên
-            <ArrowRight className="w-5 h-5" />
-          </button>
+            Join 10,000+ candidates
+            <ArrowRight className="h-5 w-5" />
+          </motion.button>
         </motion.div>
       </div>
     </section>

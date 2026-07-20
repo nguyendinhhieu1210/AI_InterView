@@ -14,77 +14,81 @@ import {
 const features = [
   {
     icon: Brain,
-    title: 'Phỏng vấn AI thông minh',
+    title: 'Adaptive AI Interviewing',
     description:
-      'Thực hành với AI thích ứng theo trình độ và nhận phản hồi tức thì.',
+      'Practice with an interview coach that adapts to your level and gives instant feedback.',
     bullets: [
-      'Phân tích câu trả lời thời gian thực',
-      'Điều chỉnh độ khó linh hoạt',
-      'Gợi ý cải thiện sau mỗi lượt',
+      'Real-time answer analysis',
+      'Dynamic difficulty adjustment',
+      'Actionable improvement hints',
     ],
-    accent: 'from-cyan-500 to-blue-500',
-    iconClass: 'bg-cyan-500/15 text-cyan-400',
+    accent: 'from-primary to-secondary',
+    iconClass: 'bg-primary/10 text-primary',
   },
   {
     icon: FileText,
-    title: 'Phân tích CV tự động',
+    title: 'Smart CV Analysis',
     description:
-      'Tải lên CV và nhận bộ câu hỏi cá nhân hóa phù hợp với hồ sơ của bạn.',
+      'Upload your resume and receive personalized questions aligned to your background.',
     bullets: [
-      'Trích xuất kỹ năng và dự án',
-      'Tạo câu hỏi theo vị trí ứng tuyển',
-      'Đề xuất kỹ năng cần bổ sung',
+      'Extract core strengths and projects',
+      'Create role-specific prompts',
+      'Recommend missing skills',
     ],
-    accent: 'from-violet-500 to-fuchsia-500',
-    iconClass: 'bg-violet-500/15 text-violet-400',
+    accent: 'from-secondary to-primary',
+    iconClass: 'bg-secondary/10 text-secondary',
   },
   {
     icon: Code2,
-    title: 'Live Coding tương tác',
-    description: 'Giải quyết thử thách lập trình và nhận đánh giá sâu từ AI.',
+    title: 'Interactive Live Coding',
+    description:
+      'Solve technical challenges and get deep, structured feedback from AI.',
     bullets: [
-      'Hỗ trợ nhiều ngôn ngữ',
-      'Phân tích code và tối ưu',
-      'Gợi ý cải thiện hiệu năng',
+      'Support for multiple languages',
+      'Code review and optimization tips',
+      'Performance-focused guidance',
     ],
-    accent: 'from-emerald-500 to-teal-500',
-    iconClass: 'bg-emerald-500/15 text-emerald-400',
+    accent: 'from-success to-primary',
+    iconClass: 'bg-success/10 text-success',
   },
   {
     icon: BarChart3,
-    title: 'Phân tích tiến độ',
-    description: 'Theo dõi kỹ năng của bạn qua biểu đồ và báo cáo chi tiết.',
+    title: 'Progress Tracking',
+    description:
+      'Monitor your growth through detailed reports and visual performance summaries.',
     bullets: [
-      'Biểu đồ tiến độ theo thời gian',
-      'Nhận diện điểm yếu',
-      'So sánh với chuẩn tuyển dụng',
+      'Timeline-based progress charts',
+      'Clear weakness detection',
+      'Benchmarking against hiring standards',
     ],
-    accent: 'from-amber-500 to-orange-500',
-    iconClass: 'bg-amber-500/15 text-amber-400',
+    accent: 'from-warning to-primary',
+    iconClass: 'bg-warning/10 text-warning',
   },
   {
     icon: Target,
-    title: 'Lộ trình học thích ứng',
-    description: 'Hệ thống tự động tối ưu câu hỏi cho từng mức độ của bạn.',
+    title: 'Adaptive Learning Path',
+    description:
+      'Let the system focus your practice on the areas that truly need improvement.',
     bullets: [
-      'Độ khó thay đổi theo phản hồi',
-      'Giảm nhầm lẫn, tăng hiệu quả',
-      'Luyện tập đúng trọng tâm',
+      'Difficulty shifts with feedback',
+      'Less confusion and more efficiency',
+      'Targeted preparation',
     ],
-    accent: 'from-pink-500 to-rose-500',
-    iconClass: 'bg-pink-500/15 text-pink-400',
+    accent: 'from-error to-secondary',
+    iconClass: 'bg-error/10 text-error',
   },
   {
     icon: Clock,
-    title: 'Luyện tập linh hoạt',
-    description: 'Học mọi lúc, mọi nơi với trải nghiệm mượt mà và dễ tiếp cận.',
+    title: 'Flexible Practice',
+    description:
+      'Train anytime, anywhere with a smooth and accessible experience designed for modern schedules.',
     bullets: [
-      'Luyện tập theo thời gian riêng',
-      'Phù hợp cả người mới và senior',
-      'Đồng bộ multi-device',
+      'Practice at your own pace',
+      'Suitable for entry and senior roles',
+      'Cross-device performance',
     ],
-    accent: 'from-sky-500 to-cyan-500',
-    iconClass: 'bg-sky-500/15 text-sky-400',
+    accent: 'from-primary to-success',
+    iconClass: 'bg-primary/10 text-primary',
   },
 ];
 
@@ -106,17 +110,17 @@ const FeaturesSection = () => {
         >
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
             <Sparkles className="h-4 w-4" />
-            <span>Tính năng nổi bật</span>
+            <span>Why professionals choose us</span>
           </div>
           <h2 className="mb-4 text-3xl font-bold md:text-5xl">
-            Mọi thứ bạn cần để{' '}
+            Everything you need to{' '}
             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              chinh phục vị trí mơ ước
+              land your next role
             </span>
           </h2>
           <p className="text-lg text-muted">
-            Giao diện hiện đại, nội dung chuẩn chỉnh và công cụ học tập thông
-            minh giúp bạn chuẩn bị hiệu quả hơn mỗi ngày.
+            A modern experience, thoughtful content, and intelligent study tools
+            designed to raise your interview readiness every day.
           </p>
         </motion.div>
 
@@ -131,7 +135,7 @@ const FeaturesSection = () => {
                 transition={{ duration: 0.45, delay: index * 0.06 }}
                 viewport={{ once: true }}
                 whileHover={{ y: -6, scale: 1.01 }}
-                className="group rounded-3xl border border-border/80 bg-card/70 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur-sm"
+                className="group rounded-3xl border border-border/80 bg-card/70 p-6 shadow-soft backdrop-blur-sm"
               >
                 <div
                   className={`inline-flex rounded-2xl p-3 ${feature.iconClass}`}
@@ -158,7 +162,7 @@ const FeaturesSection = () => {
                   ))}
                 </div>
                 <div className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary transition-all group-hover:gap-3">
-                  <span>Tìm hiểu thêm</span>
+                  <span>Explore feature</span>
                   <ArrowRight className="h-4 w-4" />
                 </div>
               </motion.article>
