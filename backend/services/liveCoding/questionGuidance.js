@@ -1,4 +1,4 @@
-
+// questionGuidance.js - CLEAN VERSION
 // ========== TOPIC GUIDANCE ==========
 function getTopicGuidance(topic, language, difficulty) {
   const topicLower = topic.toLowerCase();
@@ -12,33 +12,41 @@ function getTopicGuidance(topic, language, difficulty) {
     guidance += getOOPGuidance(oopType, difficulty);
   }
   // ===== ARRAYS =====
-  else if (topicLower.includes("array") || topicLower.includes("list")) {
+  else if (topicLower.includes('array') || topicLower.includes('list')) {
     guidance += getArrayGuidance(difficulty);
   }
   // ===== SORTING =====
-  else if (topicLower.includes("sort") || topicLower.includes("sorting")) {
+  else if (topicLower.includes('sort') || topicLower.includes('sorting')) {
     guidance += getSortingGuidance(difficulty);
   }
   // ===== QUEUE =====
-  else if (topicLower.includes("queue")) {
+  else if (topicLower.includes('queue')) {
     guidance += getQueueGuidance();
   }
   // ===== STACK =====
-  else if (topicLower.includes("stack")) {
+  else if (topicLower.includes('stack')) {
     guidance += getStackGuidance();
   }
   // ===== STRINGS =====
-  else if (topicLower.includes("string")) {
+  else if (topicLower.includes('string')) {
     guidance += getStringGuidance();
   }
   // ===== MATH =====
-  else if (topicLower.includes("math") || topicLower.includes("factorial") || 
-           topicLower.includes("fibonacci") || topicLower.includes("prime")) {
+  else if (
+    topicLower.includes('math') ||
+    topicLower.includes('factorial') ||
+    topicLower.includes('fibonacci') ||
+    topicLower.includes('prime')
+  ) {
     guidance += getMathGuidance(difficulty);
   }
   // ===== COLLECTIONS =====
-  else if (topicLower.includes("collection") || topicLower.includes("list") || 
-           topicLower.includes("arraylist") || topicLower.includes("linkedlist")) {
+  else if (
+    topicLower.includes('collection') ||
+    topicLower.includes('list') ||
+    topicLower.includes('arraylist') ||
+    topicLower.includes('linkedlist')
+  ) {
     guidance += getCollectionsGuidance(difficulty);
   }
   // ===== DEFAULT =====
@@ -54,22 +62,43 @@ function getTopicGuidance(topic, language, difficulty) {
 function isOOPTopic(topic) {
   const t = topic.toLowerCase();
   const oopKeywords = [
-    "class", "oop", "inheritance", "object", "private", "encapsulation",
-    "abstract", "polymorphism", "interface", "override", "subclass",
-    "shape", "vehicle", "animal", "employee", "bank", "account"
+    'class',
+    'oop',
+    'inheritance',
+    'object',
+    'private',
+    'encapsulation',
+    'abstract',
+    'polymorphism',
+    'interface',
+    'override',
+    'subclass',
+    'shape',
+    'vehicle',
+    'animal',
+    'employee',
+    'bank',
+    'account',
   ];
-  return oopKeywords.some(k => t.includes(k));
+  return oopKeywords.some((k) => t.includes(k));
 }
 
 function getOOPType(topic) {
   const t = topic.toLowerCase();
-  if (t.includes("abstract")) return "abstract";
-  if (t.includes("interface")) return "interface";
-  if (t.includes("polymorphism")) return "polymorphism";
-  if (t.includes("inheritance") || t.includes("extends") || t.includes("subclass")) return "inheritance";
-  if (t.includes("encapsulation") || t.includes("private")) return "encapsulation";
-  if (t.includes("shape") || t.includes("vehicle") || t.includes("animal")) return "hierarchy";
-  return "basic";
+  if (t.includes('abstract')) return 'abstract';
+  if (t.includes('interface')) return 'interface';
+  if (t.includes('polymorphism')) return 'polymorphism';
+  if (
+    t.includes('inheritance') ||
+    t.includes('extends') ||
+    t.includes('subclass')
+  )
+    return 'inheritance';
+  if (t.includes('encapsulation') || t.includes('private'))
+    return 'encapsulation';
+  if (t.includes('shape') || t.includes('vehicle') || t.includes('animal'))
+    return 'hierarchy';
+  return 'basic';
 }
 
 function getOOPGuidance(oopType, difficulty) {
@@ -288,7 +317,7 @@ class Person {
   public String greet() {
     return "Hello, I'm " + name + ", " + age + " years old";
   }
-}`
+}`,
   };
 
   const scope = {
@@ -313,7 +342,7 @@ class Person {
 • Full polymorphism with collections
 • Advanced design patterns
 • Comprehensive error handling
-• ~40-60 lines of code`
+• ~40-60 lines of code`,
   };
 
   return `${base}\n${details[oopType] || details.basic}\n\n${scope[difficulty] || scope.intermediate}`;
@@ -331,9 +360,13 @@ INPUT: int[] arr
 OUTPUT: integer (or array for transformations)
 
 DIFFICULTY SCOPE (${difficulty}):
-${difficulty === "beginner" ? "• Simple operation (sum, max, min)\n• Small array, no edge cases required" :
-  difficulty === "intermediate" ? "• Moderate operation (max-min, second max)\n• Handle empty array and single element" :
-  "• Complex operation (subarray, difference)\n• Handle all edge cases, optimized solution"}`;
+${
+  difficulty === 'beginner'
+    ? '• Simple operation (sum, max, min)\n• Small array, no edge cases required'
+    : difficulty === 'intermediate'
+      ? '• Moderate operation (max-min, second max)\n• Handle empty array and single element'
+      : '• Complex operation (subarray, difference)\n• Handle all edge cases, optimized solution'
+}`;
 }
 
 function getSortingGuidance(difficulty) {
@@ -346,9 +379,13 @@ INPUT: int[] arr
 OUTPUT: int[] (sorted array)
 
 ALGORITHM BY DIFFICULTY:
-${difficulty === "beginner" ? "• Bubble Sort or Insertion Sort — O(n²)" :
-  difficulty === "intermediate" ? "• Quick Sort — O(n log n) average" :
-  "• Merge Sort or Heap Sort — O(n log n)"}`;
+${
+  difficulty === 'beginner'
+    ? '• Bubble Sort or Insertion Sort — O(n²)'
+    : difficulty === 'intermediate'
+      ? '• Quick Sort — O(n log n) average'
+      : '• Merge Sort or Heap Sort — O(n log n)'
+}`;
 }
 
 function getQueueGuidance() {
@@ -411,9 +448,13 @@ INPUT: int[] arr or specific Collection type
 OUTPUT: integer or boolean depending on the operation
 
 DIFFICULTY SCOPE (${difficulty}):
-${difficulty === "beginner" ? "• Simple operations: count, sum, average\n• Basic List conversion and iteration" :
-  difficulty === "intermediate" ? "• Filtering and aggregation: sum of even numbers, count above average\n• Handle edge cases like empty list" :
-  "• Complex operations: sublist conditions, optimized algorithms\n• Advanced list manipulation"}`;
+${
+  difficulty === 'beginner'
+    ? '• Simple operations: count, sum, average\n• Basic List conversion and iteration'
+    : difficulty === 'intermediate'
+      ? '• Filtering and aggregation: sum of even numbers, count above average\n• Handle edge cases like empty list'
+      : '• Complex operations: sublist conditions, optimized algorithms\n• Advanced list manipulation'
+}`;
 }
 
 function getDefaultGuidance(topic, language, difficulty) {
@@ -437,176 +478,73 @@ function getExampleBasedOnTopic(topic, difficulty) {
     const examples = {
       abstract: {
         beginner: 'Input: new Dog("Buddy")\nOutput: "Woof!"',
-        intermediate: 'Input: new Shape[]{ new Circle(5), new Rectangle(4, 6) }\nOutput: 102.54',
-        advanced: 'Input: new Vehicle[]{ new Car(50, 2), new Truck(40, 3) }\nOutput: 220.0'
+        intermediate:
+          'Input: new Shape[]{ new Circle(5), new Rectangle(4, 6) }\nOutput: 102.54',
+        advanced:
+          'Input: new Vehicle[]{ new Car(50, 2), new Truck(40, 3) }\nOutput: 220.0',
       },
       interface: {
         beginner: 'Input: new Document("Hello World")\nOutput: "Hello World"',
-        intermediate: 'Input: new Payable[]{ new Employee(60000), new Freelancer(50, 40) }\nOutput: 7000.0',
-        advanced: 'Input: new Circle(5)\nOutput: "Drawing Circle with radius 5.0"'
+        intermediate:
+          'Input: new Payable[]{ new Employee(60000), new Freelancer(50, 40) }\nOutput: 7000.0',
+        advanced:
+          'Input: new Circle(5)\nOutput: "Drawing Circle with radius 5.0"',
       },
       polymorphism: {
-        beginner: 'Input: new Animal[]{ new Dog(), new Cat() }\nOutput: "Woof! Meow!"',
-        intermediate: 'Input: new Shape[]{ new Circle(5), new Rectangle(4, 6) }\nOutput: 102.54',
-        advanced: 'Input: new Animal[]{ new Dog(), new Cat(), new Cow() }\nOutput: "Woof! Meow! Moo!"'
+        beginner:
+          'Input: new Animal[]{ new Dog(), new Cat() }\nOutput: "Woof! Meow!"',
+        intermediate:
+          'Input: new Shape[]{ new Circle(5), new Rectangle(4, 6) }\nOutput: 102.54',
+        advanced:
+          'Input: new Animal[]{ new Dog(), new Cat(), new Cow() }\nOutput: "Woof! Meow! Moo!"',
       },
       inheritance: {
-        beginner: 'Input: new Car("Toyota", 2020, "Camry")\nOutput: "Toyota (2020) - Camry"',
-        intermediate: 'Input: new Manager("Alice", 75000, "IT", 5000)\nOutput: "Employee: Alice, Salary: $75000.0, Department: IT, Bonus: $5000.0"',
-        advanced: 'Input: new SavingsAccount("SAV-123", "John Doe", 1000, 0.05)\nOutput: "Account: SAV-123 | Owner: John Doe | Balance: 1050.00"'
+        beginner:
+          'Input: new Car("Toyota", 2020, "Camry")\nOutput: "Toyota (2020) - Camry"',
+        intermediate:
+          'Input: new Manager("Alice", 75000, "IT", 5000)\nOutput: "Employee: Alice, Salary: $75000.0, Department: IT, Bonus: $5000.0"',
+        advanced:
+          'Input: new SavingsAccount("SAV-123", "John Doe", 1000, 0.05)\nOutput: "Account: SAV-123 | Owner: John Doe | Balance: 1050.00"',
       },
       basic: {
-        beginner: 'Input: new Person("John", 30)\nOutput: "Hello, I\'m John, 30 years old"',
-        intermediate: 'Input: new Person("Jane", 25)\nOutput: "Hello, I\'m Jane, 25 years old"',
-        advanced: 'Input: new Person("Bob", 40)\nOutput: "Hello, I\'m Bob, 40 years old"'
-      }
+        beginner:
+          'Input: new Person("John", 30)\nOutput: "Hello, I\'m John, 30 years old"',
+        intermediate:
+          'Input: new Person("Jane", 25)\nOutput: "Hello, I\'m Jane, 25 years old"',
+        advanced:
+          'Input: new Person("Bob", 40)\nOutput: "Hello, I\'m Bob, 40 years old"',
+      },
     };
     return examples[oopType]?.[d] || examples.basic.intermediate;
   }
 
   // Non-OOP examples
-  if (t.includes("sort") || t.includes("sorting")) {
-    if (d === "advanced") return "Input: [10, -20, 30, -40, 50, 60, -70, 80, -90, 95, -5, 25]\nOutput: [-90, -70, -40, -20, -5, 10, 25, 30, 50, 60, 80, 95]";
-    if (d === "intermediate") return "Input: [10, -20, 30, -40, 50, 60, -70, 80]\nOutput: [-70, -40, -20, 10, 30, 50, 60, 80]";
-    return "Input: [10, -20, 30, -40, 50]\nOutput: [-40, -20, 10, 30, 50]";
+  if (t.includes('sort') || t.includes('sorting')) {
+    if (d === 'advanced')
+      return 'Input: [10, -20, 30, -40, 50, 60, -70, 80, -90, 95, -5, 25]\nOutput: [-90, -70, -40, -20, -5, 10, 25, 30, 50, 60, 80, 95]';
+    if (d === 'intermediate')
+      return 'Input: [10, -20, 30, -40, 50, 60, -70, 80]\nOutput: [-70, -40, -20, 10, 30, 50, 60, 80]';
+    return 'Input: [10, -20, 30, -40, 50]\nOutput: [-40, -20, 10, 30, 50]';
   }
 
-  if (t.includes("array")) {
-    if (d === "advanced") return "Input: [10, -20, 30, -40, 50, 60, -70, 80, -90, 95]\nOutput: 185";
-    if (d === "intermediate") return "Input: [10, 20, -30, 40, -50, 15, 5]\nOutput: 40";
-    return "Input: [10, 20, 30, 40, 50]\nOutput: 150";
+  if (t.includes('array')) {
+    if (d === 'advanced')
+      return 'Input: [10, -20, 30, -40, 50, 60, -70, 80, -90, 95]\nOutput: 185';
+    if (d === 'intermediate')
+      return 'Input: [10, 20, -30, 40, -50, 15, 5]\nOutput: 40';
+    return 'Input: [10, 20, 30, 40, 50]\nOutput: 150';
   }
 
-  if (t.includes("queue")) return "Input: Queue containing [-8, 10, -2, 74, 46]\nOutput: 74";
-  if (t.includes("stack")) return "Input: Stack with top = 89\nOutput: 89";
-  if (t.includes("string")) return 'Input: "A man, a plan, a canal: Panama"\nOutput: true';
-  if (t.includes("fibonacci")) return "Input: 10\nOutput: 55";
-  if (t.includes("factorial")) return "Input: 5\nOutput: 120";
-  if (t.includes("prime")) return "Input: 7\nOutput: true";
+  if (t.includes('queue'))
+    return 'Input: Queue containing [-8, 10, -2, 74, 46]\nOutput: 74';
+  if (t.includes('stack')) return 'Input: Stack with top = 89\nOutput: 89';
+  if (t.includes('string'))
+    return 'Input: "A man, a plan, a canal: Panama"\nOutput: true';
+  if (t.includes('fibonacci')) return 'Input: 10\nOutput: 55';
+  if (t.includes('factorial')) return 'Input: 5\nOutput: 120';
+  if (t.includes('prime')) return 'Input: 7\nOutput: true';
 
-  return "Input: as specified\nOutput: as specified";
-}
-
-// ========== CONSTRAINTS FOR DISPLAY ==========
-function getConstraintsForDisplay(topic, difficulty) {
-  const t = topic.toLowerCase();
-  const d = difficulty.toLowerCase();
-
-  // OOP constraints
-  if (isOOPTopic(t)) {
-    const oopType = getOOPType(t);
-    const baseConstraints = [
-      "Use private fields (encapsulation - data hiding)",
-      "Validate constructor inputs (throw exception for invalid values)",
-      "Use appropriate access modifiers (private, protected, public)"
-    ];
-
-    const specificConstraints = {
-      abstract: [
-        "Create at least one abstract method in the abstract class",
-        "Extend the abstract class in concrete subclasses",
-        "Implement all abstract methods in concrete subclasses",
-        "Cannot instantiate abstract class directly"
-      ],
-      interface: [
-        "Define an interface with abstract methods",
-        "Implement the interface using 'implements' keyword",
-        "A class can implement multiple interfaces",
-        "Use default methods if needed (Java 8+)"
-      ],
-      polymorphism: [
-        "Override at least one method in subclasses with @Override",
-        "Use polymorphism (parent reference, child object)",
-        "Runtime method binding based on object type"
-      ],
-      inheritance: [
-        "Use inheritance with 'extends' keyword",
-        "Call parent constructor using 'super()'",
-        "Access parent members using 'super' when needed",
-        "Demonstrate IS-A relationship"
-      ],
-      hierarchy: [
-        "Create a base class with common attributes",
-        "Create subclasses that extend the base class",
-        "Override methods in subclasses for specific behavior",
-        "Use polymorphism with arrays or collections"
-      ],
-      basic: [
-        "Class with private fields and getters/setters",
-        "Constructor with validation",
-        "toString() or display method",
-        "Clean encapsulation of data"
-      ]
-    };
-
-    return [...baseConstraints, ...(specificConstraints[oopType] || specificConstraints.basic)];
-  }
-
-  // Non-OOP constraints
-  if (t.includes("sort") || t.includes("sorting")) {
-    const algo = d === "advanced" ? "Merge Sort or Heap Sort — O(n log n)" :
-      d === "intermediate" ? "Quick Sort — O(n log n) average" :
-      "Bubble Sort or Insertion Sort — O(n²)";
-    return [
-      `Implement ${algo}`,
-      "Sort in ascending order",
-      "Return the sorted array",
-      "Handle empty array (return empty)"
-    ];
-  }
-
-  if (t.includes("array") || t.includes("list")) {
-    const base = [
-      "Return the computed result as an integer",
-      "Handle empty array (throw exception or return 0)",
-    ];
-    if (d !== "beginner") base.push("Handle single-element array");
-    if (d === "advanced") base.push("Optimized solution preferred");
-    return base;
-  }
-
-  if (t.includes("queue")) {
-    return [
-      "Use Queue interface with LinkedList",
-      "Only use Queue API: offer(), poll(), peek()",
-      "Queue must remain unchanged after the call",
-      "Throw an exception if the queue is empty"
-    ];
-  }
-
-  if (t.includes("stack")) {
-    return [
-      "Use Java's Stack class",
-      "Only use Stack API: push(), pop(), peek()",
-      "Stack must remain unchanged after the call",
-      "Return null if the stack is empty"
-    ];
-  }
-
-  if (t.includes("string")) {
-    return [
-      "Handle empty string (return appropriate default)",
-      "For palindrome: ignore case and non-alphanumeric characters",
-      "Return the correct type (boolean / String / integer)"
-    ];
-  }
-
-  if (t.includes("math") || t.includes("factorial") || t.includes("fibonacci") || t.includes("prime")) {
-    const base = [
-      "Handle n = 0 and n = 1 explicitly",
-      "Throw exception for invalid input (e.g., negative n where not allowed)",
-      "Return the correct type (long / boolean)"
-    ];
-    if (t.includes("fibonacci")) base.push("Use memoization for O(n) time");
-    if (t.includes("prime")) base.push("Check up to sqrt(n) for efficiency");
-    return base;
-  }
-
-  return [
-    "Handle edge cases appropriately",
-    "Follow best practices for the language",
-    "Return the correct type"
-  ];
+  return 'Input: as specified\nOutput: as specified';
 }
 
 // ========== LANGUAGE GUIDANCE ==========
@@ -660,23 +598,28 @@ function getLanguageGuidance(language) {
 • Proper error handling
 • Structs with methods; private fields use lowercase names
 • Interfaces: use 'interface' keyword, implicit implementation
-• No inheritance, use composition and embedding`
+• No inheritance, use composition and embedding`,
   };
 
-  return guidances[language] || `${language.toUpperCase()} RULES:\n• Write idiomatic code\n• Follow standard naming conventions`;
+  return (
+    guidances[language] ||
+    `${language.toUpperCase()} RULES:\n• Write idiomatic code\n• Follow standard naming conventions`
+  );
 }
 
 // ========== DOMAIN NOTE ==========
 function getDomainNote(domain) {
   const notes = {
-    "DSA": "Focus on algorithm correctness and efficiency.",
-    "OOP": "Focus on object-oriented design principles including Abstraction, Encapsulation, Inheritance, and Polymorphism.",
-    "Object": "Focus on object-oriented design principles including Abstraction, Encapsulation, Inheritance, and Polymorphism.",
-    "Concurrency": "Focus on thread safety and synchronization.",
-    "Async": "Focus on asynchronous patterns and error handling.",
-    "Functional Programming": "Focus on immutability, pure functions, and patterns like currying.",
-    "Data Structures": "Focus on correct data structure implementation.",
-    "Algorithms": "Focus on algorithm efficiency and correctness."
+    DSA: 'Focus on algorithm correctness and efficiency.',
+    OOP: 'Focus on object-oriented design principles including Abstraction, Encapsulation, Inheritance, and Polymorphism.',
+    Object:
+      'Focus on object-oriented design principles including Abstraction, Encapsulation, Inheritance, and Polymorphism.',
+    Concurrency: 'Focus on thread safety and synchronization.',
+    Async: 'Focus on asynchronous patterns and error handling.',
+    'Functional Programming':
+      'Focus on immutability, pure functions, and patterns like currying.',
+    'Data Structures': 'Focus on correct data structure implementation.',
+    Algorithms: 'Focus on algorithm efficiency and correctness.',
   };
   return notes[domain] || `Focus on ${domain} concepts.`;
 }
@@ -685,43 +628,50 @@ function getDomainNote(domain) {
 function getTopicStyle(topic, language, difficulty) {
   const t = topic.toLowerCase();
 
-  let style = "function";
-  let category = "default";
+  let style = 'function';
+  let category = 'default';
 
   if (isOOPTopic(t)) {
-    style = "class";
-    category = "oop";
-  } else if (t.includes("queue") || t.includes("stack") || t.includes("linked") || 
-             t.includes("tree") || t.includes("graph")) {
-    style = "function";
-    category = "data_structure";
-  } else if (t.includes("array") || t.includes("list") || t.includes("collection")) {
-    category = "array";
-  } else if (t.includes("string")) {
-    category = "string";
-  } else if (t.includes("math") || t.includes("factorial") || t.includes("fibonacci") || 
-             t.includes("prime")) {
-    category = "math";
+    style = 'class';
+    category = 'oop';
+  } else if (
+    t.includes('queue') ||
+    t.includes('stack') ||
+    t.includes('linked') ||
+    t.includes('tree') ||
+    t.includes('graph')
+  ) {
+    style = 'function';
+    category = 'data_structure';
+  } else if (
+    t.includes('array') ||
+    t.includes('list') ||
+    t.includes('collection')
+  ) {
+    category = 'array';
+  } else if (t.includes('string')) {
+    category = 'string';
+  } else if (
+    t.includes('math') ||
+    t.includes('factorial') ||
+    t.includes('fibonacci') ||
+    t.includes('prime')
+  ) {
+    category = 'math';
   }
 
   return { style, category };
 }
 
-// ========== IS CONCURRENCY/ASYNC ==========
-function isConcurrencyOrAsyncTopic(topic) {
-  const keywords = ["Threads", "Runnable", "Synchronized", "Locks", "Executors",
-                    "Async/Await", "Promises", "Callbacks", "Goroutines", "Channels"];
-  return keywords.some(k => topic.toLowerCase().includes(k.toLowerCase()));
-}
-
+// ========== EXPORTS ==========
 module.exports = {
   getTopicGuidance,
   getLanguageGuidance,
   getDomainNote,
-  isConcurrencyOrAsyncTopic,
   getTopicStyle,
-  getConstraintsForDisplay,
-  isOOPTopic,
-  getOOPType,
-  getOOPGuidance
-}; 
+  // isConcurrencyOrAsyncTopic, // ❌ ĐÃ XÓA - không dùng
+  // getConstraintsForDisplay,   // ❌ ĐÃ XÓA - không dùng
+  // getOOPType,                // ❌ ĐÃ XÓA - không dùng (chỉ dùng nội bộ)
+  // getOOPGuidance,            // ❌ ĐÃ XÓA - không dùng (chỉ dùng nội bộ)
+  // isOOPTopic,                // ❌ ĐÃ XÓA - không dùng (chỉ dùng nội bộ)
+};

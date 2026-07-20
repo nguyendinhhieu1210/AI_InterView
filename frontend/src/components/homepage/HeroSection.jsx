@@ -5,78 +5,88 @@ import {
   ArrowRight,
   Play,
   Sparkles,
-  FileText,
-  MessageSquare,
+  Brain,
   ShieldCheck,
+  MessageSquare,
+  FileText,
 } from 'lucide-react';
 import FloatingParticles from './FloatingParticles';
 import AnimatedBackground from './AnimatedBackground';
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-[100vh] flex items-center overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_30%),linear-gradient(135deg,_#020617_0%,_#0f172a_45%,_#111827_100%)]">
+    <section
+      className="relative flex min-h-[100vh] items-center overflow-hidden"
+      style={{
+        backgroundColor: 'var(--bg-color)',
+        backgroundImage:
+          'radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 33%), radial-gradient(circle at bottom right, rgba(99, 102, 241, 0.18), transparent 35%)',
+      }}
+    >
       <AnimatedBackground variant={2} />
       <FloatingParticles count={36} color="blue" />
 
       <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-pink-500/10"
+        className="absolute inset-0 bg-gradient-to-r from-primary/20 via-secondary/20 to-primary/20"
         animate={{
           background: [
-            'linear-gradient(45deg, rgba(59,130,246,0.12), rgba(129,140,248,0.12), rgba(236,72,153,0.12))',
-            'linear-gradient(225deg, rgba(59,130,246,0.12), rgba(129,140,248,0.12), rgba(236,72,153,0.12))',
-            'linear-gradient(45deg, rgba(59,130,246,0.12), rgba(129,140,248,0.12), rgba(236,72,153,0.12))',
+            'linear-gradient(45deg, rgba(59,130,246,0.12), rgba(99,102,241,0.12), rgba(59,130,246,0.12))',
+            'linear-gradient(225deg, rgba(59,130,246,0.12), rgba(99,102,241,0.12), rgba(59,130,246,0.12))',
+            'linear-gradient(45deg, rgba(59,130,246,0.12), rgba(99,102,241,0.12), rgba(59,130,246,0.12))',
           ],
         }}
         transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
       />
 
-      <div className="container mx-auto px-4 md:px-6 relative z-10 py-20 lg:py-24">
-        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center">
+      <div className="container relative z-10 mx-auto px-4 py-20 md:px-6 lg:py-24">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
           >
             <motion.div
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-slate-100 backdrop-blur-md"
+              className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-4 py-2 text-sm font-medium text-text/90 backdrop-blur-md"
               whileHover={{ scale: 1.03 }}
             >
-              <Sparkles className="h-4 w-4 text-yellow-400" />
-              <span>Nền tảng luyện phỏng vấn AI chuẩn doanh nghiệp</span>
+              <Sparkles className="h-4 w-4 text-warning" />
+              <span>
+                AI-powered interview practice for ambitious professionals
+              </span>
             </motion.div>
 
-            <h1 className="mt-6 text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-7xl">
-              <span className="block">Chinh phục</span>
-              <span className="mt-2 block bg-gradient-to-r from-cyan-300 via-blue-400 to-fuchsia-400 bg-clip-text text-transparent">
-                phỏng vấn
+            <h1 className="mt-6 text-4xl font-bold leading-tight text-text sm:text-5xl lg:text-7xl">
+              <span className="block">Master the interview</span>
+              <span className="mt-2 block bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+                with confidence
               </span>
-              <span className="mt-2 block">cùng AI</span>
+              <span className="mt-2 block">and precision</span>
             </h1>
 
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-              Luyện tập với AI phản hồi sát thực tế, phân tích CV, thực hành
-              live coding và theo dõi tiến bộ của bạn trong một trải nghiệm mượt
-              mà, chuyên nghiệp.
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-muted sm:text-xl">
+              Practice with an adaptive AI coach, receive real-time feedback,
+              analyze your CV, and sharpen your skills for every stage of the
+              hiring process.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 to="/register"
-                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-secondary px-7 py-3.5 font-semibold text-white shadow-lg shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-primary/50"
+                className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-secondary px-7 py-3.5 font-semibold text-white shadow-lg shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-primary/50"
               >
-                <span>Bắt đầu miễn phí</span>
+                <span>Start free</span>
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 to="/features"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-7 py-3.5 font-semibold text-slate-100 backdrop-blur-md transition-all duration-300 hover:bg-white/20"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-card/70 px-7 py-3.5 font-semibold text-text backdrop-blur-md transition-all duration-300 hover:bg-card"
               >
                 <Play className="h-5 w-5" />
-                Xem demo
+                Watch demo
               </Link>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur-sm">
+            <div className="mt-8 flex flex-wrap items-center gap-6 rounded-2xl border border-border/70 bg-card/70 px-4 py-4 backdrop-blur-sm">
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-2">
                   {[1, 2, 3, 4].map((i) => (
@@ -84,22 +94,20 @@ const HeroSection = () => {
                       key={i}
                       src={`https://i.pravatar.cc/40?img=${i}`}
                       alt="User"
-                      className="h-9 w-9 rounded-full border-2 border-slate-900"
+                      className="h-9 w-9 rounded-full border-2 border-bg"
                     />
                   ))}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">
-                    10K+ người dùng
+                  <p className="text-sm font-semibold text-text">
+                    10K+ active learners
                   </p>
-                  <p className="text-sm text-slate-400">
-                    Đang luyện tập mỗi ngày
-                  </p>
+                  <p className="text-sm text-muted">Training every day</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-yellow-400">
+              <div className="flex items-center gap-2 text-warning">
                 {'★'.repeat(5)}
-                <span className="ml-1 text-sm text-slate-400">4.9/5</span>
+                <span className="ml-1 text-sm text-muted">4.9/5</span>
               </div>
             </div>
           </motion.div>
@@ -110,19 +118,19 @@ const HeroSection = () => {
             transition={{ duration: 0.8, ease: 'easeOut' }}
             className="relative"
           >
-            <div className="relative rounded-[28px] border border-white/15 bg-slate-900/70 p-5 shadow-[0_30px_80px_rgba(15,23,42,0.45)] backdrop-blur-xl">
-              <div className="rounded-[24px] border border-cyan-400/20 bg-gradient-to-br from-slate-800/90 to-slate-900/90 p-5">
-                <div className="flex items-start justify-between rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="relative rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-soft backdrop-blur-xl">
+              <div className="rounded-[24px] border border-primary/20 bg-gradient-to-br from-card/90 to-bg/90 p-5">
+                <div className="flex items-start justify-between rounded-2xl border border-border/70 bg-card/70 p-4">
                   <div>
-                    <p className="text-sm font-medium text-slate-300">
-                      AI Phỏng vấn viên
+                    <p className="text-sm font-medium text-text">
+                      AI Interview Coach
                     </p>
-                    <p className="mt-1 text-sm text-slate-400">
-                      Đang hỏi câu mở theo ngữ cảnh
+                    <p className="mt-1 text-sm text-muted">
+                      Asking contextual questions in real time
                     </p>
                   </div>
-                  <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-300">
-                    Online
+                  <span className="rounded-full bg-success/15 px-2.5 py-1 text-xs font-medium text-success">
+                    Live
                   </span>
                 </div>
 
@@ -133,11 +141,11 @@ const HeroSection = () => {
                         <MessageSquare className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="font-semibold text-white">
-                          Phản hồi ngay
+                        <p className="font-semibold text-text">
+                          Instant feedback
                         </p>
-                        <p className="text-sm text-slate-400">
-                          Cụ thể, thực tế
+                        <p className="text-sm text-muted">
+                          Specific and actionable
                         </p>
                       </div>
                     </div>
@@ -149,41 +157,43 @@ const HeroSection = () => {
                         <FileText className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="font-semibold text-white">
-                          CV được phân tích
+                        <p className="font-semibold text-text">
+                          CV intelligence
                         </p>
-                        <p className="text-sm text-slate-400">
-                          Tự động gợi câu hỏi
-                        </p>
+                        <p className="text-sm text-muted">Tailored prompts</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                    <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                    <span>Điểm số & phân tích</span>
+                <div className="mt-4 rounded-2xl border border-border/70 bg-bg/80 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-text">
+                    <ShieldCheck className="h-4 w-4 text-success" />
+                    <span>Performance insights</span>
                   </div>
                   <div className="mt-4 grid grid-cols-3 gap-3">
                     {[
-                      { value: '92%', label: 'Độ chính xác' },
-                      { value: '500+', label: 'Câu hỏi' },
-                      { value: '4.9', label: 'Đánh giá' },
+                      { value: '92%', label: 'Accuracy' },
+                      { value: '500+', label: 'Questions' },
+                      { value: '4.9', label: 'Rating' },
                     ].map((stat, idx) => (
                       <div
                         key={idx}
-                        className="rounded-xl bg-white/5 p-3 text-center"
+                        className="rounded-xl bg-card/70 p-3 text-center"
                       >
-                        <p className="text-lg font-semibold text-white">
+                        <p className="text-lg font-semibold text-text">
                           {stat.value}
                         </p>
-                        <p className="text-xs text-slate-400">{stat.label}</p>
+                        <p className="text-xs text-muted">{stat.label}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="absolute -top-7 -right-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary shadow-lg shadow-primary/10">
+              <Brain className="h-7 w-7" />
             </div>
 
             <motion.div
@@ -205,9 +215,9 @@ const HeroSection = () => {
         animate={{ y: [0, 10, 0] }}
         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <div className="flex h-10 w-6 justify-center rounded-full border-2 border-white/20">
+        <div className="flex h-10 w-6 justify-center rounded-full border-2 border-border/70">
           <motion.div
-            className="mt-2 h-3 w-1 rounded-full bg-white/40"
+            className="mt-2 h-3 w-1 rounded-full bg-primary/40"
             animate={{ y: [0, 12, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           />
